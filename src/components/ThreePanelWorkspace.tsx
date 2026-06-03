@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { DocumentUpload } from "@/components/documents/DocumentUpload";
+import { DocumentViewPanel } from "@/components/documents/DocumentViewPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
-import type { CaseSummary } from "./types";
+import type { CaseDocument, CaseSummary } from "./types";
+
+type RightPanelMode = "help" | "evidence" | "document";
 
 export function MiddleChatPanel({
   caseItem,
@@ -15,35 +19,81 @@ export function MiddleChatPanel({
   return <ChatPanel caseItem={caseItem} onJournalRefreshRequested={onJournalRefreshRequested} />;
 }
 
-export function RightContextPanel() {
+export function RightContextPanel({
+  caseId,
+  mode,
+  selectedDocument,
+  onDocumentUploaded,
+  onOpenDocument
+}: {
+  caseId: string;
+  mode: RightPanelMode;
+  selectedDocument: CaseDocument | null;
+  onDocumentUploaded: (document: CaseDocument) => void;
+  onOpenDocument: (document: CaseDocument) => void;
+}) {
   return (
     <aside className="workspace-panel context-panel" aria-labelledby="context-title">
-      <p className="panel-kicker">Context panel</p>
-      <h2 id="context-title">Help State</h2>
-      <p className="panel-note">Default right panel placeholder.</p>
-      <div className="context-state-list">
-        <div className="context-state active-state">
-          <strong>Help State</strong>
-          <span>Default guidance placeholder.</span>
+      <h2 className="sr-only" id="context-title">Right context panel</h2>
+      <DocumentUpload caseId={caseId} onUploaded={onDocumentUploaded} />
+
+      {selectedDocument && mode !== "document" ? (
+        <section className="last-document-card" aria-labelledby="last-document-title">
+          <p className="panel-kicker">Last uploaded document</p>
+          <h3 id="last-document-title">{selectedDocument.filename}</h3>
+          <button
+            className="secondary-action"
+            onClick={() => onOpenDocument(selectedDocument)}
+            type="button"
+          >
+            Open in Document View
+          </button>
+        </section>
+      ) : null}
+
+      {mode === "document" && selectedDocument ? (
+        <DocumentViewPanel document={selectedDocument} />
+      ) : (
+        <div className="right-panel-placeholder">
+          <p className="panel-kicker">Context panel</p>
+          <h2>{mode === "evidence" ? "Evidence Panel" : "Help State"}</h2>
+          <p className="panel-note">
+            {mode === "evidence"
+              ? "Evidence Panel placeholder for selected Journal item evidence."
+              : "Default right panel guidance. Upload a document to open Document View here."}
+          </p>
+          <div className="context-state-list">
+            <div className={`context-state ${mode === "help" ? "active-state" : ""}`}>
+              <strong>Help State</strong>
+              <span>Default guidance placeholder.</span>
+            </div>
+            <div className={`context-state ${mode === "evidence" ? "active-state" : ""}`}>
+              <strong>Evidence Panel</strong>
+              <span>Placeholder for selected Journal item evidence.</span>
+            </div>
+            <div className={`context-state ${mode === "document" ? "active-state" : ""}`}>
+              <strong>Document View</strong>
+              <span>Shows uploaded document content when a document is selected.</span>
+            </div>
+          </div>
         </div>
-        <div className="context-state">
-          <strong>Evidence Panel</strong>
-          <span>Placeholder for selected Journal item evidence.</span>
-        </div>
-        <div className="context-state">
-          <strong>Document View</strong>
-          <span>Placeholder for document content.</span>
-        </div>
-      </div>
+      )}
     </aside>
   );
 }
 
 export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [journalRefreshKey, setJournalRefreshKey] = useState(0);
+  const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("help");
+  const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
 
   function requestJournalRefresh() {
     setJournalRefreshKey((currentKey) => currentKey + 1);
+  }
+
+  function openDocument(document: CaseDocument) {
+    setSelectedDocument(document);
+    setRightPanelMode("document");
   }
 
   return (
@@ -64,7 +114,13 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           caseItem={caseItem}
           onJournalRefreshRequested={requestJournalRefresh}
         />
-        <RightContextPanel />
+        <RightContextPanel
+          caseId={caseItem.id}
+          mode={rightPanelMode}
+          onDocumentUploaded={openDocument}
+          onOpenDocument={openDocument}
+          selectedDocument={selectedDocument}
+        />
       </div>
     </div>
   );
