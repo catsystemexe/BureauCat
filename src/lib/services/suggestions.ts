@@ -2,6 +2,7 @@ import type { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import { evidenceStateRecheck } from "@/lib/services/evidenceStateService";
 import {
+  type AISuggestionStatus,
   type ApproveSuggestionInput,
   type SuggestionJournalItemInput,
   suggestionJournalItemSchema
@@ -49,6 +50,17 @@ function parseSuggestedItemJson(suggestedItemJson: string) {
   } catch {
     return { ok: false as const };
   }
+}
+
+export function listAISuggestionsForCase(caseId: string, status?: AISuggestionStatus) {
+  return prisma.aISuggestion.findMany({
+    where: {
+      case_id: caseId,
+      ...(status ? { status } : {})
+    },
+    orderBy: { created_at: "desc" },
+    select: aiSuggestionSelect
+  });
 }
 
 export function getAISuggestionById(id: string) {

@@ -29,6 +29,13 @@ export const approveSuggestionSchema = z
   })
   .strict();
 
+export const listAISuggestionsQuerySchema = z
+  .object({
+    status: aiSuggestionStatusSchema.optional()
+  })
+  .strict();
+
 export type AISuggestionStatus = z.infer<typeof aiSuggestionStatusSchema>;
 export type SuggestionJournalItemInput = z.infer<typeof suggestionJournalItemSchema>;
 export type ApproveSuggestionInput = z.infer<typeof approveSuggestionSchema>;
+export type ListAISuggestionsQuery = z.infer<typeof listAISuggestionsQuerySchema>;
