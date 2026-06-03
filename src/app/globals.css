@@ -395,3 +395,170 @@ h1 {
   font-size: 0.88rem;
   margin: 0;
 }
+
+.sr-only {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: flex-start;
+}
+
+.chat-panel-header {
+  flex: 0 0 auto;
+}
+
+.chat-panel-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.message-list {
+  display: grid;
+  gap: 12px;
+}
+
+.message-card,
+.chat-empty-state,
+.suggestion-preview-card {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.message-card {
+  max-width: 88%;
+}
+
+.message-user {
+  justify-self: end;
+}
+
+.message-assistant,
+.message-system {
+  justify-self: start;
+}
+
+.message-card-header {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.78rem;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.message-role {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.message-card p,
+.suggestion-preview-card p {
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.chat-empty-state {
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+
+.chat-empty-state strong {
+  color: var(--foreground);
+}
+
+.message-composer {
+  align-items: flex-end;
+  border-top: 1px solid var(--panel-border);
+  display: grid;
+  flex: 0 0 auto;
+  gap: 10px;
+  grid-template-columns: 1fr auto;
+  padding-top: 16px;
+}
+
+.message-composer textarea {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  color: var(--foreground);
+  min-height: 76px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.message-composer textarea:focus {
+  border-color: var(--accent);
+  outline: 2px solid rgba(124, 77, 37, 0.16);
+}
+
+.suggestion-preview-section {
+  background: #f8efe3;
+  border: 1px dashed var(--panel-border);
+  border-radius: 18px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.suggestion-preview-section h3 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.suggestion-preview-list {
+  display: grid;
+  gap: 12px;
+}
+
+.suggestion-preview-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.suggestion-preview-meta > span:not(.evidence-badge):not(.journal-status-badge) {
+  background: #efe5d7;
+  border-radius: 999px;
+  color: #5b3519;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+  text-transform: uppercase;
+}
+
+.suggestion-preview-card h4 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}
+
+.message-composer textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
