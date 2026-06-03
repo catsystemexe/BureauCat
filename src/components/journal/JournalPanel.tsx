@@ -71,7 +71,13 @@ export function JournalSection({
   );
 }
 
-export function JournalPanel({ caseItem }: { caseItem: CaseSummary }) {
+export function JournalPanel({
+  caseItem,
+  refreshKey
+}: {
+  caseItem: CaseSummary;
+  refreshKey: number;
+}) {
   const [journalItems, setJournalItems] = useState<JournalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +121,7 @@ export function JournalPanel({ caseItem }: { caseItem: CaseSummary }) {
     return () => {
       isMounted = false;
     };
-  }, [caseItem.id]);
+  }, [caseItem.id, refreshKey]);
 
   const journalItemsBySection = useMemo(() => {
     const groups = createEmptyJournalGroups();
