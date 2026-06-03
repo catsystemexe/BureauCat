@@ -1,20 +1,9 @@
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
 import type { CaseSummary } from "./types";
 
 export function MiddleChatPanel({ caseItem }: { caseItem: CaseSummary }) {
-  return (
-    <main className="workspace-panel chat-panel" aria-labelledby="chat-title">
-      <div>
-        <p className="panel-kicker">Chat</p>
-        <h2 id="chat-title">Workspace chat</h2>
-        <p className="panel-note">Chat remains visible in the middle panel for case {caseItem.id}.</p>
-      </div>
-      <div className="chat-placeholder">
-        <p>Chat placeholder</p>
-        <small>Real message sending is outside this task.</small>
-      </div>
-    </main>
-  );
+  return <ChatPanel caseItem={caseItem} />;
 }
 
 export function RightContextPanel() {
