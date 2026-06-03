@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Case {
+  id         String   @id @default(cuid())
+  title      String
+  area       String?
+  /// Allowed values: draft, active, closed.
+  status     String   @default("draft")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  documents      Document[]
+  journal_items  JournalItem[]
+  chat_messages  ChatMessage[]
+  ai_suggestions AISuggestion[]
+}
+
+model Document {
+  id             String   @id @default(cuid())
+  case_id        String
+  filename       String
+  filetype       String
+  original_file  String
+  extracted_text String?
+  ai_summary     String?
+  created_at     DateTime @default(now())
+
+  case Case @relation(fields: [case_id], references: [id], onDelete: Cascade)
+
+  @@index([case_id])
+}
+
+model JournalItem {
+  id                String   @id @default(cuid())
+  case_id           String
+  /// Allowed values: description, goals, risks, open_questions, strategy.
+  section           String
+  /// Allowed values: FACT, CLAIM, GOAL, QUESTION, ACTION, RISK.
+  item_type         String
+  title             String
+  value             String?
+  explanation       String?
+  /// Allowed values: verified, inferred, unverified, conflict.
+  evidence_state    String   @default("unverified")
+  /// Allowed values: active, resolved, obsolete.
+  status            String   @default("active")
+  display_order     Int      @default(0)
+  source_links_json String   @default("[]")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  case Case @relation(fields: [case_id], references: [id], onDelete: Cascade)
+
+  @@index([case_id])
+  @@index([case_id, section, display_order])
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  case_id    String
+  role       String
+  content    String
+  created_at DateTime @default(now())
+
+  case Case @relation(fields: [case_id], references: [id], onDelete: Cascade)
+
+  @@index([case_id, created_at])
+}
+
+model AISuggestion {
+  id                  String   @id @default(cuid())
+  case_id             String
+  /// Allowed values: pending, approved, rejected.
+  status              String   @default("pending")
+  suggested_item_json String
+  assistant_reply     String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  case Case @relation(fields: [case_id], references: [id], onDelete: Cascade)
+
+  @@index([case_id, status])
+}
