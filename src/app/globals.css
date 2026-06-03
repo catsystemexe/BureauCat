@@ -292,3 +292,106 @@ h1 {
 .active-state {
   border-color: var(--accent);
 }
+
+.journal-section {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.journal-section h3 {
+  font-size: 0.95rem;
+  margin: 0 0 12px;
+}
+
+.journal-items-list {
+  display: grid;
+  gap: 10px;
+}
+
+.journal-item-card {
+  background: #fffaf2;
+  border: 1px solid #eadfce;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.journal-item-card-header {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.journal-item-card h4 {
+  font-size: 0.95rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.journal-item-type,
+.evidence-badge,
+.journal-status-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 6px 8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.journal-item-type {
+  background: #efe5d7;
+  color: #5b3519;
+}
+
+.evidence-badge {
+  border: 1px solid transparent;
+}
+
+.evidence-verified {
+  background: #e3f4e6;
+  border-color: #badfc0;
+  color: #246331;
+}
+
+.evidence-inferred {
+  background: #e8f0ff;
+  border-color: #c8d8fa;
+  color: #254f94;
+}
+
+.evidence-unverified {
+  background: #fff4cf;
+  border-color: #ead184;
+  color: #70530b;
+}
+
+.evidence-conflict {
+  background: #fae2de;
+  border-color: #ebb7ae;
+  color: #8b2d1c;
+}
+
+.journal-item-value {
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 8px 0 0;
+}
+
+.journal-status-badge {
+  background: #eee7dd;
+  color: #6d6258;
+  margin-top: 10px;
+}
+
+.journal-empty-message {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0;
+}

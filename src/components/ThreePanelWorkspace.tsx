@@ -1,23 +1,5 @@
+import { JournalPanel } from "@/components/journal/JournalPanel";
 import type { CaseSummary } from "./types";
-
-export function LeftJournalPanel({ caseItem }: { caseItem: CaseSummary }) {
-  const sections = ["Description", "Goals", "Risks", "Open Questions", "Strategy"];
-
-  return (
-    <aside className="workspace-panel journal-panel" aria-labelledby="journal-title">
-      <p className="panel-kicker">Journal</p>
-      <h2 id="journal-title">{caseItem.title}</h2>
-      <p className="panel-note">Authoritative working model placeholder.</p>
-      <div className="journal-section-list">
-        {sections.map((section) => (
-          <div className="journal-section-placeholder" key={section}>
-            {section}
-          </div>
-        ))}
-      </div>
-    </aside>
-  );
-}
 
 export function MiddleChatPanel({ caseItem }: { caseItem: CaseSummary }) {
   return (
@@ -73,7 +55,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         </div>
       </header>
       <div className="three-panel-layout" aria-label="Three-panel case workspace">
-        <LeftJournalPanel caseItem={caseItem} />
+        <JournalPanel caseItem={caseItem} />
         <MiddleChatPanel caseItem={caseItem} />
         <RightContextPanel />
       </div>
