@@ -1,3 +1,17 @@
+## Authoritative specification
+
+The authoritative product specification is:
+
+docs/bureaucat-mvp-v1.2.md
+
+Before planning or implementing any task, read this file.
+
+If AGENTS.md and the specification conflict, follow docs/bureaucat-mvp-v1.2.md.
+
+Do not infer additional features beyond the specification.
+
+
+
 # BureauCat – Agent Instructions
 ## Project goal
 Build BureauCat MVP v1.2: a desktop-first case model app with Journal, Chat, Documents, AI Suggestions and Evidence Panel.
