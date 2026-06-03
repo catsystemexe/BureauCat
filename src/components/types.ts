@@ -75,3 +75,10 @@ export type AISuggestionPreview = {
   status: SuggestionStatus;
   item: SuggestionJournalItem;
 };
+
+export type SuggestionAction = "approve" | "reject";
+
+export type SuggestionActionState = {
+  loadingAction: SuggestionAction | null;
+  error: string | null;
+};

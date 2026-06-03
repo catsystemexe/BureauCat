@@ -562,3 +562,70 @@ h1 {
   cursor: not-allowed;
   opacity: 0.65;
 }
+
+.suggestion-preview-details {
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 12px 0 0;
+}
+
+.suggestion-preview-details div {
+  background: #fbf5ed;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.suggestion-preview-details dt {
+  color: #7c4d25;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.suggestion-preview-details dd {
+  color: var(--foreground);
+  margin: 4px 0 0;
+}
+
+.suggestion-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.suggestion-action {
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 9px 12px;
+}
+
+.suggestion-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.approve-action {
+  background: var(--accent);
+  color: #fffaf2;
+}
+
+.reject-action {
+  background: #ead9c4;
+  color: #5b3519;
+}
+
+.suggestion-action-state {
+  color: var(--muted);
+  font-weight: 700;
+  margin-top: 14px !important;
+}
+
+.suggestion-action-error {
+  margin-top: 12px;
+}

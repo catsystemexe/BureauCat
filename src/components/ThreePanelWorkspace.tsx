@@ -1,9 +1,18 @@
+"use client";
+
+import { useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
 import type { CaseSummary } from "./types";
 
-export function MiddleChatPanel({ caseItem }: { caseItem: CaseSummary }) {
-  return <ChatPanel caseItem={caseItem} />;
+export function MiddleChatPanel({
+  caseItem,
+  onJournalRefreshRequested
+}: {
+  caseItem: CaseSummary;
+  onJournalRefreshRequested: () => void;
+}) {
+  return <ChatPanel caseItem={caseItem} onJournalRefreshRequested={onJournalRefreshRequested} />;
 }
 
 export function RightContextPanel() {
@@ -31,6 +40,12 @@ export function RightContextPanel() {
 }
 
 export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
+  const [journalRefreshKey, setJournalRefreshKey] = useState(0);
+
+  function requestJournalRefresh() {
+    setJournalRefreshKey((currentKey) => currentKey + 1);
+  }
+
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
@@ -44,8 +59,11 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         </div>
       </header>
       <div className="three-panel-layout" aria-label="Three-panel case workspace">
-        <JournalPanel caseItem={caseItem} />
-        <MiddleChatPanel caseItem={caseItem} />
+        <JournalPanel caseItem={caseItem} refreshKey={journalRefreshKey} />
+        <MiddleChatPanel
+          caseItem={caseItem}
+          onJournalRefreshRequested={requestJournalRefresh}
+        />
         <RightContextPanel />
       </div>
     </div>

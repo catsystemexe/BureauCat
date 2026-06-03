@@ -9,6 +9,8 @@ import type {
   AISuggestionRecord,
   CaseSummary,
   ChatMessage,
+  SuggestionAction,
+  SuggestionActionState,
   SuggestionJournalItem
 } from "@/components/types";
 
@@ -39,10 +41,19 @@ function parseSuggestion(record: AISuggestionRecord): AISuggestionPreview | null
   }
 }
 
-export function ChatPanel({ caseItem }: { caseItem: CaseSummary }) {
+export function ChatPanel({
+  caseItem,
+  onJournalRefreshRequested
+}: {
+  caseItem: CaseSummary;
+  onJournalRefreshRequested: () => void;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [composerContent, setComposerContent] = useState("");
   const [suggestionPreviews, setSuggestionPreviews] = useState<AISuggestionPreview[]>([]);
+  const [suggestionActionStates, setSuggestionActionStates] = useState<
+    Record<string, SuggestionActionState | undefined>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,11 +136,70 @@ export function ChatPanel({ caseItem }: { caseItem: CaseSummary }) {
 
       setMessages(loadedMessages);
       setSuggestionPreviews(previews);
+      setSuggestionActionStates({});
       setComposerContent("");
     } catch (sendError) {
       setError(sendError instanceof Error ? sendError.message : "Unable to send message.");
     } finally {
       setIsSending(false);
+    }
+  }
+
+  async function handleSuggestionAction(suggestionId: string, action: SuggestionAction) {
+    setSuggestionActionStates((currentStates) => ({
+      ...currentStates,
+      [suggestionId]: { loadingAction: action, error: null }
+    }));
+
+    try {
+      const response = await fetch(`/api/suggestions/${suggestionId}/${action}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: action === "approve" ? JSON.stringify({}) : undefined
+      });
+
+      if (!response.ok) {
+        let responseMessage: string | null = null;
+
+        try {
+          const body = (await response.json()) as { error?: string };
+          responseMessage = body.error ?? null;
+        } catch {
+          responseMessage = null;
+        }
+
+        if (response.status === 404 || response.status === 409) {
+          throw new Error(responseMessage ?? "Suggestion can no longer be changed.");
+        }
+
+        throw new Error(responseMessage ?? `Unable to ${action} suggestion.`);
+      }
+
+      setSuggestionPreviews((currentPreviews) =>
+        currentPreviews.map((suggestion) =>
+          suggestion.id === suggestionId
+            ? { ...suggestion, status: action === "approve" ? "approved" : "rejected" }
+            : suggestion
+        )
+      );
+      setSuggestionActionStates((currentStates) => ({
+        ...currentStates,
+        [suggestionId]: { loadingAction: null, error: null }
+      }));
+
+      if (action === "approve") {
+        onJournalRefreshRequested();
+      }
+    } catch (actionError) {
+      setSuggestionActionStates((currentStates) => ({
+        ...currentStates,
+        [suggestionId]: {
+          loadingAction: null,
+          error: actionError instanceof Error ? actionError.message : `Unable to ${action} suggestion.`
+        }
+      }));
     }
   }
 
@@ -145,7 +215,12 @@ export function ChatPanel({ caseItem }: { caseItem: CaseSummary }) {
         {isLoading ? <p className="journal-empty-message">Loading messages…</p> : null}
         {error ? <p className="status-message error-message">{error}</p> : null}
         {!isLoading ? <MessageList messages={messages} /> : null}
-        <SuggestionPreview suggestions={suggestionPreviews} />
+        <SuggestionPreview
+          actionStates={suggestionActionStates}
+          onApprove={(suggestionId) => handleSuggestionAction(suggestionId, "approve")}
+          onReject={(suggestionId) => handleSuggestionAction(suggestionId, "reject")}
+          suggestions={suggestionPreviews}
+        />
       </div>
 
       <MessageComposer
