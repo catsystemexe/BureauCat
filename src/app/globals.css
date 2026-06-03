@@ -629,3 +629,133 @@ h1 {
 .suggestion-action-error {
   margin-top: 12px;
 }
+
+.document-upload,
+.last-document-card,
+.right-panel-placeholder,
+.document-view-panel {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.document-upload {
+  margin-bottom: 16px;
+}
+
+.document-upload label {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.document-upload input[type="file"] {
+  background: #fbf5ed;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  color: var(--muted);
+  padding: 10px;
+  width: 100%;
+}
+
+.document-upload-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.secondary-action {
+  background: #ead9c4;
+  border: 0;
+  border-radius: 999px;
+  color: #5b3519;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 10px 14px;
+}
+
+.secondary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.last-document-card {
+  margin-bottom: 16px;
+}
+
+.last-document-card h3 {
+  font-size: 1rem;
+  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.document-view-panel {
+  gap: 16px;
+}
+
+.document-view-header h2 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+
+.document-meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.document-meta-list span {
+  background: #efe5d7;
+  border-radius: 999px;
+  color: #5b3519;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+}
+
+.document-view-section {
+  border-top: 1px solid var(--panel-border);
+  padding-top: 14px;
+}
+
+.document-view-section h3 {
+  color: var(--accent);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.document-view-section p {
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.document-extracted-text,
+.document-file-path {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  color: var(--foreground);
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.document-extracted-text {
+  max-height: 280px;
+}
+
+.document-file-path {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}

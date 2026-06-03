@@ -36,6 +36,17 @@ export type JournalItem = {
   updated_at: string;
 };
 
+export type CaseDocument = {
+  id: string;
+  case_id: string;
+  filename: string;
+  filetype: string;
+  original_file: string;
+  extracted_text: string | null;
+  ai_summary: string | null;
+  created_at: string;
+};
+
 export type ChatMessageRole = "user" | "assistant" | "system";
 
 export type ChatMessage = {
