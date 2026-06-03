@@ -13,3 +13,17 @@ export async function evidenceStateRecheck(journalItemId: string) {
     where: { id: journalItemId }
   });
 }
+
+/**
+ * Placeholder for MVP case-wide evidence-state recalculation.
+ *
+ * The product specification requires evidence_state to be rechecked after a
+ * document upload. Real matching against documents will be added in a later
+ * slice; this integration point deliberately leaves existing Journal Items
+ * unchanged for now.
+ */
+export async function evidenceStateRecheckForCase(caseId: string) {
+  return prisma.case.findUnique({
+    where: { id: caseId }
+  });
+}
