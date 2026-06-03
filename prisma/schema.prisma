@@ -12,12 +12,10 @@ enum CaseStatus {
   active
   closed
 }
-
 enum JournalSection {
   description
   goals
-  risks
-  open_questions
+  risks  open_questions
   strategy
 }
 
