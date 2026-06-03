@@ -84,7 +84,7 @@ model JournalItem {
   section           JournalSection
   item_type         JournalItemType
   title             String
-  value             String
+  value             String?
   explanation       String?
   evidence_state    EvidenceState      @default(unverified)
   status            JournalItemStatus  @default(active)
