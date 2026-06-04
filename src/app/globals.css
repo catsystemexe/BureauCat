@@ -314,7 +314,23 @@ h1 {
   background: #fffaf2;
   border: 1px solid #eadfce;
   border-radius: 14px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
   padding: 14px;
+  text-align: left;
+  width: 100%;
+}
+
+.journal-item-card:hover,
+.journal-item-card:focus-visible {
+  border-color: var(--accent);
+}
+
+.selected-journal-item {
+  background: #fff3df;
+  border-color: var(--accent);
+  box-shadow: inset 4px 0 0 var(--accent);
 }
 
 .journal-item-card-header {
@@ -633,7 +649,8 @@ h1 {
 .document-upload,
 .last-document-card,
 .right-panel-placeholder,
-.document-view-panel {
+.document-view-panel,
+.evidence-panel {
   background: #fffdf8;
   border: 1px solid var(--panel-border);
   border-radius: 16px;
@@ -691,6 +708,82 @@ h1 {
   line-height: 1.35;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+
+.evidence-panel {
+  gap: 16px;
+}
+
+.evidence-panel h2 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.evidence-detail-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.evidence-detail-row {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.evidence-detail-row dt,
+.source-links-panel h3 {
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.evidence-detail-row dd {
+  line-height: 1.45;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.source-links-panel {
+  border-top: 1px solid var(--panel-border);
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+}
+
+.source-links-panel h3 {
+  margin: 0;
+}
+
+.source-link-list {
+  display: grid;
+  gap: 10px;
+}
+
+.source-link-row,
+.source-link-raw {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  color: var(--foreground);
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.source-link-empty {
+  color: var(--muted);
+  margin: 0;
 }
 
 .document-view-panel {

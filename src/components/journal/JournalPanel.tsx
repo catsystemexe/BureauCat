@@ -28,9 +28,22 @@ function formatBadgeLabel(value: string) {
   return value.replaceAll("_", " ");
 }
 
-export function JournalItemCard({ item }: { item: JournalItem }) {
+export function JournalItemCard({
+  isSelected,
+  item,
+  onSelectItem
+}: {
+  isSelected: boolean;
+  item: JournalItem;
+  onSelectItem: (item: JournalItem) => void;
+}) {
   return (
-    <article className="journal-item-card" aria-label={item.title}>
+    <button
+      aria-pressed={isSelected}
+      className={`journal-item-card ${isSelected ? "selected-journal-item" : ""}`}
+      onClick={() => onSelectItem(item)}
+      type="button"
+    >
       <div className="journal-item-card-header">
         <span className="journal-item-type">{item.item_type}</span>
         <span className={`evidence-badge evidence-${item.evidence_state}`}>
@@ -42,18 +55,22 @@ export function JournalItemCard({ item }: { item: JournalItem }) {
       {item.status !== "active" ? (
         <span className="journal-status-badge">{formatBadgeLabel(item.status)}</span>
       ) : null}
-    </article>
+    </button>
   );
 }
 
 export function JournalSection({
   items,
   label,
-  sectionKey
+  onSelectItem,
+  sectionKey,
+  selectedItemId
 }: {
   items: JournalItem[];
   label: string;
+  onSelectItem: (item: JournalItem) => void;
   sectionKey: JournalSectionKey;
+  selectedItemId: string | null;
 }) {
   return (
     <section className="journal-section" aria-labelledby={`journal-section-${sectionKey}`}>
@@ -61,7 +78,12 @@ export function JournalSection({
       {items.length > 0 ? (
         <div className="journal-items-list">
           {items.map((item) => (
-            <JournalItemCard item={item} key={item.id} />
+            <JournalItemCard
+              isSelected={selectedItemId === item.id}
+              item={item}
+              key={item.id}
+              onSelectItem={onSelectItem}
+            />
           ))}
         </div>
       ) : (
@@ -73,10 +95,14 @@ export function JournalSection({
 
 export function JournalPanel({
   caseItem,
-  refreshKey
+  onSelectItem,
+  refreshKey,
+  selectedItemId
 }: {
   caseItem: CaseSummary;
+  onSelectItem: (item: JournalItem) => void;
   refreshKey: number;
+  selectedItemId: string | null;
 }) {
   const [journalItems, setJournalItems] = useState<JournalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -147,7 +173,9 @@ export function JournalPanel({
               items={journalItemsBySection[section.key]}
               key={section.key}
               label={section.label}
+              onSelectItem={onSelectItem}
               sectionKey={section.key}
+              selectedItemId={selectedItemId}
             />
           ))}
         </div>
