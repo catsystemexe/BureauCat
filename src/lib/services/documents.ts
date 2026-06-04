@@ -38,6 +38,14 @@ export async function createDocumentForCase(caseId: string, upload: ValidatedDoc
   return document;
 }
 
+export function listDocumentsForCase(caseId: string) {
+  return prisma.document.findMany({
+    where: { case_id: caseId },
+    orderBy: { created_at: "desc" },
+    select: documentSelect
+  });
+}
+
 export function getDocumentById(id: string) {
   return prisma.document.findUnique({
     where: { id },

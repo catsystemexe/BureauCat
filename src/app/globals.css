@@ -759,3 +759,56 @@ h1 {
   color: var(--muted);
   overflow-wrap: anywhere;
 }
+
+.document-list-card {
+  border-top: 1px solid var(--panel-border);
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 16px;
+}
+
+.document-list-header h3 {
+  font-size: 1rem;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.document-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.document-list-item {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  color: var(--foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.document-list-item:hover,
+.document-list-item:focus-visible {
+  border-color: var(--accent);
+}
+
+.document-list-filename {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.document-list-meta {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  gap: 8px;
+}
