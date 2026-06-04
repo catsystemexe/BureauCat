@@ -1,9 +1,7 @@
+run = "npm run dev -- --hostname 0.0.0.0 --port 3000"
+
 modules = ["nodejs-20"]
 
 [[ports]]
-localPort = 8080
+localPort = 3000
 externalPort = 80
-
-[[ports]]
-localPort = 20885
-externalPort = 3000
