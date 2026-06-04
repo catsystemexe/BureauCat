@@ -431,7 +431,17 @@ h1 {
 }
 
 .chat-panel-header {
+  align-items: flex-start;
+  display: flex;
   flex: 0 0 auto;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.meeting-prep-button {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  white-space: nowrap;
 }
 
 .chat-panel-body {
@@ -451,7 +461,8 @@ h1 {
 
 .message-card,
 .chat-empty-state,
-.suggestion-preview-card {
+.suggestion-preview-card,
+.meeting-prep-card {
   background: #fffdf8;
   border: 1px solid var(--panel-border);
   border-radius: 16px;
@@ -489,7 +500,8 @@ h1 {
 }
 
 .message-card p,
-.suggestion-preview-card p {
+.suggestion-preview-card p,
+.meeting-prep-card p {
   line-height: 1.5;
   margin: 0;
   white-space: pre-wrap;
@@ -925,4 +937,48 @@ h1 {
   flex-wrap: wrap;
   font-size: 0.78rem;
   gap: 8px;
+}
+
+.meeting-prep-card {
+  background: #fff7eb;
+  display: grid;
+  gap: 14px;
+}
+
+.meeting-prep-card-header h3 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.meeting-prep-card-section {
+  display: grid;
+  gap: 8px;
+}
+
+.meeting-prep-card-section h4 {
+  color: #5b3519;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.meeting-prep-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.meeting-prep-list li {
+  line-height: 1.45;
+}
+
+.meeting-prep-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.meeting-prep-error {
+  margin-top: 0;
 }

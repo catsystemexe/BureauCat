@@ -93,3 +93,11 @@ export type SuggestionActionState = {
   loadingAction: SuggestionAction | null;
   error: string | null;
 };
+export type MeetingPrepReport = {
+  summary: string;
+  goals: string[];
+  risks: string[];
+  documents_to_bring: string[];
+  questions_to_ask: string[];
+  strategy: string;
+};
