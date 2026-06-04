@@ -6,9 +6,64 @@ import { DocumentList } from "@/components/documents/DocumentList";
 import { DocumentUpload } from "@/components/documents/DocumentUpload";
 import { DocumentViewPanel } from "@/components/documents/DocumentViewPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
-import type { CaseDocument, CaseSummary } from "./types";
+import type { CaseDocument, CaseSummary, JournalItem } from "./types";
 
 type RightPanelMode = "help" | "evidence" | "document";
+
+type ParsedSourceLinks =
+  | { kind: "empty" }
+  | { kind: "parsed"; links: unknown[] }
+  | { kind: "raw"; rawValue: string };
+
+function formatDetailLabel(value: string) {
+  return value.replaceAll("_", " ");
+}
+
+function displayValue(value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return "Not provided";
+  }
+
+  return String(value);
+}
+
+function parseSourceLinks(sourceLinksJson: string | null | undefined): ParsedSourceLinks {
+  if (!sourceLinksJson) {
+    return { kind: "empty" };
+  }
+
+  try {
+    const parsedSourceLinks = JSON.parse(sourceLinksJson) as unknown;
+
+    if (Array.isArray(parsedSourceLinks)) {
+      return { kind: "parsed", links: parsedSourceLinks };
+    }
+
+    return { kind: "parsed", links: [parsedSourceLinks] };
+  } catch {
+    return { kind: "raw", rawValue: sourceLinksJson };
+  }
+}
+
+function formatSourceLink(sourceLink: unknown) {
+  if (sourceLink === null || sourceLink === undefined || sourceLink === "") {
+    return "Not provided";
+  }
+
+  if (
+    typeof sourceLink === "string" ||
+    typeof sourceLink === "number" ||
+    typeof sourceLink === "boolean"
+  ) {
+    return String(sourceLink);
+  }
+
+  try {
+    return JSON.stringify(sourceLink, null, 2);
+  } catch {
+    return "Not provided";
+  }
+}
 
 export function MiddleChatPanel({
   caseItem,
@@ -20,10 +75,83 @@ export function MiddleChatPanel({
   return <ChatPanel caseItem={caseItem} onJournalRefreshRequested={onJournalRefreshRequested} />;
 }
 
+export function EvidencePanel({ journalItem }: { journalItem: JournalItem }) {
+  const parsedSourceLinks = parseSourceLinks(journalItem.source_links_json);
+
+  return (
+    <section className="evidence-panel" aria-labelledby="evidence-panel-title">
+      <p className="panel-kicker">Evidence Panel</p>
+      <h2 id="evidence-panel-title">{displayValue(journalItem.title)}</h2>
+      <dl className="evidence-detail-list">
+        <div className="evidence-detail-row">
+          <dt>Title</dt>
+          <dd>{displayValue(journalItem.title)}</dd>
+        </div>
+        <div className="evidence-detail-row">
+          <dt>Section</dt>
+          <dd>{displayValue(formatDetailLabel(journalItem.section))}</dd>
+        </div>
+        <div className="evidence-detail-row">
+          <dt>Item type</dt>
+          <dd>{displayValue(journalItem.item_type)}</dd>
+        </div>
+        <div className="evidence-detail-row">
+          <dt>Value</dt>
+          <dd>{displayValue(journalItem.value)}</dd>
+        </div>
+        <div className="evidence-detail-row">
+          <dt>Explanation</dt>
+          <dd>{displayValue(journalItem.explanation)}</dd>
+        </div>
+        <div className="evidence-detail-row">
+          <dt>Evidence state</dt>
+          <dd>
+            <span className={`evidence-badge evidence-${journalItem.evidence_state}`}>
+              {formatDetailLabel(journalItem.evidence_state)}
+            </span>
+          </dd>
+        </div>
+        <div className="evidence-detail-row">
+          <dt>Status</dt>
+          <dd>{displayValue(formatDetailLabel(journalItem.status))}</dd>
+        </div>
+        <div className="evidence-detail-row">
+          <dt>Display order</dt>
+          <dd>{displayValue(journalItem.display_order)}</dd>
+        </div>
+      </dl>
+
+      <section className="source-links-panel" aria-labelledby="source-links-title">
+        <h3 id="source-links-title">Source links</h3>
+        {parsedSourceLinks.kind === "empty" ? (
+          <p className="source-link-empty">Not provided</p>
+        ) : null}
+        {parsedSourceLinks.kind === "raw" ? (
+          <pre className="source-link-raw">{parsedSourceLinks.rawValue}</pre>
+        ) : null}
+        {parsedSourceLinks.kind === "parsed" ? (
+          <div className="source-link-list">
+            {parsedSourceLinks.links.length > 0 ? (
+              parsedSourceLinks.links.map((sourceLink, index) => (
+                <pre className="source-link-row" key={index}>
+                  {formatSourceLink(sourceLink)}
+                </pre>
+              ))
+            ) : (
+              <p className="source-link-empty">Not provided</p>
+            )}
+          </div>
+        ) : null}
+      </section>
+    </section>
+  );
+}
+
 export function RightContextPanel({
   caseId,
   mode,
   selectedDocument,
+  selectedJournalItem,
   documentListRefreshKey,
   onDocumentUploaded,
   onOpenDocument
@@ -31,6 +159,7 @@ export function RightContextPanel({
   caseId: string;
   mode: RightPanelMode;
   selectedDocument: CaseDocument | null;
+  selectedJournalItem: JournalItem | null;
   documentListRefreshKey: number;
   onDocumentUploaded: (document: CaseDocument) => void;
   onOpenDocument: (document: CaseDocument) => void;
@@ -56,14 +185,14 @@ export function RightContextPanel({
 
       {mode === "document" && selectedDocument ? (
         <DocumentViewPanel document={selectedDocument} />
+      ) : mode === "evidence" && selectedJournalItem ? (
+        <EvidencePanel journalItem={selectedJournalItem} />
       ) : (
         <div className="right-panel-placeholder">
           <p className="panel-kicker">Context panel</p>
-          <h2>{mode === "evidence" ? "Evidence Panel" : "Help State"}</h2>
+          <h2>Help State</h2>
           <p className="panel-note">
-            {mode === "evidence"
-              ? "Evidence Panel placeholder for selected Journal item evidence."
-              : "Default right panel guidance. Upload a document to open Document View here."}
+            Default right panel guidance. Upload a document to open Document View here.
           </p>
           <div className="context-state-list">
             <div className={`context-state ${mode === "help" ? "active-state" : ""}`}>
@@ -72,7 +201,7 @@ export function RightContextPanel({
             </div>
             <div className={`context-state ${mode === "evidence" ? "active-state" : ""}`}>
               <strong>Evidence Panel</strong>
-              <span>Placeholder for selected Journal item evidence.</span>
+              <span>Shows selected Journal item evidence.</span>
             </div>
             <div className={`context-state ${mode === "document" ? "active-state" : ""}`}>
               <strong>Document View</strong>
@@ -96,6 +225,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [journalRefreshKey, setJournalRefreshKey] = useState(0);
   const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("help");
   const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
+  const [selectedJournalItem, setSelectedJournalItem] = useState<JournalItem | null>(null);
   const [documentListRefreshKey, setDocumentListRefreshKey] = useState(0);
 
   function requestJournalRefresh() {
@@ -112,6 +242,11 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     openDocument(document);
   }
 
+  function selectJournalItem(journalItem: JournalItem) {
+    setSelectedJournalItem(journalItem);
+    setRightPanelMode("evidence");
+  }
+
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
@@ -125,7 +260,12 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         </div>
       </header>
       <div className="three-panel-layout" aria-label="Three-panel case workspace">
-        <JournalPanel caseItem={caseItem} refreshKey={journalRefreshKey} />
+        <JournalPanel
+          caseItem={caseItem}
+          onSelectItem={selectJournalItem}
+          refreshKey={journalRefreshKey}
+          selectedItemId={selectedJournalItem?.id ?? null}
+        />
         <MiddleChatPanel
           caseItem={caseItem}
           onJournalRefreshRequested={requestJournalRefresh}
@@ -137,6 +277,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           onDocumentUploaded={handleDocumentUploaded}
           onOpenDocument={openDocument}
           selectedDocument={selectedDocument}
+          selectedJournalItem={selectedJournalItem}
         />
       </div>
     </div>
