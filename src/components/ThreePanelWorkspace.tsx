@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { DocumentList } from "@/components/documents/DocumentList";
 import { DocumentUpload } from "@/components/documents/DocumentUpload";
 import { DocumentViewPanel } from "@/components/documents/DocumentViewPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
@@ -23,12 +24,14 @@ export function RightContextPanel({
   caseId,
   mode,
   selectedDocument,
+  documentListRefreshKey,
   onDocumentUploaded,
   onOpenDocument
 }: {
   caseId: string;
   mode: RightPanelMode;
   selectedDocument: CaseDocument | null;
+  documentListRefreshKey: number;
   onDocumentUploaded: (document: CaseDocument) => void;
   onOpenDocument: (document: CaseDocument) => void;
 }) {
@@ -39,7 +42,7 @@ export function RightContextPanel({
 
       {selectedDocument && mode !== "document" ? (
         <section className="last-document-card" aria-labelledby="last-document-title">
-          <p className="panel-kicker">Last uploaded document</p>
+          <p className="panel-kicker">Selected document</p>
           <h3 id="last-document-title">{selectedDocument.filename}</h3>
           <button
             className="secondary-action"
@@ -65,7 +68,7 @@ export function RightContextPanel({
           <div className="context-state-list">
             <div className={`context-state ${mode === "help" ? "active-state" : ""}`}>
               <strong>Help State</strong>
-              <span>Default guidance placeholder.</span>
+              <span>Default guidance and uploaded document list.</span>
             </div>
             <div className={`context-state ${mode === "evidence" ? "active-state" : ""}`}>
               <strong>Evidence Panel</strong>
@@ -76,6 +79,13 @@ export function RightContextPanel({
               <span>Shows uploaded document content when a document is selected.</span>
             </div>
           </div>
+          {mode === "help" ? (
+            <DocumentList
+              caseId={caseId}
+              onOpenDocument={onOpenDocument}
+              refreshKey={documentListRefreshKey}
+            />
+          ) : null}
         </div>
       )}
     </aside>
@@ -86,6 +96,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [journalRefreshKey, setJournalRefreshKey] = useState(0);
   const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("help");
   const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
+  const [documentListRefreshKey, setDocumentListRefreshKey] = useState(0);
 
   function requestJournalRefresh() {
     setJournalRefreshKey((currentKey) => currentKey + 1);
@@ -94,6 +105,11 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   function openDocument(document: CaseDocument) {
     setSelectedDocument(document);
     setRightPanelMode("document");
+  }
+
+  function handleDocumentUploaded(document: CaseDocument) {
+    setDocumentListRefreshKey((currentKey) => currentKey + 1);
+    openDocument(document);
   }
 
   return (
@@ -116,8 +132,9 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         />
         <RightContextPanel
           caseId={caseItem.id}
+          documentListRefreshKey={documentListRefreshKey}
           mode={rightPanelMode}
-          onDocumentUploaded={openDocument}
+          onDocumentUploaded={handleDocumentUploaded}
           onOpenDocument={openDocument}
           selectedDocument={selectedDocument}
         />
