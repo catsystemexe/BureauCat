@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { MeetingPrepButton } from "@/components/chat/MeetingPrepButton";
+import { MeetingPrepCard } from "@/components/chat/MeetingPrepCard";
 import { MessageComposer } from "@/components/chat/MessageComposer";
 import { MessageList } from "@/components/chat/MessageList";
 import { SuggestionPreview } from "@/components/chat/SuggestionPreview";
@@ -9,6 +11,7 @@ import type {
   AISuggestionRecord,
   CaseSummary,
   ChatMessage,
+  MeetingPrepReport,
   SuggestionAction,
   SuggestionActionState,
   SuggestionJournalItem
@@ -22,6 +25,32 @@ type SendChatResponse = {
   assistantMessage?: ChatMessage;
   suggestions?: AISuggestionRecord[];
 };
+
+type MeetingPrepResponse = {
+  meetingPrep?: MeetingPrepReport;
+};
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function parseMeetingPrepResponse(data: MeetingPrepResponse): MeetingPrepReport {
+  const meetingPrep = data.meetingPrep;
+
+  if (
+    !meetingPrep ||
+    typeof meetingPrep.summary !== "string" ||
+    !isStringArray(meetingPrep.goals) ||
+    !isStringArray(meetingPrep.risks) ||
+    !isStringArray(meetingPrep.documents_to_bring) ||
+    !isStringArray(meetingPrep.questions_to_ask) ||
+    typeof meetingPrep.strategy !== "string"
+  ) {
+    throw new Error("Meeting prep response did not include a valid report.");
+  }
+
+  return meetingPrep;
+}
 
 function parseSuggestion(record: AISuggestionRecord): AISuggestionPreview | null {
   try {
@@ -56,6 +85,9 @@ export function ChatPanel({
   >({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [meetingPrep, setMeetingPrep] = useState<MeetingPrepReport | null>(null);
+  const [isPreparingMeeting, setIsPreparingMeeting] = useState(false);
+  const [meetingPrepError, setMeetingPrepError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadMessages = useCallback(async () => {
@@ -80,6 +112,8 @@ export function ChatPanel({
     async function loadInitialMessages() {
       try {
         setIsLoading(true);
+        setMeetingPrep(null);
+        setMeetingPrepError(null);
         const loadedMessages = await loadMessages();
 
         if (isMounted) {
@@ -145,6 +179,34 @@ export function ChatPanel({
     }
   }
 
+  async function handlePrepareMeeting() {
+    if (isPreparingMeeting) {
+      return;
+    }
+
+    try {
+      setIsPreparingMeeting(true);
+      setMeetingPrepError(null);
+
+      const response = await fetch(`/api/cases/${caseItem.id}/meeting-prep`, {
+        method: "POST"
+      });
+
+      if (!response.ok) {
+        throw new Error(response.status === 404 ? "Case not found." : "Unable to prepare meeting.");
+      }
+
+      const data = (await response.json()) as MeetingPrepResponse;
+      setMeetingPrep(parseMeetingPrepResponse(data));
+    } catch (prepareError) {
+      setMeetingPrepError(
+        prepareError instanceof Error ? prepareError.message : "Unable to prepare meeting."
+      );
+    } finally {
+      setIsPreparingMeeting(false);
+    }
+  }
+
   async function handleSuggestionAction(suggestionId: string, action: SuggestionAction) {
     setSuggestionActionStates((currentStates) => ({
       ...currentStates,
@@ -206,15 +268,22 @@ export function ChatPanel({
   return (
     <main className="workspace-panel chat-panel" aria-labelledby="chat-title">
       <div className="chat-panel-header">
-        <p className="panel-kicker">Chat</p>
-        <h2 id="chat-title">Workspace chat</h2>
-        <p className="panel-note">Chat remains visible in the middle panel for case {caseItem.id}.</p>
+        <div>
+          <p className="panel-kicker">Chat</p>
+          <h2 id="chat-title">Workspace chat</h2>
+          <p className="panel-note">Chat remains visible in the middle panel for case {caseItem.id}.</p>
+        </div>
+        <MeetingPrepButton isPreparing={isPreparingMeeting} onPrepare={handlePrepareMeeting} />
       </div>
 
       <div className="chat-panel-body">
         {isLoading ? <p className="journal-empty-message">Loading messages…</p> : null}
         {error ? <p className="status-message error-message">{error}</p> : null}
+        {meetingPrepError ? (
+          <p className="status-message error-message meeting-prep-error">{meetingPrepError}</p>
+        ) : null}
         {!isLoading ? <MessageList messages={messages} /> : null}
+        {meetingPrep ? <MeetingPrepCard meetingPrep={meetingPrep} /> : null}
         <SuggestionPreview
           actionStates={suggestionActionStates}
           onApprove={(suggestionId) => handleSuggestionAction(suggestionId, "approve")}
