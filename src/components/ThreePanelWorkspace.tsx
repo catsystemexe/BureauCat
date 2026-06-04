@@ -15,6 +15,16 @@ type ParsedSourceLinks =
   | { kind: "parsed"; links: unknown[] }
   | { kind: "raw"; rawValue: string };
 
+type DocumentResponse = {
+  document?: CaseDocument;
+  error?: string;
+};
+
+type DocumentSourceReference = {
+  documentId: string;
+  label: string;
+};
+
 function formatDetailLabel(value: string) {
   return value.replaceAll("_", " ");
 }
@@ -43,6 +53,83 @@ function parseSourceLinks(sourceLinksJson: string | null | undefined): ParsedSou
   } catch {
     return { kind: "raw", rawValue: sourceLinksJson };
   }
+}
+
+function normalizeSourceLinkKey(key: string) {
+  return key.replaceAll("_", "").replaceAll("-", "").toLowerCase();
+}
+
+function getRecordValue(record: Record<string, unknown>, keys: string[]) {
+  const normalizedKeys = new Set(keys.map(normalizeSourceLinkKey));
+
+  for (const [key, value] of Object.entries(record)) {
+    if (!normalizedKeys.has(normalizeSourceLinkKey(key))) {
+      continue;
+    }
+
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function extractDocumentIdFromValue(value: unknown): string | null {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
+  }
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return getRecordValue(value as Record<string, unknown>, ["id", "document_id", "documentId"]);
+  }
+
+  return null;
+}
+
+function findDocumentSourceReference(sourceLink: unknown): DocumentSourceReference | null {
+  if (!sourceLink || typeof sourceLink !== "object" || Array.isArray(sourceLink)) {
+    return null;
+  }
+
+  const sourceRecord = sourceLink as Record<string, unknown>;
+  const typeValue = sourceRecord.type;
+  const typeSuggestsDocument =
+    typeof typeValue === "string" && typeValue.toLowerCase().includes("document");
+
+  const directDocumentId = getRecordValue(sourceRecord, [
+    "document_id",
+    "documentId",
+    "documentID",
+    "doc_id",
+    "docId"
+  ]);
+  const nestedDocumentId = extractDocumentIdFromValue(sourceRecord.document);
+  const typedId = typeSuggestsDocument ? getRecordValue(sourceRecord, ["id"]) : null;
+  const documentId = directDocumentId ?? nestedDocumentId ?? typedId;
+
+  if (!documentId) {
+    return null;
+  }
+
+  const documentName =
+    getRecordValue(sourceRecord, ["filename", "file_name", "document_name", "name", "title"]) ??
+    (sourceRecord.document &&
+    typeof sourceRecord.document === "object" &&
+    !Array.isArray(sourceRecord.document)
+      ? getRecordValue(sourceRecord.document as Record<string, unknown>, [
+          "filename",
+          "file_name",
+          "document_name",
+          "name",
+          "title"
+        ])
+      : null);
+
+  return {
+    documentId,
+    label: documentName ? `Document: ${documentName}` : `Open Document ${documentId}`
+  };
 }
 
 function formatSourceLink(sourceLink: unknown) {
@@ -75,8 +162,33 @@ export function MiddleChatPanel({
   return <ChatPanel caseItem={caseItem} onJournalRefreshRequested={onJournalRefreshRequested} />;
 }
 
-export function EvidencePanel({ journalItem }: { journalItem: JournalItem }) {
+export function EvidencePanel({
+  journalItem,
+  onOpenDocument
+}: {
+  journalItem: JournalItem;
+  onOpenDocument: (documentId: string) => Promise<boolean>;
+}) {
   const parsedSourceLinks = parseSourceLinks(journalItem.source_links_json);
+  const [documentLoadError, setDocumentLoadError] = useState<string | null>(null);
+  const [loadingDocumentId, setLoadingDocumentId] = useState<string | null>(null);
+
+  async function handleOpenDocument(documentId: string) {
+    setDocumentLoadError(null);
+    setLoadingDocumentId(documentId);
+
+    try {
+      const didOpenDocument = await onOpenDocument(documentId);
+
+      if (!didOpenDocument) {
+        setDocumentLoadError("Unable to load document.");
+      }
+    } catch {
+      setDocumentLoadError("Unable to load document.");
+    } finally {
+      setLoadingDocumentId(null);
+    }
+  }
 
   return (
     <section className="evidence-panel" aria-labelledby="evidence-panel-title">
@@ -132,15 +244,38 @@ export function EvidencePanel({ journalItem }: { journalItem: JournalItem }) {
         {parsedSourceLinks.kind === "parsed" ? (
           <div className="source-link-list">
             {parsedSourceLinks.links.length > 0 ? (
-              parsedSourceLinks.links.map((sourceLink, index) => (
-                <pre className="source-link-row" key={index}>
-                  {formatSourceLink(sourceLink)}
-                </pre>
-              ))
+              parsedSourceLinks.links.map((sourceLink, index) => {
+                const documentReference = findDocumentSourceReference(sourceLink);
+
+                if (documentReference) {
+                  return (
+                    <button
+                      className="source-link-document-button"
+                      disabled={loadingDocumentId === documentReference.documentId}
+                      key={index}
+                      onClick={() => handleOpenDocument(documentReference.documentId)}
+                      type="button"
+                    >
+                      {loadingDocumentId === documentReference.documentId
+                        ? "Loading document…"
+                        : documentReference.label}
+                    </button>
+                  );
+                }
+
+                return (
+                  <pre className="source-link-row" key={index}>
+                    {formatSourceLink(sourceLink)}
+                  </pre>
+                );
+              })
             ) : (
               <p className="source-link-empty">Not provided</p>
             )}
           </div>
+        ) : null}
+        {documentLoadError ? (
+          <p className="status-message error-message source-link-error">{documentLoadError}</p>
         ) : null}
       </section>
     </section>
@@ -154,7 +289,8 @@ export function RightContextPanel({
   selectedJournalItem,
   documentListRefreshKey,
   onDocumentUploaded,
-  onOpenDocument
+  onOpenDocument,
+  onOpenSourceDocument
 }: {
   caseId: string;
   mode: RightPanelMode;
@@ -163,6 +299,7 @@ export function RightContextPanel({
   documentListRefreshKey: number;
   onDocumentUploaded: (document: CaseDocument) => void;
   onOpenDocument: (document: CaseDocument) => void;
+  onOpenSourceDocument: (documentId: string) => Promise<boolean>;
 }) {
   return (
     <aside className="workspace-panel context-panel" aria-labelledby="context-title">
@@ -186,7 +323,11 @@ export function RightContextPanel({
       {mode === "document" && selectedDocument ? (
         <DocumentViewPanel document={selectedDocument} />
       ) : mode === "evidence" && selectedJournalItem ? (
-        <EvidencePanel journalItem={selectedJournalItem} />
+        <EvidencePanel
+          journalItem={selectedJournalItem}
+          key={selectedJournalItem.id}
+          onOpenDocument={onOpenSourceDocument}
+        />
       ) : (
         <div className="right-panel-placeholder">
           <p className="panel-kicker">Context panel</p>
@@ -237,6 +378,22 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     setRightPanelMode("document");
   }
 
+  async function openSourceDocument(documentId: string) {
+    try {
+      const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`);
+      const data = (await response.json()) as DocumentResponse;
+
+      if (!response.ok || !data.document) {
+        return false;
+      }
+
+      openDocument(data.document);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function handleDocumentUploaded(document: CaseDocument) {
     setDocumentListRefreshKey((currentKey) => currentKey + 1);
     openDocument(document);
@@ -276,6 +433,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           mode={rightPanelMode}
           onDocumentUploaded={handleDocumentUploaded}
           onOpenDocument={openDocument}
+          onOpenSourceDocument={openSourceDocument}
           selectedDocument={selectedDocument}
           selectedJournalItem={selectedJournalItem}
         />
