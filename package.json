@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} next dev",
+    "build": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} next build",
+    "start": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} next start",
     "typecheck": "tsc --noEmit",
-    "prisma:validate": "prisma validate",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:validate": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} prisma validate",
+    "prisma:generate": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} prisma generate",
+    "prisma:migrate": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} prisma migrate dev"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
