@@ -982,3 +982,39 @@ h1 {
 .meeting-prep-error {
   margin-top: 0;
 }
+
+.workflow-card {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.workflow-card h3 {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin: 0 0 8px;
+}
+
+.workflow-card ol {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.84rem;
+  gap: 4px;
+  line-height: 1.4;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.evidence-item-title {
+  font-size: 1rem;
+  line-height: 1.35;
+  margin: -6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.document-list-open-label {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}

@@ -2,14 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { CaseSummary, JournalItem, JournalSectionKey } from "@/components/types";
+import {
+  EVIDENCE_STATE_LABELS,
+  JOURNAL_ITEM_STATUS_LABELS,
+  JOURNAL_ITEM_TYPE_LABELS,
+  JOURNAL_SECTION_LABELS
+} from "@/lib/constants/uiLabels";
 
-const JOURNAL_SECTIONS: Array<{ key: JournalSectionKey; label: string }> = [
-  { key: "description", label: "Description" },
-  { key: "goals", label: "Goals" },
-  { key: "risks", label: "Risks" },
-  { key: "open_questions", label: "Open Questions" },
-  { key: "strategy", label: "Strategy" }
-];
+const JOURNAL_SECTIONS = Object.entries(JOURNAL_SECTION_LABELS).map(([key, label]) => ({
+  key: key as JournalSectionKey,
+  label
+}));
 
 type JournalResponse = {
   journal?: JournalItem[];
@@ -22,10 +25,6 @@ function createEmptyJournalGroups(): JournalItemsBySection {
     groups[section.key] = [];
     return groups;
   }, {} as JournalItemsBySection);
-}
-
-function formatBadgeLabel(value: string) {
-  return value.replaceAll("_", " ");
 }
 
 export function JournalItemCard({
@@ -45,15 +44,15 @@ export function JournalItemCard({
       type="button"
     >
       <div className="journal-item-card-header">
-        <span className="journal-item-type">{item.item_type}</span>
+        <span className="journal-item-type">{JOURNAL_ITEM_TYPE_LABELS[item.item_type]}</span>
         <span className={`evidence-badge evidence-${item.evidence_state}`}>
-          {formatBadgeLabel(item.evidence_state)}
+          {EVIDENCE_STATE_LABELS[item.evidence_state]}
         </span>
       </div>
       <h4>{item.title}</h4>
       {item.value ? <p className="journal-item-value">{item.value}</p> : null}
       {item.status !== "active" ? (
-        <span className="journal-status-badge">{formatBadgeLabel(item.status)}</span>
+        <span className="journal-status-badge">{JOURNAL_ITEM_STATUS_LABELS[item.status]}</span>
       ) : null}
     </button>
   );
@@ -87,7 +86,7 @@ export function JournalSection({
           ))}
         </div>
       ) : (
-        <p className="journal-empty-message">No items yet.</p>
+        <p className="journal-empty-message">Zatím žádné položky.</p>
       )}
     </section>
   );
@@ -117,13 +116,15 @@ export function JournalPanel({
         const response = await fetch(`/api/cases/${caseItem.id}/journal`, { cache: "no-store" });
 
         if (!response.ok) {
-          throw new Error(response.status === 404 ? "Case not found." : "Unable to load journal.");
+          throw new Error(
+            response.status === 404 ? "Případ nebyl nalezen." : "Zápisník se nepodařilo načíst."
+          );
         }
 
         const data = (await response.json()) as JournalResponse;
 
         if (!Array.isArray(data.journal)) {
-          throw new Error("Journal response did not include journal items.");
+          throw new Error("Odpověď neobsahuje položky zápisníku.");
         }
 
         if (isMounted) {
@@ -133,7 +134,9 @@ export function JournalPanel({
       } catch (loadError) {
         if (isMounted) {
           setJournalItems([]);
-          setError(loadError instanceof Error ? loadError.message : "Unable to load journal.");
+          setError(
+            loadError instanceof Error ? loadError.message : "Zápisník se nepodařilo načíst."
+          );
         }
       } finally {
         if (isMounted) {
@@ -161,10 +164,10 @@ export function JournalPanel({
 
   return (
     <aside className="workspace-panel journal-panel" aria-labelledby="journal-title">
-      <p className="panel-kicker">Journal</p>
-      <h2 id="journal-title">{caseItem.title}</h2>
-      <p className="panel-note">Authoritative working model of this case.</p>
-      {isLoading ? <p className="journal-empty-message">Loading journal…</p> : null}
+      <p className="panel-kicker">Případ</p>
+      <h2 id="journal-title">Zápisník</h2>
+      <p className="panel-note">Hlavní pracovní model případu.</p>
+      {isLoading ? <p className="journal-empty-message">Načítám zápisník…</p> : null}
       {error ? <p className="status-message error-message">{error}</p> : null}
       {!isLoading && !error ? (
         <div className="journal-section-list">

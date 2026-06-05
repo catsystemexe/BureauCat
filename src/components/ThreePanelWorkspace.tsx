@@ -6,6 +6,13 @@ import { DocumentList } from "@/components/documents/DocumentList";
 import { DocumentUpload } from "@/components/documents/DocumentUpload";
 import { DocumentViewPanel } from "@/components/documents/DocumentViewPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
+import {
+  CASE_STATUS_LABELS,
+  EVIDENCE_STATE_LABELS,
+  JOURNAL_ITEM_STATUS_LABELS,
+  JOURNAL_ITEM_TYPE_LABELS,
+  JOURNAL_SECTION_LABELS
+} from "@/lib/constants/uiLabels";
 import type { CaseDocument, CaseSummary, JournalItem } from "./types";
 
 type RightPanelMode = "help" | "evidence" | "document";
@@ -25,13 +32,9 @@ type DocumentSourceReference = {
   label: string;
 };
 
-function formatDetailLabel(value: string) {
-  return value.replaceAll("_", " ");
-}
-
 function displayValue(value: string | number | null | undefined) {
   if (value === null || value === undefined || value === "") {
-    return "Not provided";
+    return "Neuvedeno";
   }
 
   return String(value);
@@ -128,13 +131,13 @@ function findDocumentSourceReference(sourceLink: unknown): DocumentSourceReferen
 
   return {
     documentId,
-    label: documentName ? `Document: ${documentName}` : `Open Document ${documentId}`
+    label: documentName ? `Otevřít dokument: ${documentName}` : "Otevřít dokument"
   };
 }
 
 function formatSourceLink(sourceLink: unknown) {
   if (sourceLink === null || sourceLink === undefined || sourceLink === "") {
-    return "Not provided";
+    return "Neuvedeno";
   }
 
   if (
@@ -145,11 +148,32 @@ function formatSourceLink(sourceLink: unknown) {
     return String(sourceLink);
   }
 
-  try {
-    return JSON.stringify(sourceLink, null, 2);
-  } catch {
-    return "Not provided";
+  if (typeof sourceLink === "object" && !Array.isArray(sourceLink)) {
+    const sourceRecord = sourceLink as Record<string, unknown>;
+    const documentName = getRecordValue(sourceRecord, [
+      "filename",
+      "file_name",
+      "document_name",
+      "name",
+      "title"
+    ]);
+    const quotedText = getRecordValue(sourceRecord, [
+      "quoted_text",
+      "quotedText",
+      "quote",
+      "citation"
+    ]);
+    const sourceDescription = getRecordValue(sourceRecord, ["source", "description"]);
+    const details = [
+      documentName ? `Dokument: ${documentName}` : null,
+      quotedText ? `Citace: ${quotedText}` : null,
+      sourceDescription ? `Zdroj: ${sourceDescription}` : null
+    ].filter((value): value is string => value !== null);
+
+    return details.length > 0 ? details.join("\n") : "Podklad bez dalšího popisu.";
   }
+
+  return "Podklad bez dalšího popisu.";
 }
 
 export function MiddleChatPanel({
@@ -181,10 +205,10 @@ export function EvidencePanel({
       const didOpenDocument = await onOpenDocument(documentId);
 
       if (!didOpenDocument) {
-        setDocumentLoadError("Unable to load document.");
+        setDocumentLoadError("Dokument se nepodařilo načíst.");
       }
     } catch {
-      setDocumentLoadError("Unable to load document.");
+      setDocumentLoadError("Dokument se nepodařilo načíst.");
     } finally {
       setLoadingDocumentId(null);
     }
@@ -192,51 +216,44 @@ export function EvidencePanel({
 
   return (
     <section className="evidence-panel" aria-labelledby="evidence-panel-title">
-      <p className="panel-kicker">Evidence Panel</p>
-      <h2 id="evidence-panel-title">{displayValue(journalItem.title)}</h2>
+      <p className="panel-kicker">Zápisník</p>
+      <h2 id="evidence-panel-title">Důkazy / Podklady</h2>
+      <h3 className="evidence-item-title">{displayValue(journalItem.title)}</h3>
       <dl className="evidence-detail-list">
         <div className="evidence-detail-row">
-          <dt>Title</dt>
-          <dd>{displayValue(journalItem.title)}</dd>
+          <dt>Sekce</dt>
+          <dd>{JOURNAL_SECTION_LABELS[journalItem.section]}</dd>
         </div>
         <div className="evidence-detail-row">
-          <dt>Section</dt>
-          <dd>{displayValue(formatDetailLabel(journalItem.section))}</dd>
+          <dt>Typ položky</dt>
+          <dd>{JOURNAL_ITEM_TYPE_LABELS[journalItem.item_type]}</dd>
         </div>
         <div className="evidence-detail-row">
-          <dt>Item type</dt>
-          <dd>{displayValue(journalItem.item_type)}</dd>
-        </div>
-        <div className="evidence-detail-row">
-          <dt>Value</dt>
+          <dt>Obsah</dt>
           <dd>{displayValue(journalItem.value)}</dd>
         </div>
         <div className="evidence-detail-row">
-          <dt>Explanation</dt>
+          <dt>Vysvětlení</dt>
           <dd>{displayValue(journalItem.explanation)}</dd>
         </div>
         <div className="evidence-detail-row">
-          <dt>Evidence state</dt>
+          <dt>Stav podkladů</dt>
           <dd>
             <span className={`evidence-badge evidence-${journalItem.evidence_state}`}>
-              {formatDetailLabel(journalItem.evidence_state)}
+              {EVIDENCE_STATE_LABELS[journalItem.evidence_state]}
             </span>
           </dd>
         </div>
         <div className="evidence-detail-row">
-          <dt>Status</dt>
-          <dd>{displayValue(formatDetailLabel(journalItem.status))}</dd>
-        </div>
-        <div className="evidence-detail-row">
-          <dt>Display order</dt>
-          <dd>{displayValue(journalItem.display_order)}</dd>
+          <dt>Stav položky</dt>
+          <dd>{JOURNAL_ITEM_STATUS_LABELS[journalItem.status]}</dd>
         </div>
       </dl>
 
       <section className="source-links-panel" aria-labelledby="source-links-title">
-        <h3 id="source-links-title">Source links</h3>
+        <h3 id="source-links-title">Podklady a zdroje</h3>
         {parsedSourceLinks.kind === "empty" ? (
-          <p className="source-link-empty">Not provided</p>
+          <p className="source-link-empty">Podklady nejsou uvedeny.</p>
         ) : null}
         {parsedSourceLinks.kind === "raw" ? (
           <pre className="source-link-raw">{parsedSourceLinks.rawValue}</pre>
@@ -257,7 +274,7 @@ export function EvidencePanel({
                       type="button"
                     >
                       {loadingDocumentId === documentReference.documentId
-                        ? "Loading document…"
+                        ? "Načítám dokument…"
                         : documentReference.label}
                     </button>
                   );
@@ -270,7 +287,7 @@ export function EvidencePanel({
                 );
               })
             ) : (
-              <p className="source-link-empty">Not provided</p>
+              <p className="source-link-empty">Podklady nejsou uvedeny.</p>
             )}
           </div>
         ) : null}
@@ -303,19 +320,19 @@ export function RightContextPanel({
 }) {
   return (
     <aside className="workspace-panel context-panel" aria-labelledby="context-title">
-      <h2 className="sr-only" id="context-title">Right context panel</h2>
+      <h2 className="sr-only" id="context-title">Dokumenty a podklady</h2>
       <DocumentUpload caseId={caseId} onUploaded={onDocumentUploaded} />
 
       {selectedDocument && mode !== "document" ? (
         <section className="last-document-card" aria-labelledby="last-document-title">
-          <p className="panel-kicker">Selected document</p>
+          <p className="panel-kicker">Dokument</p>
           <h3 id="last-document-title">{selectedDocument.filename}</h3>
           <button
             className="secondary-action"
             onClick={() => onOpenDocument(selectedDocument)}
             type="button"
           >
-            Open in Document View
+            Otevřít dokument
           </button>
         </section>
       ) : null}
@@ -330,32 +347,15 @@ export function RightContextPanel({
         />
       ) : (
         <div className="right-panel-placeholder">
-          <p className="panel-kicker">Context panel</p>
-          <h2>Help State</h2>
+          <h2>Dokumenty</h2>
           <p className="panel-note">
-            Default right panel guidance. Upload a document to open Document View here.
+            Nahrajte relevantní dokumenty. Po výběru položky v zápisníku se zde zobrazí její podklady.
           </p>
-          <div className="context-state-list">
-            <div className={`context-state ${mode === "help" ? "active-state" : ""}`}>
-              <strong>Help State</strong>
-              <span>Default guidance and uploaded document list.</span>
-            </div>
-            <div className={`context-state ${mode === "evidence" ? "active-state" : ""}`}>
-              <strong>Evidence Panel</strong>
-              <span>Shows selected Journal item evidence.</span>
-            </div>
-            <div className={`context-state ${mode === "document" ? "active-state" : ""}`}>
-              <strong>Document View</strong>
-              <span>Shows uploaded document content when a document is selected.</span>
-            </div>
-          </div>
-          {mode === "help" ? (
-            <DocumentList
-              caseId={caseId}
-              onOpenDocument={onOpenDocument}
-              refreshKey={documentListRefreshKey}
-            />
-          ) : null}
+          <DocumentList
+            caseId={caseId}
+            onOpenDocument={onOpenDocument}
+            refreshKey={documentListRefreshKey}
+          />
         </div>
       )}
     </aside>
@@ -408,15 +408,15 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     <div className="workspace-shell">
       <header className="workspace-header">
         <div>
-          <p className="eyebrow">BureauCat workspace</p>
+          <p className="eyebrow">BureauCat · Případ</p>
           <h1>{caseItem.title}</h1>
         </div>
         <div className="case-meta">
-          <span>{caseItem.area ?? "No area set"}</span>
-          <span className="status-pill">{caseItem.status}</span>
+          <span>{caseItem.area ?? "Oblast není uvedena"}</span>
+          <span className="status-pill">{CASE_STATUS_LABELS[caseItem.status]}</span>
         </div>
       </header>
-      <div className="three-panel-layout" aria-label="Three-panel case workspace">
+      <div className="three-panel-layout" aria-label="Pracovní prostor případu: Zápisník, Konzultace a Dokumenty">
         <JournalPanel
           caseItem={caseItem}
           onSelectItem={selectJournalItem}

@@ -4,12 +4,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BureauCat",
-  description: "Desktop-first case model workspace for BureauCat MVP v1.2."
+  description: "Pracovní prostor pro správu případů v BureauCat MVP v1.2."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="cs">
       <body>{children}</body>
     </html>
   );

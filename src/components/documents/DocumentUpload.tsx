@@ -7,7 +7,6 @@ const ACCEPTED_DOCUMENT_TYPES = ".pdf,.docx,.txt,.jpg,.jpeg,.png";
 
 type DocumentUploadResponse = {
   document?: CaseDocument;
-  error?: string;
 };
 
 export function DocumentUpload({
@@ -48,11 +47,11 @@ export function DocumentUpload({
       const data = (await response.json()) as DocumentUploadResponse;
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Unable to upload document.");
+        throw new Error("Dokument se nepodařilo nahrát.");
       }
 
       if (!data.document) {
-        throw new Error("Upload response did not include a document.");
+        throw new Error("Odpověď neobsahuje nahraný dokument.");
       }
 
       onUploaded(data.document);
@@ -62,7 +61,7 @@ export function DocumentUpload({
         fileInputRef.current.value = "";
       }
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Unable to upload document.");
+      setUploadError(error instanceof Error ? error.message : "Dokument se nepodařilo nahrát.");
     } finally {
       setIsUploading(false);
     }
@@ -70,7 +69,7 @@ export function DocumentUpload({
 
   return (
     <form className="document-upload" onSubmit={handleUpload}>
-      <label htmlFor="document-upload-input">Upload document</label>
+      <label htmlFor="document-upload-input">Nahrát dokument</label>
       <input
         accept={ACCEPTED_DOCUMENT_TYPES}
         disabled={isUploading}
@@ -80,9 +79,9 @@ export function DocumentUpload({
         ref={fileInputRef}
         type="file"
       />
-      <p className="document-upload-hint">Allowed: PDF, DOCX, TXT, JPG, PNG.</p>
+      <p className="document-upload-hint">Povolené formáty: PDF, DOCX, TXT, JPG, PNG.</p>
       <button className="primary-action" disabled={!selectedFile || isUploading} type="submit">
-        {isUploading ? "Uploading…" : "Upload and open"}
+        {isUploading ? "Nahrávám…" : "Nahrát dokument"}
       </button>
       {uploadError ? <p className="status-message error-message">{uploadError}</p> : null}
     </form>

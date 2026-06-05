@@ -46,7 +46,7 @@ function parseMeetingPrepResponse(data: MeetingPrepResponse): MeetingPrepReport 
     !isStringArray(meetingPrep.questions_to_ask) ||
     typeof meetingPrep.strategy !== "string"
   ) {
-    throw new Error("Meeting prep response did not include a valid report.");
+    throw new Error("Odpověď neobsahuje platné podklady k jednání.");
   }
 
   return meetingPrep;
@@ -94,13 +94,13 @@ export function ChatPanel({
     const response = await fetch(`/api/cases/${caseItem.id}/messages`, { cache: "no-store" });
 
     if (!response.ok) {
-      throw new Error(response.status === 404 ? "Case not found." : "Unable to load messages.");
+      throw new Error(response.status === 404 ? "Případ nebyl nalezen." : "Zprávy se nepodařilo načíst.");
     }
 
     const data = (await response.json()) as MessagesResponse;
 
     if (!Array.isArray(data.messages)) {
-      throw new Error("Messages response did not include messages.");
+      throw new Error("Odpověď neobsahuje zprávy.");
     }
 
     return data.messages;
@@ -123,7 +123,7 @@ export function ChatPanel({
       } catch (loadError) {
         if (isMounted) {
           setMessages([]);
-          setError(loadError instanceof Error ? loadError.message : "Unable to load messages.");
+          setError(loadError instanceof Error ? loadError.message : "Zprávy se nepodařilo načíst.");
         }
       } finally {
         if (isMounted) {
@@ -159,7 +159,7 @@ export function ChatPanel({
       });
 
       if (!response.ok) {
-        throw new Error(response.status === 404 ? "Case not found." : "Unable to send message.");
+        throw new Error(response.status === 404 ? "Případ nebyl nalezen." : "Zprávu se nepodařilo odeslat.");
       }
 
       const data = (await response.json()) as SendChatResponse;
@@ -173,7 +173,7 @@ export function ChatPanel({
       setSuggestionActionStates({});
       setComposerContent("");
     } catch (sendError) {
-      setError(sendError instanceof Error ? sendError.message : "Unable to send message.");
+      setError(sendError instanceof Error ? sendError.message : "Zprávu se nepodařilo odeslat.");
     } finally {
       setIsSending(false);
     }
@@ -193,14 +193,14 @@ export function ChatPanel({
       });
 
       if (!response.ok) {
-        throw new Error(response.status === 404 ? "Case not found." : "Unable to prepare meeting.");
+        throw new Error(response.status === 404 ? "Případ nebyl nalezen." : "Podklady k jednání se nepodařilo připravit.");
       }
 
       const data = (await response.json()) as MeetingPrepResponse;
       setMeetingPrep(parseMeetingPrepResponse(data));
     } catch (prepareError) {
       setMeetingPrepError(
-        prepareError instanceof Error ? prepareError.message : "Unable to prepare meeting."
+        prepareError instanceof Error ? prepareError.message : "Podklady k jednání se nepodařilo připravit."
       );
     } finally {
       setIsPreparingMeeting(false);
@@ -223,20 +223,11 @@ export function ChatPanel({
       });
 
       if (!response.ok) {
-        let responseMessage: string | null = null;
-
-        try {
-          const body = (await response.json()) as { error?: string };
-          responseMessage = body.error ?? null;
-        } catch {
-          responseMessage = null;
-        }
-
         if (response.status === 404 || response.status === 409) {
-          throw new Error(responseMessage ?? "Suggestion can no longer be changed.");
+          throw new Error("Tento návrh už nelze změnit.");
         }
 
-        throw new Error(responseMessage ?? `Unable to ${action} suggestion.`);
+        throw new Error("Návrh se nepodařilo upravit.");
       }
 
       setSuggestionPreviews((currentPreviews) =>
@@ -259,7 +250,7 @@ export function ChatPanel({
         ...currentStates,
         [suggestionId]: {
           loadingAction: null,
-          error: actionError instanceof Error ? actionError.message : `Unable to ${action} suggestion.`
+          error: actionError instanceof Error ? actionError.message : "Návrh se nepodařilo upravit."
         }
       }));
     }
@@ -269,15 +260,25 @@ export function ChatPanel({
     <main className="workspace-panel chat-panel" aria-labelledby="chat-title">
       <div className="chat-panel-header">
         <div>
-          <p className="panel-kicker">Chat</p>
-          <h2 id="chat-title">Workspace chat</h2>
-          <p className="panel-note">Chat remains visible in the middle panel for case {caseItem.id}.</p>
+          <p className="panel-kicker">Případ</p>
+          <h2 id="chat-title">Konzultace</h2>
+          <p className="panel-note">Pracovní prostor pro otázky, analýzu a doplnění situace.</p>
         </div>
         <MeetingPrepButton isPreparing={isPreparingMeeting} onPrepare={handlePrepareMeeting} />
       </div>
 
       <div className="chat-panel-body">
-        {isLoading ? <p className="journal-empty-message">Loading messages…</p> : null}
+        <section className="workflow-card" aria-labelledby="workflow-card-title">
+          <h3 id="workflow-card-title">Doporučený postup</h3>
+          <ol>
+            <li>Nahrajte relevantní dokumenty.</li>
+            <li>Popište situaci v konzultaci.</li>
+            <li>Zkontrolujte návrhy asistenta.</li>
+            <li>Přidejte důležité body do zápisníku.</li>
+            <li>Připravte se na jednání.</li>
+          </ol>
+        </section>
+        {isLoading ? <p className="journal-empty-message">Načítám zprávy…</p> : null}
         {error ? <p className="status-message error-message">{error}</p> : null}
         {meetingPrepError ? (
           <p className="status-message error-message meeting-prep-error">{meetingPrepError}</p>

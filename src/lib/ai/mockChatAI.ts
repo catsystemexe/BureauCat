@@ -11,22 +11,22 @@ export async function mockChatAI(context: ChatContext): Promise<MockAIChatRespon
 
   return {
     assistant_reply:
-      "I noted your message. This mock assistant can discuss the case workspace and may propose pending Journal suggestions for your review.",
+      "Vaši zprávu jsem zaznamenal. Mohu ji s vámi rozebrat a navrhnout body ke kontrole před přidáním do zápisníku.",
     suggestions: trimmedMessage
       ? [
           {
             section: "open_questions",
             item_type: "QUESTION",
-            title: "Clarify user statement",
-            value: `Clarify or verify: ${trimmedMessage}`,
+            title: "Upřesnit vyjádření uživatele",
+            value: `Upřesnit nebo ověřit: ${trimmedMessage}`,
             explanation:
-              "Mock AI suggestion created from the latest chat message. It remains pending until the user approves it.",
+              "Návrh asistenta vznikl z poslední zprávy v konzultaci. Do zápisníku se přidá až po schválení uživatelem.",
             evidence_state: "unverified",
             status: "active",
             display_order: 0,
             source_links_json: JSON.stringify([
               {
-                document_name: "User Statement",
+                document_name: "Vyjádření uživatele",
                 quoted_text: quotedText
               }
             ])

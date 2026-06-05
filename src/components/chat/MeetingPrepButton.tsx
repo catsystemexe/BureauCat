@@ -12,7 +12,7 @@ export function MeetingPrepButton({
       onClick={onPrepare}
       type="button"
     >
-      {isPreparing ? "Preparing…" : "Prepare meeting"}
+      {isPreparing ? "Připravuji…" : "Připravit na jednání"}
     </button>
   );
 }

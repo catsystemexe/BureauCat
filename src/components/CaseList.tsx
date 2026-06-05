@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CASE_STATUS_LABELS } from "@/lib/constants/uiLabels";
 import type { CaseSummary } from "./types";
 
 type CasesResponse = {
@@ -27,7 +28,7 @@ export function CaseList() {
         const response = await fetch("/api/cases", { cache: "no-store" });
 
         if (!response.ok) {
-          throw new Error("Unable to load cases.");
+          throw new Error("Případy se nepodařilo načíst.");
         }
 
         const data = (await response.json()) as CasesResponse;
@@ -38,7 +39,7 @@ export function CaseList() {
         }
       } catch (loadError) {
         if (isMounted) {
-          setError(loadError instanceof Error ? loadError.message : "Unable to load cases.");
+          setError(loadError instanceof Error ? loadError.message : "Případy se nepodařilo načíst.");
         }
       } finally {
         if (isMounted) {
@@ -62,22 +63,24 @@ export function CaseList() {
       const response = await fetch("/api/cases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "Untitled draft case" })
+        body: JSON.stringify({ title: "Nový případ" })
       });
 
       if (!response.ok) {
-        throw new Error("Unable to create a draft case.");
+        throw new Error("Nový případ se nepodařilo vytvořit.");
       }
 
       const data = (await response.json()) as CreateCaseResponse;
 
       if (!data.case?.id) {
-        throw new Error("The created case response did not include an id.");
+        throw new Error("Odpověď neobsahuje identifikátor vytvořeného případu.");
       }
 
       router.push(`/cases/${data.case.id}`);
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Unable to create a draft case.");
+      setError(
+        createError instanceof Error ? createError.message : "Nový případ se nepodařilo vytvořit."
+      );
       setIsCreating(false);
     }
   }
@@ -86,21 +89,21 @@ export function CaseList() {
     <section className="case-list-card" aria-labelledby="cases-title">
       <div className="case-list-header">
         <div>
-          <p className="eyebrow">Cases</p>
-          <h1 id="cases-title">Case list</h1>
+          <p className="eyebrow">BureauCat</p>
+          <h1 id="cases-title">Případy</h1>
         </div>
         <button className="primary-action" type="button" onClick={createDraftCase} disabled={isCreating}>
-          {isCreating ? "Creating…" : "New Case"}
+          {isCreating ? "Vytvářím…" : "Nový případ"}
         </button>
       </div>
 
       {error ? <p className="status-message error-message">{error}</p> : null}
-      {isLoading ? <p className="status-message">Loading cases…</p> : null}
+      {isLoading ? <p className="status-message">Načítám případy…</p> : null}
 
       {!isLoading && cases.length === 0 ? (
         <div className="empty-state">
-          <h2>No cases yet</h2>
-          <p>Create a draft case to begin an intake workspace.</p>
+          <h2>Zatím žádné případy</h2>
+          <p>Vytvořte nový případ a začněte zápisník/konzultaci.</p>
         </div>
       ) : null}
 
@@ -116,9 +119,9 @@ export function CaseList() {
             >
               <span>
                 <strong>{caseItem.title}</strong>
-                <small>{caseItem.area ?? "No area set"}</small>
+                <small>{caseItem.area ?? "Oblast není uvedena"}</small>
               </span>
-              <span className="status-pill">{caseItem.status}</span>
+              <span className="status-pill">{CASE_STATUS_LABELS[caseItem.status]}</span>
             </button>
           ))}
         </div>
