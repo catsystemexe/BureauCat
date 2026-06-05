@@ -22,6 +22,18 @@ export type Situation = {
   updated_at: string;
 };
 
+export type GoalStatus = "active" | "completed" | "archived";
+
+export type Goal = {
+  id: string;
+  situation_id: string;
+  title: string;
+  status: GoalStatus;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type JournalSectionKey =
   | "description"
   | "goals"

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { CaseSummary, JournalItem, JournalSectionKey, Situation } from "@/components/types";
+import { GoalsSection } from "@/components/journal/GoalsSection";
 import { SituationTabs } from "@/components/journal/SituationTabs";
 import {
   EVIDENCE_STATE_LABELS,
@@ -258,6 +259,7 @@ export function JournalPanel({
         selectedSituationId={selectedSituationId}
         situations={situations}
       />
+      <GoalsSection selectedSituationId={selectedSituationId} />
       <div className="journal-heading">
         <p className="panel-kicker">Případ</p>
         <h2 id="journal-title">Zápisník</h2>
