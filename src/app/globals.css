@@ -1085,3 +1085,78 @@ h1 {
 .journal-heading h2 {
   margin-top: 0;
 }
+
+.goals-section {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  margin-bottom: 22px;
+  padding: 16px;
+}
+
+.goals-section-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.goals-section-header h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.goal-add-button {
+  background: #fffaf2;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 7px 11px;
+}
+
+.goal-add-button:hover,
+.goal-add-button:focus-visible {
+  border-color: var(--accent);
+}
+
+.goal-add-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.goals-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.goal-row {
+  align-items: center;
+  background: #fffaf2;
+  border: 1px solid #eadfce;
+  border-radius: 14px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  line-height: 1.4;
+  padding: 12px;
+}
+
+.goal-row:hover,
+.goal-row:focus-within {
+  border-color: var(--accent);
+}
+
+.goal-row input {
+  accent-color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.completed-goal-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}

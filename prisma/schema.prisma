@@ -34,10 +34,27 @@ model Situation {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  case Case @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  case  Case   @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  goals Goal[]
 
   @@index([case_id])
   @@index([case_id, display_order])
+}
+
+model Goal {
+  id            String   @id @default(cuid())
+  situation_id  String
+  title         String
+  /// Allowed values: active, completed, archived.
+  status        String   @default("active")
+  display_order Int      @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  situation Situation @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+
+  @@index([situation_id])
+  @@index([situation_id, display_order])
 }
 
 model Document {
