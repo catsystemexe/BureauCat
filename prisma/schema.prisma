@@ -20,6 +20,24 @@ model Case {
   journal_items  JournalItem[]
   chat_messages  ChatMessage[]
   ai_suggestions AISuggestion[]
+  situations     Situation[]
+}
+
+model Situation {
+  id            String   @id @default(cuid())
+  case_id       String
+  title         String
+  description   String?
+  /// Allowed values: active, archived.
+  status        String   @default("active")
+  display_order Int      @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  case Case @relation(fields: [case_id], references: [id], onDelete: Cascade)
+
+  @@index([case_id])
+  @@index([case_id, display_order])
 }
 
 model Document {

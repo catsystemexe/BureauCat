@@ -9,6 +9,19 @@ export type CaseSummary = {
   updated_at?: string;
 };
 
+export type SituationStatus = "active" | "archived";
+
+export type Situation = {
+  id: string;
+  case_id: string;
+  title: string;
+  description: string | null;
+  status: SituationStatus;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type JournalSectionKey =
   | "description"
   | "goals"

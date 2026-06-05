@@ -1018,3 +1018,70 @@ h1 {
   font-size: 0.78rem;
   font-weight: 700;
 }
+
+.situation-navigation {
+  border-bottom: 1px solid var(--panel-border);
+  margin: -2px 0 22px;
+  padding-bottom: 20px;
+}
+
+.situation-navigation-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.situation-navigation-header h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.situation-add-button,
+.situation-tab {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 7px 11px;
+}
+
+.situation-add-button:hover,
+.situation-add-button:focus-visible,
+.situation-tab:hover,
+.situation-tab:focus-visible,
+.selected-situation-tab {
+  border-color: var(--accent);
+}
+
+.situation-add-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.situation-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.selected-situation-tab {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.situation-description {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin: 12px 0 0;
+}
+
+.journal-heading h2 {
+  margin-top: 0;
+}
