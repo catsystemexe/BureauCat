@@ -18,13 +18,27 @@ export function listCases() {
 }
 
 export function createCase(input: CreateCaseInput) {
-  return prisma.case.create({
-    data: {
-      title: input.title,
-      area: input.area ?? null,
-      status: "draft"
-    },
-    select: caseSelect
+  return prisma.$transaction(async (transaction) => {
+    const createdCase = await transaction.case.create({
+      data: {
+        title: input.title,
+        area: input.area ?? null,
+        status: "draft"
+      },
+      select: caseSelect
+    });
+
+    await transaction.situation.create({
+      data: {
+        case_id: createdCase.id,
+        title: "Situace 1",
+        description: null,
+        status: "active",
+        display_order: 0
+      }
+    });
+
+    return createdCase;
   });
 }
 

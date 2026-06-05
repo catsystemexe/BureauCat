@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { CaseSummary, JournalItem, JournalSectionKey } from "@/components/types";
+import type { CaseSummary, JournalItem, JournalSectionKey, Situation } from "@/components/types";
+import { SituationTabs } from "@/components/journal/SituationTabs";
 import {
   EVIDENCE_STATE_LABELS,
   JOURNAL_ITEM_STATUS_LABELS,
@@ -16,6 +17,14 @@ const JOURNAL_SECTIONS = Object.entries(JOURNAL_SECTION_LABELS).map(([key, label
 
 type JournalResponse = {
   journal?: JournalItem[];
+};
+
+type SituationsResponse = {
+  situations?: Situation[];
+};
+
+type SituationResponse = {
+  situation?: Situation;
 };
 
 type JournalItemsBySection = Record<JournalSectionKey, JournalItem[]>;
@@ -106,6 +115,58 @@ export function JournalPanel({
   const [journalItems, setJournalItems] = useState<JournalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [situations, setSituations] = useState<Situation[]>([]);
+  const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null);
+  const [isLoadingSituations, setIsLoadingSituations] = useState(true);
+  const [isCreatingSituation, setIsCreatingSituation] = useState(false);
+  const [situationError, setSituationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSituations() {
+      try {
+        setIsLoadingSituations(true);
+        const response = await fetch(`/api/cases/${caseItem.id}/situations`, {
+          cache: "no-store"
+        });
+        const data = (await response.json()) as SituationsResponse;
+
+        if (!response.ok || !Array.isArray(data.situations)) {
+          throw new Error("Nepodařilo se načíst situace.");
+        }
+
+        if (isMounted) {
+          setSituations(data.situations);
+          setSelectedSituationId(
+            (currentId) =>
+              data.situations?.find(
+                (situation) => situation.id === currentId && situation.status === "active"
+              )?.id ??
+              data.situations?.find((situation) => situation.status === "active")?.id ??
+              null
+          );
+          setSituationError(null);
+        }
+      } catch {
+        if (isMounted) {
+          setSituations([]);
+          setSelectedSituationId(null);
+          setSituationError("Nepodařilo se načíst situace.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingSituations(false);
+        }
+      }
+    }
+
+    loadSituations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [caseItem.id]);
 
   useEffect(() => {
     let isMounted = true;
@@ -152,6 +213,30 @@ export function JournalPanel({
     };
   }, [caseItem.id, refreshKey]);
 
+  async function handleCreateSituation() {
+    try {
+      setIsCreatingSituation(true);
+      setSituationError(null);
+      const response = await fetch(`/api/cases/${caseItem.id}/situations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: `Situace ${situations.length + 1}` })
+      });
+      const data = (await response.json()) as SituationResponse;
+
+      if (!response.ok || !data.situation) {
+        throw new Error("Nepodařilo se vytvořit situaci.");
+      }
+
+      setSituations((currentSituations) => [...currentSituations, data.situation as Situation]);
+      setSelectedSituationId(data.situation.id);
+    } catch {
+      setSituationError("Nepodařilo se vytvořit situaci.");
+    } finally {
+      setIsCreatingSituation(false);
+    }
+  }
+
   const journalItemsBySection = useMemo(() => {
     const groups = createEmptyJournalGroups();
 
@@ -164,9 +249,20 @@ export function JournalPanel({
 
   return (
     <aside className="workspace-panel journal-panel" aria-labelledby="journal-title">
-      <p className="panel-kicker">Případ</p>
-      <h2 id="journal-title">Zápisník</h2>
-      <p className="panel-note">Hlavní pracovní model případu.</p>
+      <SituationTabs
+        error={situationError}
+        isCreating={isCreatingSituation}
+        isLoading={isLoadingSituations}
+        onCreateSituation={handleCreateSituation}
+        onSelectSituation={setSelectedSituationId}
+        selectedSituationId={selectedSituationId}
+        situations={situations}
+      />
+      <div className="journal-heading">
+        <p className="panel-kicker">Případ</p>
+        <h2 id="journal-title">Zápisník</h2>
+        <p className="panel-note">Hlavní pracovní model případu.</p>
+      </div>
       {isLoading ? <p className="journal-empty-message">Načítám zápisník…</p> : null}
       {error ? <p className="status-message error-message">{error}</p> : null}
       {!isLoading && !error ? (
