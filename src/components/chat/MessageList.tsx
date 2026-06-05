@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/components/types";
+import { CHAT_MESSAGE_ROLE_LABELS } from "@/lib/constants/uiLabels";
 
 function formatMessageDate(value: string) {
   const date = new Date(value);
@@ -7,7 +8,7 @@ function formatMessageDate(value: string) {
     return null;
   }
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("cs-CZ", {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(date);
@@ -17,21 +18,21 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
   if (messages.length === 0) {
     return (
       <div className="chat-empty-state">
-        <strong>No messages yet.</strong>
-        <span>Start the workspace chat by sending a message about this case.</span>
+        <strong>Zatím žádné zprávy.</strong>
+        <span>Začněte konzultaci popisem situace nebo otázkou k případu.</span>
       </div>
     );
   }
 
   return (
-    <div className="message-list" aria-label="Case chat messages">
+    <div className="message-list" aria-label="Zprávy konzultace k případu">
       {messages.map((message) => {
         const createdAt = formatMessageDate(message.created_at);
 
         return (
           <article className={`message-card message-${message.role}`} key={message.id}>
             <div className="message-card-header">
-              <span className="message-role">{message.role}</span>
+              <span className="message-role">{CHAT_MESSAGE_ROLE_LABELS[message.role]}</span>
               {createdAt ? <time dateTime={message.created_at}>{createdAt}</time> : null}
             </div>
             <p>{message.content}</p>

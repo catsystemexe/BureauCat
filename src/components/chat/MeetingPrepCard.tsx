@@ -18,7 +18,7 @@ function MeetingPrepList({ items, title }: MeetingPrepListSection) {
           ))}
         </ul>
       ) : (
-        <p className="meeting-prep-empty">None listed.</p>
+        <p className="meeting-prep-empty">Bez položek.</p>
       )}
     </section>
   );
@@ -28,23 +28,23 @@ export function MeetingPrepCard({ meetingPrep }: { meetingPrep: MeetingPrepRepor
   return (
     <article className="meeting-prep-card" aria-labelledby="meeting-prep-card-title">
       <div className="meeting-prep-card-header">
-        <p className="panel-kicker">Meeting Prep</p>
-        <h3 id="meeting-prep-card-title">Prepared meeting brief</h3>
-        <p className="panel-note">This working output stays in the Chat panel and is not saved.</p>
+        <p className="panel-kicker">Příprava na jednání</p>
+        <h3 id="meeting-prep-card-title">Podklady k jednání</h3>
+        <p className="panel-note">Tento pracovní výstup zůstává v konzultaci a neukládá se.</p>
       </div>
 
       <section className="meeting-prep-card-section">
-        <h4>Summary</h4>
+        <h4>Shrnutí</h4>
         <p>{meetingPrep.summary}</p>
       </section>
 
-      <MeetingPrepList items={meetingPrep.goals} title="Goals" />
-      <MeetingPrepList items={meetingPrep.risks} title="Risks" />
-      <MeetingPrepList items={meetingPrep.documents_to_bring} title="Documents to bring" />
-      <MeetingPrepList items={meetingPrep.questions_to_ask} title="Questions to ask" />
+      <MeetingPrepList items={meetingPrep.goals} title="Cíle" />
+      <MeetingPrepList items={meetingPrep.risks} title="Rizika" />
+      <MeetingPrepList items={meetingPrep.documents_to_bring} title="Dokumenty s sebou" />
+      <MeetingPrepList items={meetingPrep.questions_to_ask} title="Otázky k položení" />
 
       <section className="meeting-prep-card-section">
-        <h4>Strategy</h4>
+        <h4>Postup</h4>
         <p>{meetingPrep.strategy}</p>
       </section>
     </article>

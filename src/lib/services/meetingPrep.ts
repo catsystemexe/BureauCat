@@ -79,7 +79,7 @@ function firstBySection(items: JournalItemContext[], section: string, fallback: 
 
 function summarizeDocuments(documents: DocumentSummaryContext[]) {
   return documents.map((document) => {
-    const summary = document.ai_summary ?? document.extracted_text?.slice(0, 240) ?? "No summary yet.";
+    const summary = document.ai_summary ?? document.extracted_text?.slice(0, 240) ?? "Shrnutí zatím není k dispozici.";
 
     return `${document.filename} — ${summary}`;
   });
@@ -91,20 +91,26 @@ function buildSummary(context: MeetingPrepContext) {
   const messageCount = context.lastMessages.length;
   const description = descriptionItems.length > 0
     ? uniqueNonEmpty(descriptionItems.map(formatJournalValue)).slice(0, 3).join("; ")
-    : "No journal description items have been recorded yet.";
+    : "V části Situace zatím nejsou žádné položky.";
 
-  return `Mock meeting prep for ${context.case.title}. Case status: ${context.case.status}. ${description} Evidence includes ${documentCount} document${documentCount === 1 ? "" : "s"}. Recent chat context includes ${messageCount} message${messageCount === 1 ? "" : "s"}.`;
+  const statusLabel = {
+    draft: "Rozpracováno",
+    active: "Aktivní",
+    closed: "Uzavřeno"
+  }[context.case.status] ?? context.case.status;
+
+  return `Pracovní příprava k případu ${context.case.title}. Stav případu: ${statusLabel}. ${description} Počet dokumentů: ${documentCount}. Počet zohledněných posledních zpráv: ${messageCount}.`;
 }
 
 function buildGoals(context: MeetingPrepContext) {
-  return firstBySection(context.journalItems, "goals", "Confirm the desired outcome for this case.");
+  return firstBySection(context.journalItems, "goals", "Potvrďte požadovaný výsledek tohoto případu.");
 }
 
 function buildRisks(context: MeetingPrepContext) {
-  const riskItems = firstBySection(context.journalItems, "risks", "Identify deadlines, missing evidence, and unresolved contradictions.");
+  const riskItems = firstBySection(context.journalItems, "risks", "Určete lhůty, chybějící podklady a nevyřešené rozpory.");
   const conflictItems = context.journalItems
     .filter((item) => item.evidence_state === "conflict")
-    .map((item) => `Resolve conflict: ${formatJournalValue(item)}`);
+    .map((item) => `Vyřešit rozpor: ${formatJournalValue(item)}`);
 
   return uniqueNonEmpty([...riskItems, ...conflictItems]).slice(0, 6);
 }
@@ -113,7 +119,7 @@ function buildDocumentsToBring(context: MeetingPrepContext) {
   const documents = context.documentSummaries.map((document) => document.filename);
 
   if (documents.length === 0) {
-    return ["Bring any original documents, correspondence, notices, contracts, photos, or screenshots related to the case."];
+    return ["Vezměte s sebou všechny původní dokumenty, korespondenci, výzvy, smlouvy, fotografie nebo snímky obrazovky související s případem."];
   }
 
   return uniqueNonEmpty(documents).slice(0, 10);
@@ -123,12 +129,12 @@ function buildQuestions(context: MeetingPrepContext) {
   const openQuestions = firstBySection(
     context.journalItems,
     "open_questions",
-    "What facts, deadlines, or documents are still missing?"
+    "Které skutečnosti, lhůty nebo dokumenty stále chybějí?"
   );
   const recentUserMessages = context.lastMessages
     .filter((message) => message.role === "user")
     .slice(-3)
-    .map((message) => `Clarify recent point: ${message.content.slice(0, 120)}`);
+    .map((message) => `Upřesnit poslední bod: ${message.content.slice(0, 120)}`);
 
   return uniqueNonEmpty([...openQuestions, ...recentUserMessages]).slice(0, 6);
 }
@@ -142,10 +148,10 @@ function buildStrategy(context: MeetingPrepContext) {
   }
 
   if (documentSummaries.length > 0) {
-    return `Use the Journal as the working model, verify it against available documents, and focus the meeting on unresolved questions. Key evidence to review: ${documentSummaries.join(" | ")}`;
+    return `Použijte zápisník jako pracovní model, ověřte jej podle dostupných dokumentů a zaměřte jednání na nevyřešené otázky. Klíčové podklady ke kontrole: ${documentSummaries.join(" | ")}`;
   }
 
-  return "Use the Journal as the working model, confirm the user's goal, identify missing evidence, and turn unresolved points into concrete next actions.";
+  return "Použijte zápisník jako pracovní model, potvrďte cíl uživatele, určete chybějící podklady a převeďte nevyřešené body na konkrétní další kroky.";
 }
 
 function buildMockMeetingPrep(context: MeetingPrepContext): MeetingPrepResponse {

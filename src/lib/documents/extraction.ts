@@ -1,7 +1,7 @@
 const TXT_CONTEXT_LIMIT = 10000;
-const NOT_IMPLEMENTED_SUMMARY = "Text extraction not implemented for this file type yet.";
-const TXT_PLACEHOLDER_SUMMARY = "TXT document uploaded. AI summary not implemented yet.";
-const TXT_LIMIT_SUMMARY = "TXT document exceeded the MVP context limit. Only the first 10000 characters were stored for extracted text.";
+const NOT_IMPLEMENTED_SUMMARY = "Extrahování textu pro tento typ souboru zatím není implementováno.";
+const TXT_PLACEHOLDER_SUMMARY = "Dokument TXT byl nahrán. Automatické shrnutí zatím není implementováno.";
+const TXT_LIMIT_SUMMARY = "Dokument TXT překročil limit kontextu MVP. Do extrahovaného textu bylo uloženo pouze prvních 10 000 znaků.";
 
 export type DocumentTextExtractionResult = {
   extracted_text: string | null;

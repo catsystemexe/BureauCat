@@ -24,13 +24,13 @@ export default function CaseWorkspacePage() {
         const response = await fetch(`/api/cases/${params.caseId}`, { cache: "no-store" });
 
         if (!response.ok) {
-          throw new Error(response.status === 404 ? "Case not found." : "Unable to load case.");
+          throw new Error(response.status === 404 ? "Případ nebyl nalezen." : "Případ se nepodařilo načíst.");
         }
 
         const data = (await response.json()) as CaseResponse;
 
         if (!data.case) {
-          throw new Error("Case response did not include case details.");
+          throw new Error("Odpověď neobsahuje podrobnosti případu.");
         }
 
         if (isMounted) {
@@ -39,7 +39,7 @@ export default function CaseWorkspacePage() {
         }
       } catch (loadError) {
         if (isMounted) {
-          setError(loadError instanceof Error ? loadError.message : "Unable to load case.");
+          setError(loadError instanceof Error ? loadError.message : "Případ se nepodařilo načíst.");
         }
       } finally {
         if (isMounted) {
@@ -56,14 +56,14 @@ export default function CaseWorkspacePage() {
   }, [params.caseId]);
 
   if (isLoading) {
-    return <main className="workspace-loading">Loading case workspace…</main>;
+    return <main className="workspace-loading">Načítám pracovní prostor případu…</main>;
   }
 
   if (error || !caseItem) {
     return (
       <main className="workspace-loading">
-        <p className="status-message error-message">{error ?? "Case not found."}</p>
-        <Link href="/cases">Back to cases</Link>
+        <p className="status-message error-message">{error ?? "Případ nebyl nalezen."}</p>
+        <Link href="/cases">Zpět na případy</Link>
       </main>
     );
   }

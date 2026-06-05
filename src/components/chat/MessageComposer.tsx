@@ -21,18 +21,18 @@ export function MessageComposer({
   return (
     <form className="message-composer" onSubmit={handleSubmit}>
       <label className="sr-only" htmlFor="chat-message-input">
-        Message
+        Zpráva
       </label>
       <textarea
         disabled={isSending}
         id="chat-message-input"
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Ask, analyze, or note something about this case…"
+        placeholder="Popište situaci, položte otázku nebo doplňte důležitou informaci…"
         rows={3}
         value={content}
       />
       <button className="primary-action" disabled={isSending || !trimmedContent} type="submit">
-        {isSending ? "Sending…" : "Send"}
+        {isSending ? "Odesílám…" : "Odeslat"}
       </button>
     </form>
   );

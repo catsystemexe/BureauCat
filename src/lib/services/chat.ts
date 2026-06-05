@@ -136,7 +136,7 @@ export async function buildChatContext(
     compactJournal: journalItems.map(compactJournalItem),
     documentSummaries: documents.map((document: DocumentSummaryRecord) => {
       const summary =
-        document.ai_summary ?? document.extracted_text?.slice(0, 500) ?? "No summary yet.";
+        document.ai_summary ?? document.extracted_text?.slice(0, 500) ?? "Shrnutí zatím není k dispozici.";
 
       return `${document.filename}: ${summary}`;
     }),
@@ -161,7 +161,7 @@ export async function sendChatMessage(
     ? validationResult.data.assistant_reply
     : typeof aiResponse.assistant_reply === "string" && aiResponse.assistant_reply.trim()
       ? aiResponse.assistant_reply
-      : "I noted your message.";
+      : "Vaši zprávu jsem zaznamenal.";
   const validSuggestions = validationResult.success ? validationResult.data.suggestions : [];
 
   const transactionResult = await prisma.$transaction(async (tx: ChatTransactionClient) => {
