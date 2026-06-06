@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run db:deploy && DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} next dev",
-    "build": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} next build",
-    "start": "npm run db:deploy && DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} next start",
+    "db:deploy": "DATABASE_URL=file:../data/bureaucat.sqlite prisma migrate deploy",
+    "dev": "npm run db:deploy && DATABASE_URL=file:../data/bureaucat.sqlite next dev",
+    "build": "DATABASE_URL=file:../data/bureaucat.sqlite next build",
+    "start": "npm run db:deploy && DATABASE_URL=file:../data/bureaucat.sqlite next start",
     "typecheck": "tsc --noEmit",
-    "prisma:validate": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} prisma validate",
-    "prisma:generate": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} prisma generate",
-    "prisma:migrate": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} prisma migrate dev",
-    "db:deploy": "DATABASE_URL=${DATABASE_URL:-file:../data/bureaucat.sqlite} prisma migrate deploy"
+    "prisma:validate": "DATABASE_URL=file:../data/bureaucat.sqlite prisma validate",
+    "prisma:generate": "DATABASE_URL=file:../data/bureaucat.sqlite prisma generate",
+    "prisma:migrate": "DATABASE_URL=file:../data/bureaucat.sqlite prisma migrate dev"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
