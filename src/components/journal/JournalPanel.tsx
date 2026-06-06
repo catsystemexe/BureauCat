@@ -1,31 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type {
-  CaseDocument,
-  CaseSummary,
-  JournalItem,
-  JournalSectionKey,
-  Situation
-} from "@/components/types";
+import type { CaseDocument, CaseSummary, Situation } from "@/components/types";
 import { GoalsSection } from "@/components/journal/GoalsSection";
 import { SituationDocumentsSection } from "@/components/journal/SituationDocumentsSection";
-import { SituationTabs } from "@/components/journal/SituationTabs";
-import {
-  EVIDENCE_STATE_LABELS,
-  JOURNAL_ITEM_STATUS_LABELS,
-  JOURNAL_ITEM_TYPE_LABELS,
-  JOURNAL_SECTION_LABELS
-} from "@/lib/constants/uiLabels";
+import { SituationPager } from "@/components/journal/SituationPager";
 
-const JOURNAL_SECTIONS = Object.entries(JOURNAL_SECTION_LABELS).map(([key, label]) => ({
-  key: key as JournalSectionKey,
-  label
-}));
-
-type JournalResponse = {
-  journal?: JournalItem[];
-};
+const AI_PLACEHOLDERS = [
+  { title: "Analýza", message: "Zatím bez analýzy." },
+  { title: "Poznatky", message: "Zatím bez poznatků." },
+  { title: "Otázky", message: "Zatím bez otázek." },
+  { title: "Rizika", message: "Zatím bez rizik." },
+  { title: "Postup", message: "Zatím bez návrhu postupu." }
+] as const;
 
 type SituationsResponse = {
   situations?: Situation[];
@@ -35,77 +22,59 @@ type SituationResponse = {
   situation?: Situation;
 };
 
-type JournalItemsBySection = Record<JournalSectionKey, JournalItem[]>;
-
-function createEmptyJournalGroups(): JournalItemsBySection {
-  return JOURNAL_SECTIONS.reduce((groups, section) => {
-    groups[section.key] = [];
-    return groups;
-  }, {} as JournalItemsBySection);
-}
-
-export function JournalItemCard({
-  isSelected,
-  item,
-  onSelectItem
-}: {
-  isSelected: boolean;
-  item: JournalItem;
-  onSelectItem: (item: JournalItem) => void;
-}) {
+function SituationCard({ situation }: { situation: Situation | null }) {
   return (
-    <button
-      aria-pressed={isSelected}
-      className={`journal-item-card ${isSelected ? "selected-journal-item" : ""}`}
-      onClick={() => onSelectItem(item)}
-      type="button"
-    >
-      <div className="journal-item-card-header">
-        <span className="journal-item-type">{JOURNAL_ITEM_TYPE_LABELS[item.item_type]}</span>
-        <span className={`evidence-badge evidence-${item.evidence_state}`}>
-          {EVIDENCE_STATE_LABELS[item.evidence_state]}
+    <section className="notebook-card notebook-user-card" aria-labelledby="situation-card-title">
+      <div className="notebook-card-header">
+        <h3 id="situation-card-title">Situace</h3>
+        <span
+          aria-label="Úprava popisu zatím není dostupná"
+          className="situation-edit-placeholder"
+          role="img"
+          title="Úprava popisu zatím není dostupná"
+        >
+          ✎
         </span>
       </div>
-      <h4>{item.title}</h4>
-      {item.value ? <p className="journal-item-value">{item.value}</p> : null}
-      {item.status !== "active" ? (
-        <span className="journal-status-badge">{JOURNAL_ITEM_STATUS_LABELS[item.status]}</span>
-      ) : null}
-    </button>
+      <p className="situation-description">
+        {situation?.description || "Popis situace zatím není vyplněn."}
+      </p>
+    </section>
   );
 }
 
-export function JournalSection({
-  items,
-  label,
-  onSelectItem,
-  sectionKey,
-  selectedItemId
+function UserLayer({
+  documentListRefreshKey,
+  onOpenDocument,
+  selectedSituation
 }: {
-  items: JournalItem[];
-  label: string;
-  onSelectItem: (item: JournalItem) => void;
-  sectionKey: JournalSectionKey;
-  selectedItemId: string | null;
+  documentListRefreshKey: number;
+  onOpenDocument: (document: CaseDocument) => void;
+  selectedSituation: Situation | null;
 }) {
   return (
-    <section className="journal-section" aria-labelledby={`journal-section-${sectionKey}`}>
-      <h3 id={`journal-section-${sectionKey}`}>{label}</h3>
-      {items.length > 0 ? (
-        <div className="journal-items-list">
-          {items.map((item) => (
-            <JournalItemCard
-              isSelected={selectedItemId === item.id}
-              item={item}
-              key={item.id}
-              onSelectItem={onSelectItem}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="journal-empty-message">Zatím žádné položky.</p>
-      )}
-    </section>
+    <div className="notebook-layer notebook-user-layer">
+      <SituationCard situation={selectedSituation} />
+      <GoalsSection selectedSituationId={selectedSituation?.id ?? null} />
+      <SituationDocumentsSection
+        onOpenDocument={onOpenDocument}
+        refreshKey={documentListRefreshKey}
+        selectedSituationId={selectedSituation?.id ?? null}
+      />
+    </div>
+  );
+}
+
+function AILayer() {
+  return (
+    <div className="notebook-layer notebook-ai-layer" aria-label="AI vrstva situace">
+      {AI_PLACEHOLDERS.map((placeholder) => (
+        <section className="notebook-card notebook-ai-card" key={placeholder.title}>
+          <h3>{placeholder.title}</h3>
+          <p className="journal-empty-message">{placeholder.message}</p>
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -113,24 +82,15 @@ export function JournalPanel({
   caseItem,
   documentListRefreshKey,
   onOpenDocument,
-  onSelectItem,
   onSelectSituation,
-  refreshKey,
-  selectedItemId,
   selectedSituationId
 }: {
   caseItem: CaseSummary;
   documentListRefreshKey: number;
   onOpenDocument: (document: CaseDocument) => void;
-  onSelectItem: (item: JournalItem) => void;
   onSelectSituation: (situationId: string | null) => void;
-  refreshKey: number;
-  selectedItemId: string | null;
   selectedSituationId: string | null;
 }) {
-  const [journalItems, setJournalItems] = useState<JournalItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [situations, setSituations] = useState<Situation[]>([]);
   const [isLoadingSituations, setIsLoadingSituations] = useState(true);
   const [isCreatingSituation, setIsCreatingSituation] = useState(false);
@@ -152,10 +112,11 @@ export function JournalPanel({
         }
 
         if (isMounted) {
-          setSituations(data.situations);
-          onSelectSituation(
-            data.situations.find((situation) => situation.status === "active")?.id ?? null
+          const activeSituations = data.situations.filter(
+            (situation) => situation.status === "active"
           );
+          setSituations(data.situations);
+          onSelectSituation(activeSituations[0]?.id ?? null);
           setSituationError(null);
         }
       } catch {
@@ -177,51 +138,6 @@ export function JournalPanel({
       isMounted = false;
     };
   }, [caseItem.id, onSelectSituation]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadJournal() {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/cases/${caseItem.id}/journal`, { cache: "no-store" });
-
-        if (!response.ok) {
-          throw new Error(
-            response.status === 404 ? "Případ nebyl nalezen." : "Zápisník se nepodařilo načíst."
-          );
-        }
-
-        const data = (await response.json()) as JournalResponse;
-
-        if (!Array.isArray(data.journal)) {
-          throw new Error("Odpověď neobsahuje položky zápisníku.");
-        }
-
-        if (isMounted) {
-          setJournalItems(data.journal);
-          setError(null);
-        }
-      } catch (loadError) {
-        if (isMounted) {
-          setJournalItems([]);
-          setError(
-            loadError instanceof Error ? loadError.message : "Zápisník se nepodařilo načíst."
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadJournal();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [caseItem.id, refreshKey]);
 
   async function handleCreateSituation() {
     try {
@@ -247,19 +163,20 @@ export function JournalPanel({
     }
   }
 
-  const journalItemsBySection = useMemo(() => {
-    const groups = createEmptyJournalGroups();
-
-    for (const item of journalItems) {
-      groups[item.section].push(item);
-    }
-
-    return groups;
-  }, [journalItems]);
+  const selectedSituation = useMemo(
+    () =>
+      situations.find(
+        (situation) => situation.status === "active" && situation.id === selectedSituationId
+      ) ?? null,
+    [selectedSituationId, situations]
+  );
 
   return (
     <aside className="workspace-panel journal-panel" aria-labelledby="journal-title">
-      <SituationTabs
+      <header className="notebook-heading">
+        <h2 id="journal-title">Zápisník</h2>
+      </header>
+      <SituationPager
         error={situationError}
         isCreating={isCreatingSituation}
         isLoading={isLoadingSituations}
@@ -268,33 +185,14 @@ export function JournalPanel({
         selectedSituationId={selectedSituationId}
         situations={situations}
       />
-      <GoalsSection selectedSituationId={selectedSituationId} />
-      <SituationDocumentsSection
-        onOpenDocument={onOpenDocument}
-        refreshKey={documentListRefreshKey}
-        selectedSituationId={selectedSituationId}
-      />
-      <div className="journal-heading">
-        <p className="panel-kicker">Případ</p>
-        <h2 id="journal-title">Zápisník</h2>
-        <p className="panel-note">Hlavní pracovní model případu.</p>
+      <div className="notebook-page">
+        <UserLayer
+          documentListRefreshKey={documentListRefreshKey}
+          onOpenDocument={onOpenDocument}
+          selectedSituation={selectedSituation}
+        />
+        <AILayer />
       </div>
-      {isLoading ? <p className="journal-empty-message">Načítám zápisník…</p> : null}
-      {error ? <p className="status-message error-message">{error}</p> : null}
-      {!isLoading && !error ? (
-        <div className="journal-section-list">
-          {JOURNAL_SECTIONS.map((section) => (
-            <JournalSection
-              items={journalItemsBySection[section.key]}
-              key={section.key}
-              label={section.label}
-              onSelectItem={onSelectItem}
-              sectionKey={section.key}
-              selectedItemId={selectedItemId}
-            />
-          ))}
-        </div>
-      ) : null}
     </aside>
   );
 }
