@@ -69,7 +69,7 @@ export function SituationDocumentsSection({
 
   return (
     <section className="situation-documents-section" aria-labelledby="situation-documents-title">
-      <h2 id="situation-documents-title">Dokumenty</h2>
+      <h3 id="situation-documents-title">Dokumenty</h3>
       {isLoading ? <p className="journal-empty-message">Načítám dokumenty…</p> : null}
       {error ? <p className="status-message error-message">{error}</p> : null}
       {!isLoading && !error && documents.length === 0 ? (

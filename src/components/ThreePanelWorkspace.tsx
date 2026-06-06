@@ -372,7 +372,7 @@ export function RightContextPanel({
 }
 
 export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
-  const [journalRefreshKey, setJournalRefreshKey] = useState(0);
+  const [, setJournalRefreshKey] = useState(0);
   const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("help");
   const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
   const [selectedJournalItem, setSelectedJournalItem] = useState<JournalItem | null>(null);
@@ -422,11 +422,6 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     openDocument(document);
   }
 
-  function selectJournalItem(journalItem: JournalItem) {
-    setSelectedJournalItem(journalItem);
-    setRightPanelMode("evidence");
-  }
-
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
@@ -444,10 +439,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           caseItem={caseItem}
           documentListRefreshKey={situationDocumentListRefreshKey}
           onOpenDocument={openDocument}
-          onSelectItem={selectJournalItem}
           onSelectSituation={selectSituation}
-          refreshKey={journalRefreshKey}
-          selectedItemId={selectedJournalItem?.id ?? null}
           selectedSituationId={selectedSituationId}
         />
         <MiddleChatPanel

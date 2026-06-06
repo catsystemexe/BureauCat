@@ -129,7 +129,7 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
   return (
     <section className="goals-section" aria-labelledby="goals-title">
       <div className="goals-section-header">
-        <h2 id="goals-title">Cíle</h2>
+        <h3 id="goals-title">Cíle</h3>
         <button
           className="goal-add-button"
           disabled={!selectedSituationId || isCreating || isLoading}
