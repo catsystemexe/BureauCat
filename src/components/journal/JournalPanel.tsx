@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { CaseSummary, JournalItem, JournalSectionKey, Situation } from "@/components/types";
+import type {
+  CaseDocument,
+  CaseSummary,
+  JournalItem,
+  JournalSectionKey,
+  Situation
+} from "@/components/types";
 import { GoalsSection } from "@/components/journal/GoalsSection";
+import { SituationDocumentsSection } from "@/components/journal/SituationDocumentsSection";
 import { SituationTabs } from "@/components/journal/SituationTabs";
 import {
   EVIDENCE_STATE_LABELS,
@@ -104,20 +111,27 @@ export function JournalSection({
 
 export function JournalPanel({
   caseItem,
+  documentListRefreshKey,
+  onOpenDocument,
   onSelectItem,
+  onSelectSituation,
   refreshKey,
-  selectedItemId
+  selectedItemId,
+  selectedSituationId
 }: {
   caseItem: CaseSummary;
+  documentListRefreshKey: number;
+  onOpenDocument: (document: CaseDocument) => void;
   onSelectItem: (item: JournalItem) => void;
+  onSelectSituation: (situationId: string | null) => void;
   refreshKey: number;
   selectedItemId: string | null;
+  selectedSituationId: string | null;
 }) {
   const [journalItems, setJournalItems] = useState<JournalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [situations, setSituations] = useState<Situation[]>([]);
-  const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null);
   const [isLoadingSituations, setIsLoadingSituations] = useState(true);
   const [isCreatingSituation, setIsCreatingSituation] = useState(false);
   const [situationError, setSituationError] = useState<string | null>(null);
@@ -139,20 +153,15 @@ export function JournalPanel({
 
         if (isMounted) {
           setSituations(data.situations);
-          setSelectedSituationId(
-            (currentId) =>
-              data.situations?.find(
-                (situation) => situation.id === currentId && situation.status === "active"
-              )?.id ??
-              data.situations?.find((situation) => situation.status === "active")?.id ??
-              null
+          onSelectSituation(
+            data.situations.find((situation) => situation.status === "active")?.id ?? null
           );
           setSituationError(null);
         }
       } catch {
         if (isMounted) {
           setSituations([]);
-          setSelectedSituationId(null);
+          onSelectSituation(null);
           setSituationError("Nepodařilo se načíst situace.");
         }
       } finally {
@@ -167,7 +176,7 @@ export function JournalPanel({
     return () => {
       isMounted = false;
     };
-  }, [caseItem.id]);
+  }, [caseItem.id, onSelectSituation]);
 
   useEffect(() => {
     let isMounted = true;
@@ -230,7 +239,7 @@ export function JournalPanel({
       }
 
       setSituations((currentSituations) => [...currentSituations, data.situation as Situation]);
-      setSelectedSituationId(data.situation.id);
+      onSelectSituation(data.situation.id);
     } catch {
       setSituationError("Nepodařilo se vytvořit situaci.");
     } finally {
@@ -255,11 +264,16 @@ export function JournalPanel({
         isCreating={isCreatingSituation}
         isLoading={isLoadingSituations}
         onCreateSituation={handleCreateSituation}
-        onSelectSituation={setSelectedSituationId}
+        onSelectSituation={onSelectSituation}
         selectedSituationId={selectedSituationId}
         situations={situations}
       />
       <GoalsSection selectedSituationId={selectedSituationId} />
+      <SituationDocumentsSection
+        onOpenDocument={onOpenDocument}
+        refreshKey={documentListRefreshKey}
+        selectedSituationId={selectedSituationId}
+      />
       <div className="journal-heading">
         <p className="panel-kicker">Případ</p>
         <h2 id="journal-title">Zápisník</h2>
