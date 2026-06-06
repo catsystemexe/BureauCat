@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { CaseDocument, CaseSummary, Situation } from "@/components/types";
 import { GoalsSection } from "@/components/journal/GoalsSection";
 import { SituationDocumentsSection } from "@/components/journal/SituationDocumentsSection";
 import { SituationPager } from "@/components/journal/SituationPager";
 
 const AI_PLACEHOLDERS = [
-  { title: "Analýza", message: "Zatím bez analýzy." },
-  { title: "Poznatky", message: "Zatím bez poznatků." },
-  { title: "Otázky", message: "Zatím bez otázek." },
-  { title: "Rizika", message: "Zatím bez rizik." },
-  { title: "Postup", message: "Zatím bez návrhu postupu." }
+  { title: "Analýza", message: "Zatím bez analýzy.", icon: "↗" },
+  { title: "Poznatky", message: "Zatím bez poznatků.", icon: "◉" },
+  { title: "Otázky", message: "Zatím bez otázek.", icon: "?" },
+  { title: "Rizika", message: "Zatím bez rizik.", icon: "!" },
+  { title: "Postup", message: "Zatím bez návrhu postupu.", icon: "☷" }
 ] as const;
 
 type SituationsResponse = {
@@ -22,23 +22,130 @@ type SituationResponse = {
   situation?: Situation;
 };
 
-function SituationCard({ situation }: { situation: Situation | null }) {
+function SituationCard({
+  onSituationUpdated,
+  situation
+}: {
+  onSituationUpdated: (situation: Situation) => void;
+  situation: Situation | null;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsEditing(false);
+    setTitleDraft(situation?.title ?? "");
+    setDescriptionDraft(situation?.description ?? "");
+    setError(null);
+  }, [situation?.id, situation?.title, situation?.description]);
+
+  function beginEditing() {
+    if (!situation) {
+      return;
+    }
+
+    setTitleDraft(situation.title);
+    setDescriptionDraft(situation.description ?? "");
+    setError(null);
+    setIsEditing(true);
+  }
+
+  function cancelEditing() {
+    setTitleDraft(situation?.title ?? "");
+    setDescriptionDraft(situation?.description ?? "");
+    setError(null);
+    setIsEditing(false);
+  }
+
+  async function handleSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!situation || !titleDraft.trim()) {
+      setError("Název situace nesmí být prázdný.");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setError(null);
+      const response = await fetch(`/api/situations/${situation.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: titleDraft.trim(),
+          description: descriptionDraft.trim() || null
+        })
+      });
+      const data = (await response.json()) as SituationResponse;
+
+      if (!response.ok || !data.situation) {
+        throw new Error("Nepodařilo se upravit situaci.");
+      }
+
+      onSituationUpdated(data.situation);
+      setIsEditing(false);
+    } catch {
+      setError("Nepodařilo se upravit situaci.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
-    <section className="notebook-card notebook-user-card" aria-labelledby="situation-card-title">
-      <div className="notebook-card-header">
-        <h3 id="situation-card-title">Situace</h3>
-        <span
-          aria-label="Úprava popisu zatím není dostupná"
-          className="situation-edit-placeholder"
-          role="img"
-          title="Úprava popisu zatím není dostupná"
-        >
-          ✎
-        </span>
+    <section className="notebook-card notebook-user-card situation-card" aria-labelledby="situation-card-title">
+      <span aria-hidden="true" className="notebook-section-icon user-section-icon">▤</span>
+      <div className="notebook-section-content">
+        <div className="notebook-card-header">
+          <h3 id="situation-card-title">Situace</h3>
+          {!isEditing ? (
+            <button
+              aria-label="Upravit situaci"
+              className="notebook-icon-button persistent-action"
+              disabled={!situation}
+              onClick={beginEditing}
+              title="Upravit situaci"
+              type="button"
+            >
+              ✎
+            </button>
+          ) : null}
+        </div>
+        {isEditing ? (
+          <form className="situation-edit-form" onSubmit={handleSave}>
+            <input
+              aria-label="Název situace"
+              autoFocus
+              className="situation-title-input"
+              disabled={isSaving}
+              onChange={(event) => setTitleDraft(event.target.value)}
+              value={titleDraft}
+            />
+            <textarea
+              aria-label="Popis situace"
+              disabled={isSaving}
+              onChange={(event) => setDescriptionDraft(event.target.value)}
+              rows={3}
+              value={descriptionDraft}
+            />
+            {error ? <p className="notebook-inline-error">{error}</p> : null}
+            <div className="notebook-form-actions">
+              <button className="notebook-text-button primary-notebook-action" disabled={isSaving} type="submit">
+                {isSaving ? "Ukládám…" : "Uložit"}
+              </button>
+              <button className="notebook-text-button" disabled={isSaving} onClick={cancelEditing} type="button">
+                Zrušit
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="situation-description">
+            {situation?.description || "Popis situace zatím není vyplněn."}
+          </p>
+        )}
       </div>
-      <p className="situation-description">
-        {situation?.description || "Popis situace zatím není vyplněn."}
-      </p>
     </section>
   );
 }
@@ -46,15 +153,21 @@ function SituationCard({ situation }: { situation: Situation | null }) {
 function UserLayer({
   documentListRefreshKey,
   onOpenDocument,
+  onSituationUpdated,
   selectedSituation
 }: {
   documentListRefreshKey: number;
   onOpenDocument: (document: CaseDocument) => void;
+  onSituationUpdated: (situation: Situation) => void;
   selectedSituation: Situation | null;
 }) {
   return (
     <div className="notebook-layer notebook-user-layer">
-      <SituationCard situation={selectedSituation} />
+      <div className="notebook-layer-heading user-layer-heading">
+        <span aria-hidden="true" className="notebook-layer-icon">♙</span>
+        <span>Uživatelská část</span>
+      </div>
+      <SituationCard onSituationUpdated={onSituationUpdated} situation={selectedSituation} />
       <GoalsSection selectedSituationId={selectedSituation?.id ?? null} />
       <SituationDocumentsSection
         onOpenDocument={onOpenDocument}
@@ -68,10 +181,22 @@ function UserLayer({
 function AILayer() {
   return (
     <div className="notebook-layer notebook-ai-layer" aria-label="AI vrstva situace">
+      <div className="notebook-layer-heading ai-layer-heading">
+        <span aria-hidden="true" className="notebook-layer-icon">⌘</span>
+        <span>AI část</span>
+      </div>
       {AI_PLACEHOLDERS.map((placeholder) => (
         <section className="notebook-card notebook-ai-card" key={placeholder.title}>
-          <h3>{placeholder.title}</h3>
-          <p className="journal-empty-message">{placeholder.message}</p>
+          <span aria-hidden="true" className="notebook-section-icon ai-section-icon">
+            {placeholder.icon}
+          </span>
+          <div className="notebook-section-content">
+            <div className="notebook-card-header">
+              <h3>{placeholder.title}</h3>
+              <span aria-hidden="true" className="notebook-placeholder-action">＋</span>
+            </div>
+            <p className="journal-empty-message">{placeholder.message}</p>
+          </div>
         </section>
       ))}
     </div>
@@ -171,11 +296,17 @@ export function JournalPanel({
     [selectedSituationId, situations]
   );
 
+  function handleSituationUpdated(updatedSituation: Situation) {
+    setSituations((currentSituations) =>
+      currentSituations.map((situation) =>
+        situation.id === updatedSituation.id ? updatedSituation : situation
+      )
+    );
+  }
+
   return (
     <aside className="workspace-panel journal-panel" aria-labelledby="journal-title">
-      <header className="notebook-heading">
-        <h2 id="journal-title">Zápisník</h2>
-      </header>
+      <h2 className="sr-only" id="journal-title">Zápisník</h2>
       <SituationPager
         error={situationError}
         isCreating={isCreatingSituation}
@@ -189,6 +320,7 @@ export function JournalPanel({
         <UserLayer
           documentListRefreshKey={documentListRefreshKey}
           onOpenDocument={onOpenDocument}
+          onSituationUpdated={handleSituationUpdated}
           selectedSituation={selectedSituation}
         />
         <AILayer />
