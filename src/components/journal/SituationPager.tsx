@@ -27,34 +27,37 @@ export function SituationPager({
 
   return (
     <nav className="situation-pager" aria-label="Stránky situací">
-      <div className="situation-page-buttons">
-        {activeSituations.map((situation, index) => {
-          const isSelected = situation.id === selectedSituationId;
+      <div className="situation-pager-row">
+        <span className="situation-pager-label">Situace:</span>
+        <div className="situation-page-buttons">
+          {activeSituations.map((situation, index) => {
+            const isSelected = situation.id === selectedSituationId;
 
-          return (
-            <button
-              aria-label={`Situace ${index + 1}: ${situation.title}`}
-              aria-pressed={isSelected}
-              className={`situation-page-button${isSelected ? " selected-situation-page" : ""}`}
-              key={situation.id}
-              onClick={() => onSelectSituation(situation.id)}
-              title={situation.title}
-              type="button"
-            >
-              {index + 1}
-            </button>
-          );
-        })}
-        <button
-          aria-label="Přidat situaci"
-          className="situation-page-button situation-page-add-button"
-          disabled={isCreating || isLoading}
-          onClick={onCreateSituation}
-          title="Přidat situaci"
-          type="button"
-        >
-          +
-        </button>
+            return (
+              <button
+                aria-label={`Situace ${index + 1}: ${situation.title}`}
+                aria-pressed={isSelected}
+                className={`situation-page-button${isSelected ? " selected-situation-page" : ""}`}
+                key={situation.id}
+                onClick={() => onSelectSituation(situation.id)}
+                title={situation.title}
+                type="button"
+              >
+                {index + 1}
+              </button>
+            );
+          })}
+          <button
+            aria-label="Přidat situaci"
+            className="situation-page-button situation-page-add-button"
+            disabled={isCreating || isLoading}
+            onClick={onCreateSituation}
+            title="Přidat situaci"
+            type="button"
+          >
+            +
+          </button>
+        </div>
       </div>
       {isLoading ? <p className="journal-empty-message">Načítám situace…</p> : null}
       {error ? <p className="status-message error-message">{error}</p> : null}
