@@ -34,8 +34,9 @@ model Situation {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  case  Case   @relation(fields: [case_id], references: [id], onDelete: Cascade)
-  goals Goal[]
+  case                Case                @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  goals               Goal[]
+  situation_documents SituationDocument[]
 
   @@index([case_id])
   @@index([case_id, display_order])
@@ -67,9 +68,24 @@ model Document {
   ai_summary     String?
   created_at     DateTime @default(now())
 
-  case Case @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  case                Case                @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  situation_documents SituationDocument[]
 
   @@index([case_id])
+}
+
+model SituationDocument {
+  id           String   @id @default(cuid())
+  situation_id String
+  document_id  String
+  created_at   DateTime @default(now())
+
+  situation Situation @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  document  Document  @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@index([situation_id])
+  @@index([document_id])
+  @@unique([situation_id, document_id])
 }
 
 model JournalItem {

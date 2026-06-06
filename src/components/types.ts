@@ -63,6 +63,13 @@ export type JournalItem = {
   updated_at: string;
 };
 
+export type SituationDocument = {
+  id: string;
+  situation_id: string;
+  document_id: string;
+  created_at: string;
+};
+
 export type CaseDocument = {
   id: string;
   case_id: string;

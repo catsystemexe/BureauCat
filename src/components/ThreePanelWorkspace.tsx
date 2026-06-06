@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { DocumentList } from "@/components/documents/DocumentList";
 import { DocumentUpload } from "@/components/documents/DocumentUpload";
@@ -307,7 +307,9 @@ export function RightContextPanel({
   documentListRefreshKey,
   onDocumentUploaded,
   onOpenDocument,
-  onOpenSourceDocument
+  onOpenSourceDocument,
+  onSituationDocumentLinked,
+  selectedSituationId
 }: {
   caseId: string;
   mode: RightPanelMode;
@@ -317,11 +319,18 @@ export function RightContextPanel({
   onDocumentUploaded: (document: CaseDocument) => void;
   onOpenDocument: (document: CaseDocument) => void;
   onOpenSourceDocument: (documentId: string) => Promise<boolean>;
+  onSituationDocumentLinked: () => void;
+  selectedSituationId: string | null;
 }) {
   return (
     <aside className="workspace-panel context-panel" aria-labelledby="context-title">
       <h2 className="sr-only" id="context-title">Dokumenty a podklady</h2>
-      <DocumentUpload caseId={caseId} onUploaded={onDocumentUploaded} />
+      <DocumentUpload
+        caseId={caseId}
+        onSituationDocumentLinked={onSituationDocumentLinked}
+        onUploaded={onDocumentUploaded}
+        selectedSituationId={selectedSituationId}
+      />
 
       {selectedDocument && mode !== "document" ? (
         <section className="last-document-card" aria-labelledby="last-document-title">
@@ -368,6 +377,16 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
   const [selectedJournalItem, setSelectedJournalItem] = useState<JournalItem | null>(null);
   const [documentListRefreshKey, setDocumentListRefreshKey] = useState(0);
+  const [situationDocumentListRefreshKey, setSituationDocumentListRefreshKey] = useState(0);
+  const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedSituationId(null);
+  }, [caseItem.id]);
+
+  const selectSituation = useCallback((situationId: string | null) => {
+    setSelectedSituationId(situationId);
+  }, []);
 
   function requestJournalRefresh() {
     setJournalRefreshKey((currentKey) => currentKey + 1);
@@ -392,6 +411,10 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     } catch {
       return false;
     }
+  }
+
+  function handleSituationDocumentLinked() {
+    setSituationDocumentListRefreshKey((currentKey) => currentKey + 1);
   }
 
   function handleDocumentUploaded(document: CaseDocument) {
@@ -419,9 +442,13 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
       <div className="three-panel-layout" aria-label="Pracovní prostor případu: Zápisník, Konzultace a Dokumenty">
         <JournalPanel
           caseItem={caseItem}
+          documentListRefreshKey={situationDocumentListRefreshKey}
+          onOpenDocument={openDocument}
           onSelectItem={selectJournalItem}
+          onSelectSituation={selectSituation}
           refreshKey={journalRefreshKey}
           selectedItemId={selectedJournalItem?.id ?? null}
+          selectedSituationId={selectedSituationId}
         />
         <MiddleChatPanel
           caseItem={caseItem}
@@ -434,8 +461,10 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           onDocumentUploaded={handleDocumentUploaded}
           onOpenDocument={openDocument}
           onOpenSourceDocument={openSourceDocument}
+          onSituationDocumentLinked={handleSituationDocumentLinked}
           selectedDocument={selectedDocument}
           selectedJournalItem={selectedJournalItem}
+          selectedSituationId={selectedSituationId}
         />
       </div>
     </div>

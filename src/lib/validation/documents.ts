@@ -1,4 +1,5 @@
 import path from "node:path";
+import { z } from "zod";
 
 export const allowedDocumentExtensions = [".txt", ".pdf", ".docx", ".jpg", ".jpeg", ".png"] as const;
 export const maxDocumentUploadBytes = 10 * 1024 * 1024;
@@ -57,3 +58,7 @@ export function validateDocumentUploadFile(value: FormDataEntryValue | null): Va
     filetype: extension.slice(1)
   };
 }
+
+export const linkDocumentToSituationSchema = z.object({
+  document_id: z.string().trim().min(1)
+});

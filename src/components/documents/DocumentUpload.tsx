@@ -11,19 +11,25 @@ type DocumentUploadResponse = {
 
 export function DocumentUpload({
   caseId,
-  onUploaded
+  onSituationDocumentLinked,
+  onUploaded,
+  selectedSituationId
 }: {
   caseId: string;
+  onSituationDocumentLinked: () => void;
   onUploaded: (document: CaseDocument) => void;
+  selectedSituationId: string | null;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     setSelectedFile(event.target.files?.[0] ?? null);
     setUploadError(null);
+    setLinkError(null);
   }
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
@@ -39,6 +45,7 @@ export function DocumentUpload({
     try {
       setIsUploading(true);
       setUploadError(null);
+      setLinkError(null);
 
       const response = await fetch(`/api/cases/${caseId}/documents`, {
         method: "POST",
@@ -54,7 +61,27 @@ export function DocumentUpload({
         throw new Error("Odpověď neobsahuje nahraný dokument.");
       }
 
-      onUploaded(data.document);
+      const uploadedDocument = data.document;
+      onUploaded(uploadedDocument);
+
+      if (selectedSituationId) {
+        try {
+          const linkResponse = await fetch(`/api/situations/${selectedSituationId}/documents`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ document_id: uploadedDocument.id })
+          });
+
+          if (!linkResponse.ok) {
+            throw new Error("Nepodařilo se propojit dokument se situací.");
+          }
+
+          onSituationDocumentLinked();
+        } catch {
+          setLinkError("Nepodařilo se propojit dokument se situací.");
+        }
+      }
+
       setSelectedFile(null);
 
       if (fileInputRef.current) {
@@ -84,6 +111,7 @@ export function DocumentUpload({
         {isUploading ? "Nahrávám…" : "Nahrát dokument"}
       </button>
       {uploadError ? <p className="status-message error-message">{uploadError}</p> : null}
+      {linkError ? <p className="status-message error-message">{linkError}</p> : null}
     </form>
   );
 }
