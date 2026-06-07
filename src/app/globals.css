@@ -2302,3 +2302,275 @@ body {
 
 /* === PANEL CORNER CLIP FINAL END === */
 
+
+/* === BUREAUCAT TYPOGRAPHY V1 START === */
+
+/* Case title */
+.workspace-header h1 {
+  color: #161616;
+  font-weight: 650 !important;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+/* Panel headers */
+.journal-panel-title,
+.chat-panel-header h2,
+.right-panel-tab {
+  color: #1d1d1b !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em;
+}
+
+/* Notebook section titles */
+.notebook-card h3,
+.goals-section-header h3,
+.situation-documents-header h3 {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #1d1d1b !important;
+}
+
+/* Notebook content */
+.notebook-card,
+.goal-item,
+.situation-documents-list,
+.journal-empty-message {
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+/* Metadata */
+.document-upload-date,
+.document-list-meta,
+.message-meta,
+.case-status {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #6f6a63 !important;
+}
+
+/* Document viewer readability */
+.document-extracted-text {
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+/* User messages */
+.message-card.user-message,
+.message-card.user {
+  background: #f3f8ff !important;
+}
+
+/* Assistant messages */
+.message-card.assistant-message,
+.message-card.assistant {
+  background: #ffffff !important;
+}
+
+/* Vertical labels */
+.notebook-user-label,
+.notebook-ai-label {
+  opacity: 0.65;
+  font-size: 11px !important;
+}
+
+/* Softer BureauCat blue */
+:root {
+  --bc-blue: #1f5fbf;
+}
+
+/* === BUREAUCAT TYPOGRAPHY V1 END === */
+
+
+/* === BUREAUCAT UX POLISH PASS START === */
+
+/* 1) User chat messages: subtle blue distinction */
+.user-message,
+.message-card.user,
+.message-card.user-message,
+.message-bubble.user,
+.message-bubble.user-message {
+  background: #f2f8ff !important;
+  border-color: #d9e8ff !important;
+}
+
+/* Assistant messages stay neutral */
+.assistant-message,
+.message-card.assistant,
+.message-card.assistant-message,
+.message-bubble.assistant,
+.message-bubble.assistant-message {
+  background: #ffffff !important;
+  border-color: #e5e2dc !important;
+}
+
+/* 2) Wider chat bubbles */
+.message-card,
+.message-bubble,
+.chat-message {
+  max-width: 88% !important;
+}
+
+/* 3) Empty document state: centered, calmer */
+.compact-right-placeholder,
+.right-panel-placeholder {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.compact-right-placeholder .document-empty-state,
+.right-panel-placeholder .document-empty-state {
+  align-items: center !important;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-height: 420px !important;
+  text-align: center !important;
+}
+
+.compact-right-placeholder h2,
+.right-panel-placeholder h2 {
+  color: #1d1d1b !important;
+  font-size: 1.45rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  margin: 0 0 10px !important;
+}
+
+.compact-right-placeholder .panel-note,
+.right-panel-placeholder .panel-note {
+  color: #6f6a63 !important;
+  font-size: 0.92rem !important;
+  line-height: 1.5 !important;
+  max-width: 420px !important;
+}
+
+/* 4) Notebook hierarchy: user section stronger, AI layer softer */
+.notebook-user-layer h3,
+.notebook-user-layer .notebook-card h3,
+.notebook-user-layer .goals-section-header h3,
+.notebook-user-layer .situation-documents-header h3 {
+  color: #1d1d1b !important;
+  font-weight: 650 !important;
+}
+
+.notebook-ai-layer h3,
+.notebook-ai-layer .notebook-card h3 {
+  color: #7a6a56 !important;
+  font-weight: 600 !important;
+}
+
+.notebook-ai-layer .journal-empty-message {
+  color: #7f766c !important;
+}
+
+/* === BUREAUCAT UX POLISH PASS END === */
+
+
+/* === FINAL POLISH USER BUBBLE EMPTY DOC START === */
+
+/* 1) User chat bubble: clearer but still subtle blue */
+.user-message,
+.message-card.user,
+.message-card.user-message,
+.message-bubble.user,
+.message-bubble.user-message {
+  background: #eef5ff !important;
+  border-color: #d6e5ff !important;
+}
+
+/* 4) Empty document state: centered inside right panel */
+.compact-right-placeholder,
+.right-panel-placeholder {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100% !important;
+}
+
+.compact-right-placeholder h2,
+.compact-right-placeholder .panel-note,
+.right-panel-placeholder h2,
+.right-panel-placeholder .panel-note {
+  max-width: 440px !important;
+}
+
+.compact-right-placeholder > h2:first-child,
+.right-panel-placeholder > h2:first-child {
+  margin-top: auto !important;
+}
+
+.compact-right-placeholder > .panel-note,
+.right-panel-placeholder > .panel-note {
+  margin-bottom: auto !important;
+}
+
+/* === FINAL POLISH USER BUBBLE EMPTY DOC END === */
+
+
+/* === REAL CHAT BUBBLE COLORS START === */
+
+/* Actual MessageList classes:
+   <article className={`message-card message-${message.role}`}>
+*/
+
+.message-card.message-user,
+.message-user {
+  background: #eef5ff !important;
+  border-color: #d6e5ff !important;
+}
+
+.message-card.message-assistant,
+.message-assistant {
+  background: #ffffff !important;
+  border-color: #e5e2dc !important;
+}
+
+/* === REAL CHAT BUBBLE COLORS END === */
+
+
+/* === CHAT ROLE COLOR FINAL START === */
+
+.message-user .message-role {
+  color: #1f5fbf !important;
+}
+
+.message-assistant .message-role {
+  color: #9b6632 !important;
+}
+
+/* === CHAT ROLE COLOR FINAL END === */
+
+
+/* === RIGHT PANEL HEADER DIVIDER FINAL START === */
+
+/* Ensure the right panel tab header is clearly separated from content */
+.right-panel-tabs {
+  border-bottom: 1px solid #e5e2dc !important;
+  box-shadow: inset 0 -1px 0 #e5e2dc !important;
+}
+
+.right-panel-tab-content {
+  border-top: 0 !important;
+}
+
+/* === RIGHT PANEL HEADER DIVIDER FINAL END === */
+
+
+/* === RIGHT CONTENT TOP DIVIDER FINAL START === */
+
+/* Visible separator between right tabs header and right content */
+.context-panel > .right-panel-tab-content {
+  border-top: 1px solid #e5e2dc !important;
+  margin-top: -1px !important;
+}
+
+/* Prevent first placeholder/card from visually eating the separator */
+.context-panel > .right-panel-tab-content > :first-child {
+  margin-top: 0 !important;
+}
+
+/* === RIGHT CONTENT TOP DIVIDER FINAL END === */
+
