@@ -120,7 +120,6 @@ export function SituationDocumentsSection({
       <div className="notebook-section-content">
         <div className="situation-documents-header">
           <h3 id="situation-documents-title">Dokumenty</h3>
-          <span aria-hidden="true" className="notebook-placeholder-action">＋</span>
         </div>
         {isLoading ? <p className="journal-empty-message">Načítám dokumenty…</p> : null}
         {error ? <p className="notebook-inline-error">{error}</p> : null}

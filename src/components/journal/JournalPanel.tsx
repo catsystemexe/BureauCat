@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
 import type { CaseDocument, CaseSummary, Situation } from "@/components/types";
 import { GoalsSection } from "@/components/journal/GoalsSection";
 import { SituationDocumentsSection } from "@/components/journal/SituationDocumentsSection";
@@ -32,15 +32,13 @@ function SituationCard({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
-  const [descriptionDraft, setDescriptionDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsEditing(false);
     setTitleDraft(situation?.title ?? "");
-    setDescriptionDraft(situation?.description ?? "");
     setError(null);
-  }, [situation?.id, situation?.title, situation?.description]);
+  }, [situation?.id, situation?.title]);
 
   function beginEditing() {
     if (!situation) {
@@ -48,16 +46,21 @@ function SituationCard({
     }
 
     setTitleDraft(situation.title);
-    setDescriptionDraft(situation.description ?? "");
     setError(null);
     setIsEditing(true);
   }
 
   function cancelEditing() {
     setTitleDraft(situation?.title ?? "");
-    setDescriptionDraft(situation?.description ?? "");
     setError(null);
     setIsEditing(false);
+  }
+
+  function handleTitleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelEditing();
+    }
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
@@ -74,10 +77,7 @@ function SituationCard({
       const response = await fetch(`/api/situations/${situation.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: titleDraft.trim(),
-          description: descriptionDraft.trim() || null
-        })
+        body: JSON.stringify({ title: titleDraft.trim() })
       });
       const data = (await response.json()) as SituationResponse;
 
@@ -121,14 +121,8 @@ function SituationCard({
               className="situation-title-input"
               disabled={isSaving}
               onChange={(event) => setTitleDraft(event.target.value)}
+              onKeyDown={handleTitleKeyDown}
               value={titleDraft}
-            />
-            <textarea
-              aria-label="Popis situace"
-              disabled={isSaving}
-              onChange={(event) => setDescriptionDraft(event.target.value)}
-              rows={3}
-              value={descriptionDraft}
             />
             {error ? <p className="notebook-inline-error">{error}</p> : null}
             <div className="notebook-form-actions">
@@ -141,8 +135,12 @@ function SituationCard({
             </div>
           </form>
         ) : (
-          <p className="situation-description">
-            {situation?.description || "Popis situace zatím není vyplněn."}
+          <p
+            className="situation-title-display"
+            onDoubleClick={beginEditing}
+            title={situation ? "Dvojklikem upravit název situace" : undefined}
+          >
+            {situation?.title || "Žádná situace není vybrána."}
           </p>
         )}
       </div>
@@ -164,8 +162,7 @@ function UserLayer({
   return (
     <div className="notebook-layer notebook-user-layer">
       <div className="notebook-layer-heading user-layer-heading">
-        <span aria-hidden="true" className="notebook-layer-icon">♙</span>
-        <span>Uživatelská část</span>
+        <span>Uživatel</span>
       </div>
       <SituationCard onSituationUpdated={onSituationUpdated} situation={selectedSituation} />
       <GoalsSection selectedSituationId={selectedSituation?.id ?? null} />
@@ -182,8 +179,7 @@ function AILayer() {
   return (
     <div className="notebook-layer notebook-ai-layer" aria-label="AI vrstva situace">
       <div className="notebook-layer-heading ai-layer-heading">
-        <span aria-hidden="true" className="notebook-layer-icon">⌘</span>
-        <span>AI část</span>
+        <span>AI asistent</span>
       </div>
       {AI_PLACEHOLDERS.map((placeholder) => (
         <section className="notebook-card notebook-ai-card" key={placeholder.title}>
@@ -265,6 +261,12 @@ export function JournalPanel({
   }, [caseItem.id, onSelectSituation]);
 
   async function handleCreateSituation() {
+    const activeSituationCount = situations.filter((situation) => situation.status === "active").length;
+
+    if (activeSituationCount >= 10) {
+      return;
+    }
+
     try {
       setIsCreatingSituation(true);
       setSituationError(null);
@@ -306,7 +308,7 @@ export function JournalPanel({
 
   return (
     <aside className="workspace-panel journal-panel" aria-labelledby="journal-title">
-      <h2 className="sr-only" id="journal-title">Zápisník</h2>
+      <h2 className="journal-panel-title" id="journal-title">Zápisník</h2>
       <SituationPager
         error={situationError}
         isCreating={isCreatingSituation}

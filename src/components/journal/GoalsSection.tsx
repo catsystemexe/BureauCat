@@ -220,7 +220,7 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
             type="button"
           >
             <span aria-hidden="true">＋</span>
-            <span className="sr-only">Přidat cíl</span>
+            <span>Cíl</span>
           </button>
         </div>
         {isLoading ? <p className="journal-empty-message">Načítám cíle…</p> : null}
@@ -276,7 +276,11 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
                     </form>
                   ) : (
                     <>
-                      <span className={`goal-title${goal.status === "completed" ? " completed-goal-title" : ""}`}>
+                      <span
+                        className={`goal-title${goal.status === "completed" ? " completed-goal-title" : ""}`}
+                        onDoubleClick={() => beginEditingGoal(goal)}
+                        title="Dvojklikem upravit cíl"
+                      >
                         {goal.title}
                       </span>
                       <div className="notebook-row-actions">
@@ -298,7 +302,9 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
                           title="Archivovat cíl"
                           type="button"
                         >
-                          ♲
+                          <svg aria-hidden="true" className="trash-icon" viewBox="0 0 24 24">
+                            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+                          </svg>
                         </button>
                       </div>
                     </>

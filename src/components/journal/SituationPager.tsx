@@ -21,14 +21,14 @@ export function SituationPager({
   situations: Situation[];
 }) {
   const activeSituations = useMemo(
-    () => situations.filter((situation) => situation.status === "active"),
+    () => situations.filter((situation) => situation.status === "active").slice(0, 10),
     [situations]
   );
+  const hasReachedSituationLimit = activeSituations.length >= 10;
 
   return (
     <nav className="situation-pager" aria-label="Stránky situací">
       <div className="situation-pager-row">
-        <span className="situation-pager-label">Situace:</span>
         <div className="situation-page-buttons">
           {activeSituations.map((situation, index) => {
             const isSelected = situation.id === selectedSituationId;
@@ -50,9 +50,9 @@ export function SituationPager({
           <button
             aria-label="Přidat situaci"
             className="situation-page-button situation-page-add-button"
-            disabled={isCreating || isLoading}
+            disabled={isCreating || isLoading || hasReachedSituationLimit}
             onClick={onCreateSituation}
-            title="Přidat situaci"
+            title={hasReachedSituationLimit ? "Byl dosažen limit 10 situací" : "Přidat situaci"}
             type="button"
           >
             +

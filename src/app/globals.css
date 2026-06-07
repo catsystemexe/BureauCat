@@ -1022,65 +1022,67 @@ h1 {
 .journal-panel {
   --user-accent: #0869d7;
   --user-accent-dark: #075cb8;
-  --user-border: #a9cef8;
-  --user-group-surface: #f7fbff;
-  --user-icon-surface: #edf6ff;
+  --user-border: #d9e8f8;
   --ai-accent: #e97812;
-  --ai-border: #f2c89f;
-  --ai-group-surface: #fffaf5;
-  --ai-icon-surface: #fff3e5;
+  --ai-border: #f4dfca;
   --notebook-text: #17202d;
-  --notebook-muted: #5d6878;
+  --notebook-muted: #657184;
+  background: #fffefd;
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  padding: 16px;
+  padding: 18px 16px;
+}
+
+.journal-panel-title {
+  color: var(--notebook-text);
+  font-size: 1.08rem;
+  font-weight: 760;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  margin: 0 0 10px;
 }
 
 .situation-pager {
   display: grid;
   gap: 6px;
-  padding: 0 0 12px;
+  padding: 0 0 14px;
 }
 
 .situation-pager-row {
-  align-items: center;
-  display: flex;
-  gap: 12px;
-}
-
-.situation-pager-label {
-  color: #344155;
-  font-size: 0.78rem;
-  font-weight: 700;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 1px 1px 4px;
+  scrollbar-width: thin;
 }
 
 .situation-page-buttons {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-wrap: nowrap;
+  gap: 5px;
+  min-width: max-content;
 }
 
 .situation-page-button {
   align-items: center;
   background: #ffffff;
-  border: 1px solid #b7c1cf;
-  border-radius: 9px;
-  color: #334155;
+  border: 1px solid #c9d2de;
+  border-radius: 6px;
+  color: #425067;
   cursor: pointer;
   display: inline-flex;
-  font-size: 0.9rem;
+  flex: 0 0 auto;
+  font-size: 0.73rem;
   font-weight: 700;
-  height: 36px;
+  height: 25px;
   justify-content: center;
-  min-width: 42px;
-  padding: 0 10px;
+  min-width: 25px;
+  padding: 0 6px;
 }
 
 .situation-page-button:hover,
 .situation-page-button:focus-visible {
   border-color: var(--user-accent);
-  outline: 2px solid rgba(8, 105, 215, 0.14);
+  outline: 2px solid rgba(8, 105, 215, 0.12);
   outline-offset: 1px;
 }
 
@@ -1089,21 +1091,21 @@ h1 {
 .selected-situation-page:focus-visible {
   background: var(--user-accent);
   border-color: var(--user-accent);
-  box-shadow: 0 3px 8px rgba(8, 105, 215, 0.2);
+  box-shadow: 0 2px 5px rgba(8, 105, 215, 0.18);
   color: #ffffff;
 }
 
 .situation-page-add-button {
-  border-color: #d1d8e2;
+  border-color: #cdd6e1;
   border-style: dashed;
-  color: #314158;
-  font-size: 1.25rem;
-  font-weight: 400;
+  color: var(--user-accent-dark);
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .situation-page-add-button:disabled {
-  cursor: wait;
-  opacity: 0.55;
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .situation-pager .status-message,
@@ -1113,35 +1115,24 @@ h1 {
 
 .notebook-page {
   display: grid;
-  gap: 10px;
+  gap: 14px;
 }
 
 .notebook-layer {
-  border-radius: 10px;
-  display: grid;
-  gap: 6px;
-  padding: 7px;
-}
-
-.notebook-user-layer {
-  background: var(--user-group-surface);
-  border: 1px solid var(--user-border);
-}
-
-.notebook-ai-layer {
-  background: var(--ai-group-surface);
-  border: 1px solid var(--ai-border);
+  padding-left: 30px;
+  position: relative;
 }
 
 .notebook-layer-heading {
-  align-items: center;
-  display: flex;
-  font-size: 0.75rem;
+  font-size: 0.69rem;
   font-weight: 750;
-  gap: 7px;
-  letter-spacing: 0.025em;
-  padding: 1px 5px 4px;
-  text-transform: uppercase;
+  left: 11px;
+  letter-spacing: 0.035em;
+  line-height: 1;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  white-space: nowrap;
 }
 
 .user-layer-heading {
@@ -1152,51 +1143,47 @@ h1 {
   color: var(--ai-accent);
 }
 
-.notebook-layer-icon {
-  align-items: center;
-  display: inline-flex;
-  font-size: 1rem;
-  height: 20px;
-  justify-content: center;
-  width: 20px;
-}
-
 .notebook-card,
 .goals-section,
 .situation-documents-section {
-  background: rgba(255, 255, 255, 0.84);
-  border: 1px solid #d7e6f5;
-  border-radius: 9px;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid #e8edf2;
+  border-radius: 0;
   display: grid;
-  gap: 9px;
-  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 8px;
+  grid-template-columns: 29px minmax(0, 1fr);
   margin: 0;
-  padding: 10px;
+  padding: 11px 2px 12px;
 }
 
-.notebook-ai-card {
-  border-color: #f0dac5;
+.notebook-layer > .notebook-card:first-of-type,
+.notebook-layer > .situation-card:first-of-type {
+  border-top-color: var(--user-border);
+}
+
+.notebook-ai-layer > .notebook-card:first-of-type {
+  border-top-color: var(--ai-border);
 }
 
 .notebook-section-icon {
   align-items: center;
   align-self: start;
-  border-radius: 999px;
+  background: transparent;
+  border-radius: 0;
   display: inline-flex;
-  font-size: 1.08rem;
+  font-size: 0.92rem;
   font-weight: 700;
-  height: 34px;
+  height: 25px;
   justify-content: center;
-  width: 34px;
+  width: 25px;
 }
 
 .user-section-icon {
-  background: var(--user-icon-surface);
   color: var(--user-accent);
 }
 
 .ai-section-icon {
-  background: var(--ai-icon-surface);
   color: var(--ai-accent);
 }
 
@@ -1213,14 +1200,14 @@ h1 {
   display: flex;
   gap: 8px;
   justify-content: space-between;
-  min-height: 24px;
+  min-height: 22px;
 }
 
 .notebook-card h3,
 .goals-section-header h3,
 .situation-documents-header h3 {
   color: var(--notebook-text);
-  font-size: 0.89rem;
+  font-size: 0.85rem;
   font-weight: 750;
   letter-spacing: 0;
   line-height: 1.25;
@@ -1229,22 +1216,25 @@ h1 {
 }
 
 .notebook-placeholder-action {
-  color: #344155;
-  font-size: 1.12rem;
+  color: #657184;
+  font-size: 0.95rem;
   line-height: 1;
   padding: 0 2px;
 }
 
 .notebook-ai-card .notebook-placeholder-action {
   color: var(--ai-accent);
+  opacity: 0.7;
 }
 
-.situation-description {
+.situation-title-display {
   color: var(--notebook-text);
-  font-size: 0.81rem;
+  cursor: text;
+  font-size: 0.84rem;
+  font-weight: 550;
   line-height: 1.4;
   margin: 0;
-  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .situation-edit-form {
@@ -1253,11 +1243,10 @@ h1 {
 }
 
 .situation-edit-form input,
-.situation-edit-form textarea,
 .goal-edit-form input {
   background: #ffffff;
   border: 1px solid #bfd4ea;
-  border-radius: 6px;
+  border-radius: 5px;
   color: var(--notebook-text);
   font-size: 0.8rem;
   min-width: 0;
@@ -1266,20 +1255,14 @@ h1 {
 }
 
 .situation-edit-form input:focus,
-.situation-edit-form textarea:focus,
 .goal-edit-form input:focus {
   border-color: var(--user-accent);
   outline: 2px solid rgba(8, 105, 215, 0.13);
 }
 
 .situation-edit-form .situation-title-input {
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.situation-edit-form textarea {
-  line-height: 1.4;
-  resize: vertical;
+  font-size: 0.84rem;
+  font-weight: 650;
 }
 
 .notebook-form-actions,
@@ -1302,7 +1285,7 @@ h1 {
   border-radius: 5px;
   color: var(--user-accent-dark);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   font-weight: 700;
   line-height: 1;
   padding: 5px;
@@ -1311,17 +1294,17 @@ h1 {
 .notebook-add-button {
   align-items: center;
   display: inline-flex;
-  font-size: 1.12rem;
+  font-size: 1rem;
   justify-content: center;
-  min-height: 24px;
-  min-width: 24px;
+  min-height: 22px;
+  min-width: 22px;
 }
 
 .notebook-text-button:hover,
 .notebook-text-button:focus-visible,
 .notebook-add-button:hover,
 .notebook-add-button:focus-visible {
-  background: #e9f4ff;
+  background: #edf6ff;
   outline: none;
 }
 
@@ -1348,20 +1331,20 @@ h1 {
   background: transparent;
   border: 0;
   border-radius: 4px;
-  color: #5f6b7a;
+  color: #687587;
   cursor: pointer;
   display: inline-flex;
-  font-size: 0.78rem;
-  height: 21px;
+  font-size: 0.75rem;
+  height: 20px;
   justify-content: center;
   line-height: 1;
   padding: 0;
-  width: 21px;
+  width: 20px;
 }
 
 .notebook-icon-button:hover,
 .notebook-icon-button:focus-visible {
-  background: #e9f4ff;
+  background: #edf6ff;
   color: var(--user-accent-dark);
   outline: none;
 }
@@ -1371,13 +1354,19 @@ h1 {
 }
 
 .notebook-icon-button.destructive-action {
-  color: #875a57;
+  color: var(--user-accent);
 }
 
 .notebook-icon-button.destructive-action:hover,
 .notebook-icon-button.destructive-action:focus-visible {
-  background: #f8e9e7;
-  color: #8b3028;
+  background: #fff0ef;
+  color: #c9382e;
+}
+
+.trash-icon {
+  fill: currentColor;
+  height: 13px;
+  width: 13px;
 }
 
 .goals-list,
@@ -1389,10 +1378,16 @@ h1 {
 .goal-row,
 .situation-document-row {
   align-items: center;
+  border-radius: 4px;
   display: flex;
   gap: 6px;
-  min-height: 25px;
-  padding: 1px 0;
+  min-height: 24px;
+  padding: 2px 1px;
+}
+
+.goal-row:hover,
+.situation-document-row:hover {
+  background: #f8fbfe;
 }
 
 .goal-row > input[type="checkbox"] {
@@ -1407,7 +1402,7 @@ h1 {
 .situation-document-title {
   color: var(--notebook-text);
   flex: 1 1 auto;
-  font-size: 0.81rem;
+  font-size: 0.8rem;
   font-weight: 500;
   line-height: 1.3;
   min-width: 0;
@@ -1416,14 +1411,18 @@ h1 {
   white-space: nowrap;
 }
 
+.goal-title {
+  cursor: text;
+}
+
 .completed-goal-title {
-  color: #687586;
+  color: #748092;
   text-decoration: line-through;
 }
 
 .goal-row:not(:hover):not(:focus-within) .notebook-row-actions,
 .situation-document-row:not(:hover):not(:focus-within) .notebook-row-actions {
-  opacity: 0.35;
+  opacity: 0.3;
 }
 
 .goal-edit-form {
@@ -1451,12 +1450,12 @@ h1 {
   color: #ffffff;
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 0.43rem;
+  font-size: 0.4rem;
   font-weight: 800;
-  height: 17px;
+  height: 16px;
   justify-content: center;
   letter-spacing: -0.02em;
-  width: 17px;
+  width: 16px;
 }
 
 .document-file-icon-pdf {
@@ -1493,7 +1492,7 @@ h1 {
 .notebook-ai-card .journal-empty-message,
 .journal-panel .journal-empty-message {
   color: var(--notebook-muted);
-  font-size: 0.77rem;
+  font-size: 0.75rem;
   line-height: 1.35;
   margin: 0;
 }
