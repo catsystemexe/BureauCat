@@ -260,11 +260,8 @@ export function ChatPanel({
     <main className="workspace-panel chat-panel" aria-labelledby="chat-title">
       <div className="chat-panel-header">
         <div>
-          <p className="panel-kicker">Případ</p>
           <h2 id="chat-title">Konzultace</h2>
-          <p className="panel-note">Pracovní prostor pro otázky, analýzu a doplnění situace.</p>
         </div>
-        <MeetingPrepButton isPreparing={isPreparingMeeting} onPrepare={handlePrepareMeeting} />
       </div>
 
       <div className="chat-panel-body">

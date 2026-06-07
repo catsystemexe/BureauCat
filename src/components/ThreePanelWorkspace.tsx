@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { DocumentList } from "@/components/documents/DocumentList";
 import { DocumentUpload } from "@/components/documents/DocumentUpload";
@@ -16,6 +16,7 @@ import {
 import type { CaseDocument, CaseSummary, JournalItem } from "./types";
 
 type RightPanelMode = "help" | "evidence" | "document";
+type RightPanelTab = "documents" | "analysis" | "procedure";
 
 type ParsedSourceLinks =
   | { kind: "empty" }
@@ -322,51 +323,153 @@ export function RightContextPanel({
   onSituationDocumentLinked: () => void;
   selectedSituationId: string | null;
 }) {
+  const [activeTab, setActiveTab] = useState<RightPanelTab>("documents");
+  const [isUploadVisible, setIsUploadVisible] = useState(false);
+  const [isCaseDocumentListVisible, setIsCaseDocumentListVisible] = useState(false);
+  const documentListOverlayRef = useRef<HTMLDivElement | null>(null);
+  const documentListToggleRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!isCaseDocumentListVisible) {
+      return;
+    }
+
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (documentListOverlayRef.current?.contains(target)) {
+        return;
+      }
+
+      if (documentListToggleRef.current?.contains(target)) {
+        return;
+      }
+
+      setIsCaseDocumentListVisible(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [isCaseDocumentListVisible]);
+
   return (
     <aside className="workspace-panel context-panel" aria-labelledby="context-title">
       <h2 className="sr-only" id="context-title">Dokumenty a podklady</h2>
-      <DocumentUpload
-        caseId={caseId}
-        onSituationDocumentLinked={onSituationDocumentLinked}
-        onUploaded={onDocumentUploaded}
-        selectedSituationId={selectedSituationId}
-      />
 
-      {selectedDocument && mode !== "document" ? (
-        <section className="last-document-card" aria-labelledby="last-document-title">
-          <p className="panel-kicker">Dokument</p>
-          <h3 id="last-document-title">{selectedDocument.filename}</h3>
+      <div className="right-panel-tabs" role="tablist" aria-label="Pravý panel">
+        <button
+          aria-selected={activeTab === "documents"}
+          className={`right-panel-tab${activeTab === "documents" ? " selected-right-panel-tab" : ""}`}
+          onClick={() => setActiveTab("documents")}
+          role="tab"
+          type="button"
+        >
+          Dokument
+        </button>
+        <button
+          aria-selected={activeTab === "analysis"}
+          className={`right-panel-tab${activeTab === "analysis" ? " selected-right-panel-tab" : ""}`}
+          onClick={() => setActiveTab("analysis")}
+          role="tab"
+          type="button"
+        >
+          Analýza
+        </button>
+        <button
+          aria-selected={activeTab === "procedure"}
+          className={`right-panel-tab${activeTab === "procedure" ? " selected-right-panel-tab" : ""}`}
+          onClick={() => setActiveTab("procedure")}
+          role="tab"
+          type="button"
+        >
+          Postup
+        </button>
+
+        <div className="right-panel-tab-actions" aria-label="Akce dokumentů">
           <button
-            className="secondary-action"
-            onClick={() => onOpenDocument(selectedDocument)}
+            aria-pressed={isUploadVisible}
+            className="right-panel-icon-action"
+            onClick={() => setIsUploadVisible((current) => !current)}
+            title="Zobrazit / skrýt nahrání dokumentu"
             type="button"
           >
-            Otevřít dokument
+            ⤴
           </button>
-        </section>
+          <button
+            aria-pressed={isCaseDocumentListVisible}
+            className="right-panel-icon-action"
+            onClick={() => setIsCaseDocumentListVisible((current) => !current)}
+            ref={documentListToggleRef}
+            title="Zobrazit / skrýt seznam dokumentů"
+            type="button"
+          >
+            ☰
+          </button>
+        </div>
+      </div>
+
+      {activeTab === "documents" ? (
+        <div className="right-panel-tab-content">
+          {isUploadVisible ? (
+            <DocumentUpload
+              caseId={caseId}
+              onSituationDocumentLinked={onSituationDocumentLinked}
+              onUploaded={onDocumentUploaded}
+              selectedSituationId={selectedSituationId}
+            />
+          ) : null}
+
+          {isCaseDocumentListVisible ? (
+            <div ref={documentListOverlayRef}>
+              <DocumentList
+                caseId={caseId}
+                onOpenDocument={onOpenDocument}
+                refreshKey={documentListRefreshKey}
+              />
+            </div>
+          ) : null}
+
+          {selectedDocument ? (
+            <DocumentViewPanel document={selectedDocument} />
+          ) : mode === "evidence" && selectedJournalItem ? (
+            <EvidencePanel
+              journalItem={selectedJournalItem}
+              key={selectedJournalItem.id}
+              onOpenDocument={onOpenSourceDocument}
+            />
+          ) : (
+            <div className="right-panel-placeholder compact-right-placeholder">
+              <h2>Dokument</h2>
+              <p className="panel-note">
+                Vyberte dokument v zápisníku nebo nahrajte nový dokument.
+              </p>
+            </div>
+          )}
+        </div>
       ) : null}
 
-      {mode === "document" && selectedDocument ? (
-        <DocumentViewPanel document={selectedDocument} />
-      ) : mode === "evidence" && selectedJournalItem ? (
-        <EvidencePanel
-          journalItem={selectedJournalItem}
-          key={selectedJournalItem.id}
-          onOpenDocument={onOpenSourceDocument}
-        />
-      ) : (
-        <div className="right-panel-placeholder">
-          <h2>Dokumenty</h2>
-          <p className="panel-note">
-            Nahrajte relevantní dokumenty. Po výběru položky v zápisníku se zde zobrazí její podklady.
-          </p>
-          <DocumentList
-            caseId={caseId}
-            onOpenDocument={onOpenDocument}
-            refreshKey={documentListRefreshKey}
-          />
+      {activeTab === "analysis" ? (
+        <div className="right-panel-tab-content right-panel-placeholder compact-right-placeholder">
+          <h2>Analýza</h2>
+          <p className="panel-note">Zatím bez analýzy.</p>
         </div>
-      )}
+      ) : null}
+
+      {activeTab === "procedure" ? (
+        <div className="right-panel-tab-content right-panel-placeholder compact-right-placeholder">
+          <h2>Postup</h2>
+          <p className="panel-note">Zatím bez návrhu postupu.</p>
+        </div>
+      ) : null}
     </aside>
   );
 }

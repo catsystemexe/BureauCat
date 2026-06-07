@@ -7,11 +7,11 @@ import { SituationDocumentsSection } from "@/components/journal/SituationDocumen
 import { SituationPager } from "@/components/journal/SituationPager";
 
 const AI_PLACEHOLDERS = [
-  { title: "Analýza", message: "Zatím bez analýzy.", icon: "↗" },
-  { title: "Poznatky", message: "Zatím bez poznatků.", icon: "◉" },
+  { title: "Analýza", message: "Zatím bez analýzy.", icon: "⌁" },
+  { title: "Poznatky", message: "Zatím bez poznatků.", icon: "◌" },
   { title: "Otázky", message: "Zatím bez otázek.", icon: "?" },
-  { title: "Rizika", message: "Zatím bez rizik.", icon: "!" },
-  { title: "Postup", message: "Zatím bez návrhu postupu.", icon: "☷" }
+  { title: "Rizika", message: "Zatím bez rizik.", icon: "△" },
+  { title: "Postup", message: "Zatím bez návrhu postupu.", icon: "☰" }
 ] as const;
 
 type SituationsResponse = {
@@ -96,7 +96,7 @@ function SituationCard({
 
   return (
     <section className="notebook-card notebook-user-card situation-card" aria-labelledby="situation-card-title">
-      <span aria-hidden="true" className="notebook-section-icon user-section-icon">▤</span>
+      <span aria-hidden="true" className="notebook-section-icon user-section-icon">▣</span>
       <div className="notebook-section-content">
         <div className="notebook-card-header">
           <h3 id="situation-card-title">Situace</h3>
@@ -308,16 +308,18 @@ export function JournalPanel({
 
   return (
     <aside className="workspace-panel journal-panel" aria-labelledby="journal-title">
-      <h2 className="journal-panel-title" id="journal-title">Zápisník</h2>
-      <SituationPager
-        error={situationError}
-        isCreating={isCreatingSituation}
-        isLoading={isLoadingSituations}
-        onCreateSituation={handleCreateSituation}
-        onSelectSituation={onSelectSituation}
-        selectedSituationId={selectedSituationId}
-        situations={situations}
-      />
+      <div className="journal-panel-title-row">
+        <h2 className="journal-panel-title" id="journal-title">Zápisník</h2>
+        <SituationPager
+          error={situationError}
+          isCreating={isCreatingSituation}
+          isLoading={isLoadingSituations}
+          onCreateSituation={handleCreateSituation}
+          onSelectSituation={onSelectSituation}
+          selectedSituationId={selectedSituationId}
+          situations={situations}
+        />
+      </div>
       <div className="notebook-page">
         <UserLayer
           documentListRefreshKey={documentListRefreshKey}

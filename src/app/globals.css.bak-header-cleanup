@@ -2131,14 +2131,126 @@ h1 {
 /* === RIGHT DOCUMENTS LIST OVERLAY END === */
 
 
-/* === BUREAUCAT FINAL HEADER SYSTEM START === */
+/* === HEADER FULL BLEED FIX START === */
 
-/* Main panel spacing */
+/* Make left/middle headers span full panel width despite panel padding */
+.journal-panel-title-row,
+.chat-panel-header {
+  margin-left: -16px !important;
+  margin-right: -16px !important;
+  width: calc(100% + 32px) !important;
+  border-bottom: 1px solid #e7e5e0 !important;
+  background: #f6f6f4 !important;
+}
+
+/* Keep content below aligned with original panel padding */
+.notebook-page,
+.chat-panel-body {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Active left tab dimensions */
+.journal-panel-title,
+.chat-panel-header h2 {
+  min-width: 150px !important;
+  height: 52px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  background: #ffffff !important;
+  border-right: 1px solid #e7e5e0 !important;
+}
+
+/* Numbers start clearly outside the Zápisník tab */
+.journal-panel-title-row .situation-pager {
+  padding-left: 18px !important;
+}
+
+/* Chat markup has inner div; make it not collapse the fake tab */
+.chat-panel-header > div {
+  align-self: stretch;
+  display: flex;
+}
+
+/* Right panel header already full width; keep same height */
+.right-panel-tabs {
+  height: 52px !important;
+}
+
+/* === HEADER FULL BLEED FIX END === */
+
+
+/* === HEADER TABS CLEAN ROUND START === */
+
+/* Remove top borders/frames from inactive gray header areas */
+.journal-panel-title-row,
+.chat-panel-header,
+.right-panel-tabs {
+  border-top: 0 !important;
+  background: transparent !important;
+}
+
+/* Keep only one clean bottom separator across headers */
+.journal-panel-title-row,
+.chat-panel-header {
+  border-bottom: 1px solid #e7e5e0 !important;
+}
+
+.right-panel-tabs {
+  border-bottom: 1px solid #e7e5e0 !important;
+}
+
+/* Rounded active tabs like Dokument */
+.journal-panel-title,
+.chat-panel-header h2,
+.right-panel-tab {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  overflow: hidden;
+}
+
+/* Remove visible frame around inactive tab gray strip */
+.right-panel-tab {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+}
+
+.right-panel-tabs::after {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  background: transparent !important;
+}
+
+/* Zápisník/Konzultace active tabs rounded, without top frame */
+.journal-panel-title,
+.chat-panel-header h2 {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+}
+
+/* Make inactive tabs look like soft background, not boxed cells */
+.right-panel-tab:not(.selected-right-panel-tab) {
+  background: #f6f6f4 !important;
+  border-color: transparent #e7e5e0 transparent transparent !important;
+}
+
+/* Active tab keeps clean white surface */
+.selected-right-panel-tab {
+  background: #ffffff !important;
+  border-color: transparent #e7e5e0 transparent transparent !important;
+}
+
+/* === HEADER TABS CLEAN ROUND END === */
+
+
+/* === UNIFY PANEL HEADERS GAP START === */
+
+/* Final panel spacing */
 .three-panel-layout {
   gap: 4px !important;
 }
 
-/* Left and middle panel headers: plain white, no pseudo-tabs */
+/* Unified simple header for left and middle panels */
 .journal-panel-title-row,
 .chat-panel-header {
   align-items: center !important;
@@ -2152,6 +2264,7 @@ h1 {
   padding: 0 18px !important;
 }
 
+/* Remove pseudo-tab look from Zápisník/Konzultace */
 .journal-panel-title,
 .chat-panel-header h2 {
   background: transparent !important;
@@ -2159,146 +2272,112 @@ h1 {
   border-radius: 0 !important;
   box-shadow: none !important;
   color: #1d1d1b !important;
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 1.05rem !important;
   font-weight: 740 !important;
-  letter-spacing: -0.018em !important;
+  height: auto !important;
   line-height: 1.2 !important;
   margin: 0 !important;
   min-width: auto !important;
   padding: 0 !important;
 }
 
+/* Keep situation numbers on same row, but clearly separate from title */
 .journal-panel-title-row {
   gap: 20px !important;
 }
 
-.journal-panel-title-row .situation-pager,
-.journal-panel-title-row .situation-pager-row {
+.journal-panel-title-row .situation-pager {
   margin: 0 !important;
   padding: 0 !important;
 }
 
-/* Right panel keeps the only real tab system */
+/* Right panel tabs share same header height */
 .right-panel-tabs {
-  align-items: stretch !important;
-  background: #ffffff !important;
-  border-bottom: 1px solid #e7e5e0 !important;
-  display: grid !important;
-  grid-template-columns: 0.7fr 0.7fr 0.7fr 1fr auto !important;
   height: 56px !important;
+  min-height: 56px !important;
+  border-bottom: 1px solid #e7e5e0 !important;
+}
+
+.right-panel-tab,
+.right-panel-tab-actions {
   min-height: 56px !important;
 }
 
 .right-panel-tab {
-  background: #f6f6f4 !important;
-  border: 0 !important;
-  border-right: 1px solid #e7e5e0 !important;
-  border-radius: 0 !important;
-  color: #6f6a63 !important;
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 1.05rem !important;
-  font-weight: 700 !important;
-  line-height: 1.2 !important;
-  min-height: 56px !important;
-  padding: 0 18px !important;
-  text-align: left !important;
-}
-
-.selected-right-panel-tab {
-  background: #ffffff !important;
-  box-shadow: inset 0 -3px 0 #0869d7 !important;
-  color: #1d1d1b !important;
   font-weight: 740 !important;
+  line-height: 1.2 !important;
 }
 
-.right-panel-tab-actions {
-  align-items: center !important;
-  background: #ffffff !important;
-  border-left: 1px solid #e7e5e0 !important;
-  display: flex !important;
-  gap: 6px !important;
-  min-height: 56px !important;
-  padding: 0 12px !important;
-}
+/* === UNIFY PANEL HEADERS GAP END === */
 
-.right-panel-tabs::after {
-  content: "";
-  background: #ffffff;
-  grid-column: 4;
-  grid-row: 1;
-}
 
-/* Global typography fallback */
+/* === TYPOGRAPHY PASS START === */
+
+/* BureauCat typography normalization */
 body {
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1d1d1b;
 }
 
-/* === BUREAUCAT FINAL HEADER SYSTEM END === */
-
-
-/* === FULL WIDTH PANEL HEADER LINES START === */
-
-/* Make left/middle header separators span full panel width like the right panel */
-.journal-panel-title-row,
-.chat-panel-header {
-  margin-left: -18px !important;
-  margin-right: -18px !important;
-  padding-left: 18px !important;
-  padding-right: 18px !important;
-  width: calc(100% + 36px) !important;
+/* Main page title */
+.workspace-header h1 {
+  font-size: clamp(2.1rem, 3.2vw, 3.35rem);
+  font-weight: 780;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
 }
 
-/* Keep content after header aligned with panel padding */
-.notebook-page,
-.chat-panel-body {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+/* Panel headers */
+.journal-panel-title,
+.chat-panel-header h2,
+.right-panel-tab {
+  color: #1d1d1b !important;
+  font-family: inherit;
+  font-size: 1.05rem !important;
+  font-weight: 740 !important;
+  letter-spacing: -0.018em !important;
+  line-height: 1.2 !important;
 }
 
-/* === FULL WIDTH PANEL HEADER LINES END === */
-
-
-/* === PANEL HEADER TOP ALIGN FINAL START === */
-
-.journal-panel,
-.chat-panel {
-  padding-top: 0 !important;
+/* Inactive right tabs lighter but same size */
+.right-panel-tab:not(.selected-right-panel-tab) {
+  color: #6f6a63 !important;
+  font-weight: 700 !important;
 }
 
-.journal-panel-title-row,
-.chat-panel-header {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-
-  height: 56px !important;
-  min-height: 56px !important;
-
-  display: flex !important;
-  align-items: center !important;
+/* Notebook section headings */
+.notebook-card h3,
+.goals-section-header h3,
+.situation-documents-header h3 {
+  font-size: 0.82rem !important;
+  font-weight: 740 !important;
+  letter-spacing: -0.01em;
 }
 
-.notebook-page,
-.chat-panel-body {
-  padding-top: 16px !important;
+/* Chat and document body text */
+.chat-panel,
+.document-view-panel,
+.right-panel-placeholder {
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
-/* === PANEL HEADER TOP ALIGN FINAL END === */
-
-
-/* === PANEL CORNER CLIP FINAL START === */
-
-.workspace-panel {
-  overflow: hidden !important;
-  border-radius: 12px !important;
-}
-
-/* Inner content can still scroll where explicitly needed */
-.chat-panel-body,
-.right-panel-tab-content,
+/* Document text */
 .document-extracted-text {
-  overflow: auto;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.83rem;
+  line-height: 1.65;
 }
 
-/* === PANEL CORNER CLIP FINAL END === */
+/* Muted/meta text */
+.panel-note,
+.document-upload-date,
+.document-list-meta,
+.journal-empty-message {
+  color: #6f756f !important;
+  font-weight: 450;
+}
+
+/* === TYPOGRAPHY PASS END === */
 

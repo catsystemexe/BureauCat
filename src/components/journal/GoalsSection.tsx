@@ -209,7 +209,7 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
 
   return (
     <section className="goals-section" aria-labelledby="goals-title">
-      <span aria-hidden="true" className="notebook-section-icon user-section-icon">◎</span>
+      <span aria-hidden="true" className="notebook-section-icon user-section-icon">◉</span>
       <div className="notebook-section-content">
         <div className="goals-section-header">
           <h3 id="goals-title">Cíle</h3>
@@ -220,7 +220,6 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
             type="button"
           >
             <span aria-hidden="true">＋</span>
-            <span>Cíl</span>
           </button>
         </div>
         {isLoading ? <p className="journal-empty-message">Načítám cíle…</p> : null}
