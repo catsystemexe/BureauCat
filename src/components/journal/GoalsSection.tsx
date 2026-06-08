@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckBadgeIcon } from "@heroicons/react/24/outline";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { Goal } from "@/components/types";
 
@@ -209,7 +210,7 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
 
   return (
     <section className="goals-section" aria-labelledby="goals-title">
-      <span aria-hidden="true" className="notebook-section-icon user-section-icon">◉</span>
+      <CheckBadgeIcon className="notebook-section-icon user-section-icon" />
       <div className="notebook-section-content">
         <div className="goals-section-header">
           <h3 id="goals-title">Cíle</h3>

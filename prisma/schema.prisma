@@ -59,14 +59,19 @@ model Goal {
 }
 
 model Document {
-  id             String   @id @default(cuid())
-  case_id        String
-  filename       String
-  filetype       String
-  original_file  String
-  extracted_text String?
-  ai_summary     String?
-  created_at     DateTime @default(now())
+  id                String   @id @default(cuid())
+  case_id           String
+  filename          String
+  filetype          String
+  original_file     String
+
+  extracted_text    String?
+  processed_text    String?
+
+  validation_status String @default("pending_validation")
+
+  ai_summary        String?
+  created_at        DateTime @default(now())
 
   case                Case                @relation(fields: [case_id], references: [id], onDelete: Cascade)
   situation_documents SituationDocument[]

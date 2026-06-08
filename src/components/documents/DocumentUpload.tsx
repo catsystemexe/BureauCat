@@ -1,6 +1,12 @@
 "use client";
 
-import { type ChangeEvent, type FormEvent, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useState
+} from "react";
 import type { CaseDocument } from "@/components/types";
 
 const ACCEPTED_DOCUMENT_TYPES = ".pdf,.docx,.txt,.jpg,.jpeg,.png";
@@ -9,38 +15,41 @@ type DocumentUploadResponse = {
   document?: CaseDocument;
 };
 
-export function DocumentUpload({
-  caseId,
-  onSituationDocumentLinked,
-  onUploaded,
-  selectedSituationId
-}: {
+export type DocumentUploadHandle = {
+  openFilePicker: () => void;
+};
+
+export const DocumentUpload = forwardRef<DocumentUploadHandle, {
   caseId: string;
   onSituationDocumentLinked: () => void;
   onUploaded: (document: CaseDocument) => void;
   selectedSituationId: string | null;
-}) {
+}>(function DocumentUpload({
+  caseId,
+  onSituationDocumentLinked,
+  onUploaded,
+  selectedSituationId
+}, ref) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    setSelectedFile(event.target.files?.[0] ?? null);
-    setUploadError(null);
-    setLinkError(null);
-  }
+  useImperativeHandle(ref, () => ({
+    openFilePicker() {
+      if (!isUploading) {
+        fileInputRef.current?.click();
+      }
+    }
+  }), [isUploading]);
 
-  async function handleUpload(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!selectedFile || isUploading) {
+  async function uploadFile(file: File) {
+    if (isUploading) {
       return;
     }
 
     const formData = new FormData();
-    formData.append("file", selectedFile);
+    formData.append("file", file);
 
     try {
       setIsUploading(true);
@@ -81,37 +90,39 @@ export function DocumentUpload({
           setLinkError("Nepodařilo se propojit dokument se situací.");
         }
       }
-
-      setSelectedFile(null);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Dokument se nepodařilo nahrát.");
     } finally {
       setIsUploading(false);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      void uploadFile(file);
     }
   }
 
   return (
-    <form className="document-upload" onSubmit={handleUpload}>
-      <label htmlFor="document-upload-input">Nahrát dokument</label>
+    <>
       <input
         accept={ACCEPTED_DOCUMENT_TYPES}
+        aria-hidden="true"
+        className="direct-document-upload-input"
         disabled={isUploading}
-        id="document-upload-input"
-        name="file"
         onChange={handleFileChange}
         ref={fileInputRef}
+        tabIndex={-1}
         type="file"
       />
-      <p className="document-upload-hint">Povolené formáty: PDF, DOCX, TXT, JPG, PNG.</p>
-      <button className="primary-action" disabled={!selectedFile || isUploading} type="submit">
-        {isUploading ? "Nahrávám…" : "Nahrát dokument"}
-      </button>
-      {uploadError ? <p className="status-message error-message">{uploadError}</p> : null}
-      {linkError ? <p className="status-message error-message">{linkError}</p> : null}
-    </form>
+      {uploadError ? <p className="status-message error-message document-upload-inline-error">{uploadError}</p> : null}
+      {linkError ? <p className="status-message error-message document-upload-inline-error">{linkError}</p> : null}
+    </>
   );
-}
+});

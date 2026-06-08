@@ -11,6 +11,8 @@ const documentSelect = {
   filetype: true,
   original_file: true,
   extracted_text: true,
+  processed_text: true,
+  validation_status: true,
   ai_summary: true,
   created_at: true
 };
@@ -28,6 +30,8 @@ export async function createDocumentForCase(caseId: string, upload: ValidatedDoc
       filetype: upload.filetype,
       original_file: storedFile.relativePath,
       extracted_text,
+      processed_text: extracted_text,
+      validation_status: "pending_validation",
       ai_summary
     },
     select: documentSelect

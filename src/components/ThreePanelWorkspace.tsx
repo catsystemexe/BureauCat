@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { DocumentList } from "@/components/documents/DocumentList";
-import { DocumentUpload } from "@/components/documents/DocumentUpload";
+import { DocumentUpload, type DocumentUploadHandle } from "@/components/documents/DocumentUpload";
 import { DocumentViewPanel } from "@/components/documents/DocumentViewPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
 import {
@@ -13,6 +13,10 @@ import {
   JOURNAL_ITEM_TYPE_LABELS,
   JOURNAL_SECTION_LABELS
 } from "@/lib/constants/uiLabels";
+import {
+  ArrowUpTrayIcon,
+  FolderIcon
+} from "@heroicons/react/24/outline";
 import type { CaseDocument, CaseSummary, JournalItem } from "./types";
 
 type RightPanelMode = "help" | "evidence" | "document";
@@ -324,8 +328,8 @@ export function RightContextPanel({
   selectedSituationId: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<RightPanelTab>("documents");
-  const [isUploadVisible, setIsUploadVisible] = useState(false);
   const [isCaseDocumentListVisible, setIsCaseDocumentListVisible] = useState(false);
+  const documentUploadRef = useRef<DocumentUploadHandle | null>(null);
   const documentListOverlayRef = useRef<HTMLDivElement | null>(null);
   const documentListToggleRef = useRef<HTMLButtonElement | null>(null);
 
@@ -396,13 +400,12 @@ export function RightContextPanel({
 
         <div className="right-panel-tab-actions" aria-label="Akce dokumentů">
           <button
-            aria-pressed={isUploadVisible}
             className="right-panel-icon-action"
-            onClick={() => setIsUploadVisible((current) => !current)}
-            title="Zobrazit / skrýt nahrání dokumentu"
+            onClick={() => documentUploadRef.current?.openFilePicker()}
+            title="Nahrát dokument"
             type="button"
           >
-            ⤴
+            <ArrowUpTrayIcon aria-hidden="true" className="right-panel-action-icon" />
           </button>
           <button
             aria-pressed={isCaseDocumentListVisible}
@@ -412,21 +415,21 @@ export function RightContextPanel({
             title="Zobrazit / skrýt seznam dokumentů"
             type="button"
           >
-            ☰
+            <FolderIcon aria-hidden="true" className="right-panel-action-icon" />
           </button>
         </div>
       </div>
 
       {activeTab === "documents" ? (
         <div className="right-panel-tab-content">
-          {isUploadVisible ? (
-            <DocumentUpload
-              caseId={caseId}
-              onSituationDocumentLinked={onSituationDocumentLinked}
-              onUploaded={onDocumentUploaded}
-              selectedSituationId={selectedSituationId}
-            />
-          ) : null}
+        <DocumentUpload
+          caseId={caseId}
+          onSituationDocumentLinked={onSituationDocumentLinked}
+          onUploaded={onDocumentUploaded}
+          ref={documentUploadRef}
+          selectedSituationId={selectedSituationId}
+        />
+
 
           {isCaseDocumentListVisible ? (
             <div ref={documentListOverlayRef}>

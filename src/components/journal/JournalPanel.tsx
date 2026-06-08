@@ -5,13 +5,22 @@ import type { CaseDocument, CaseSummary, Situation } from "@/components/types";
 import { GoalsSection } from "@/components/journal/GoalsSection";
 import { SituationDocumentsSection } from "@/components/journal/SituationDocumentsSection";
 import { SituationPager } from "@/components/journal/SituationPager";
+import {
+  DocumentTextIcon,
+  MagnifyingGlassIcon,
+  LightBulbIcon,
+  QuestionMarkCircleIcon,
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
+  EllipsisVerticalIcon
+} from "@heroicons/react/24/outline";
 
 const AI_PLACEHOLDERS = [
-  { title: "Analýza", message: "Zatím bez analýzy.", icon: "⌁" },
-  { title: "Poznatky", message: "Zatím bez poznatků.", icon: "◌" },
-  { title: "Otázky", message: "Zatím bez otázek.", icon: "?" },
-  { title: "Rizika", message: "Zatím bez rizik.", icon: "△" },
-  { title: "Postup", message: "Zatím bez návrhu postupu.", icon: "☰" }
+  { title: "Analýza", message: "Zatím bez analýzy.", Icon: MagnifyingGlassIcon },
+  { title: "Poznatky", message: "Zatím bez poznatků.", Icon: LightBulbIcon },
+  { title: "Otázky", message: "Zatím bez otázek.", Icon: QuestionMarkCircleIcon },
+  { title: "Rizika", message: "Zatím bez rizik.", Icon: ExclamationTriangleIcon },
+  { title: "Postup", message: "Zatím bez návrhu postupu.", Icon: ArrowPathIcon }
 ] as const;
 
 type SituationsResponse = {
@@ -31,6 +40,7 @@ function SituationCard({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +57,7 @@ function SituationCard({
 
     setTitleDraft(situation.title);
     setError(null);
+    setIsMenuOpen(false);
     setIsEditing(true);
   }
 
@@ -96,21 +107,31 @@ function SituationCard({
 
   return (
     <section className="notebook-card notebook-user-card situation-card" aria-labelledby="situation-card-title">
-      <span aria-hidden="true" className="notebook-section-icon user-section-icon">▣</span>
+      <DocumentTextIcon className="notebook-section-icon user-section-icon" />
       <div className="notebook-section-content">
         <div className="notebook-card-header">
           <h3 id="situation-card-title">Situace</h3>
           {!isEditing ? (
-            <button
-              aria-label="Upravit situaci"
-              className="notebook-icon-button persistent-action"
-              disabled={!situation}
-              onClick={beginEditing}
-              title="Upravit situaci"
-              type="button"
-            >
-              ✎
-            </button>
+            <div className="notebook-row-actions">
+              <button
+                aria-expanded={isMenuOpen}
+                aria-label="Akce situace"
+                className="notebook-icon-button persistent-action"
+                disabled={!situation}
+                onClick={() => setIsMenuOpen((current) => !current)}
+                title="Akce situace"
+                type="button"
+              >
+                <EllipsisVerticalIcon aria-hidden="true" className="notebook-action-icon" />
+              </button>
+              {isMenuOpen ? (
+                <div className="notebook-row-menu" role="menu">
+                  <button onClick={beginEditing} role="menuitem" type="button">
+                    Přejmenovat
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </div>
         {isEditing ? (
@@ -183,9 +204,7 @@ function AILayer() {
       </div>
       {AI_PLACEHOLDERS.map((placeholder) => (
         <section className="notebook-card notebook-ai-card" key={placeholder.title}>
-          <span aria-hidden="true" className="notebook-section-icon ai-section-icon">
-            {placeholder.icon}
-          </span>
+          <placeholder.Icon className="notebook-section-icon ai-section-icon" />
           <div className="notebook-section-content">
             <div className="notebook-card-header">
               <h3>{placeholder.title}</h3>

@@ -2574,3 +2574,104 @@ body {
 
 /* === RIGHT CONTENT TOP DIVIDER FINAL END === */
 
+
+/* === HEROICONS MVP START === */
+
+.notebook-section-icon {
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0;
+}
+
+.user-section-icon {
+  color: #0869d7;
+}
+
+.ai-section-icon {
+  color: #b7791f;
+}
+
+/* === HEROICONS MVP END === */
+
+
+/* === RIGHT PANEL HEROICON VISIBILITY FIX START === */
+
+.right-panel-action-icon {
+  display: block !important;
+  height: 22px !important;
+  width: 22px !important;
+  color: #128141 !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+}
+
+.right-panel-icon-action {
+  color: #128141 !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+}
+
+/* === RIGHT PANEL HEROICON VISIBILITY FIX END === */
+
+
+/* === NOTEBOOK ROW MENU FINAL START === */
+
+.notebook-row-actions {
+  position: relative !important;
+}
+
+.notebook-row-menu {
+  background: #ffffff !important;
+  border: 1px solid #e5e2dc !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(29, 29, 27, 0.12) !important;
+  display: grid !important;
+  min-width: 132px !important;
+  padding: 4px !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: 24px !important;
+  z-index: 100 !important;
+}
+
+.notebook-row-menu button {
+  background: transparent !important;
+  border: 0 !important;
+  color: #1d1d1b !important;
+  cursor: pointer !important;
+  font-size: 0.78rem !important;
+  padding: 7px 9px !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+.notebook-row-menu button:hover,
+.notebook-row-menu button:focus-visible {
+  background: #f6f6f4 !important;
+  outline: none !important;
+}
+
+.notebook-row-menu .destructive-menu-item {
+  color: #b42318 !important;
+}
+
+/* === NOTEBOOK ROW MENU FINAL END === */
+
+
+
+/* === DIRECT DOCUMENT UPLOAD FINAL START === */
+
+.direct-document-upload-input {
+  display: none !important;
+}
+
+.document-upload-inline-error {
+  margin: 0 0 8px !important;
+}
+
+/* Legacy visual upload box should never appear in right panel */
+.document-upload {
+  display: none !important;
+}
+
+/* === DIRECT DOCUMENT UPLOAD FINAL END === */

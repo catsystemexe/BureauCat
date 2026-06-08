@@ -10,16 +10,24 @@ type CaseDocumentsRouteContext = {
 };
 
 export async function GET(_request: Request, context: CaseDocumentsRouteContext) {
-  const { caseId } = await context.params;
-  const foundCase = await getCaseById(caseId);
+  try {
+    const { caseId } = await context.params;
+    const foundCase = await getCaseById(caseId);
 
-  if (!foundCase) {
-    return NextResponse.json({ error: "Case not found." }, { status: 404 });
+    if (!foundCase) {
+      return NextResponse.json({ error: "Case not found." }, { status: 404 });
+    }
+
+    const documents = await listDocumentsForCase(caseId);
+
+    return NextResponse.json({ documents });
+  } catch (error) {
+    console.error("DOCUMENTS_GET_ERROR", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Documents could not be loaded." },
+      { status: 500 }
+    );
   }
-
-  const documents = await listDocumentsForCase(caseId);
-
-  return NextResponse.json({ documents });
 }
 
 export async function POST(request: Request, context: CaseDocumentsRouteContext) {

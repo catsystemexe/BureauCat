@@ -1,5 +1,6 @@
 "use client";
 
+import { FolderIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import type { CaseDocument } from "@/components/types";
 
@@ -116,7 +117,7 @@ export function SituationDocumentsSection({
 
   return (
     <section className="situation-documents-section" aria-labelledby="situation-documents-title">
-      <span aria-hidden="true" className="notebook-section-icon user-section-icon">▣</span>
+      <FolderIcon className="notebook-section-icon user-section-icon" />
       <div className="notebook-section-content">
         <div className="situation-documents-header">
           <h3 id="situation-documents-title">Dokumenty</h3>

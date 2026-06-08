@@ -13,6 +13,7 @@
     "prisma:migrate": "DATABASE_URL=file:../data/bureaucat.sqlite prisma migrate dev"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@prisma/client": "^6.19.0",
     "next": "^16.2.7",
     "react": "^19.2.7",
