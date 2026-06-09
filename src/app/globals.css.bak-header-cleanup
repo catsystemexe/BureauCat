@@ -1889,7 +1889,7 @@ h1 {
 .document-view-header {
   background: #f6f6f3;
   border-radius: 10px;
-  padding: 12px;
+  padding: 1px;
 }
 
 .document-title-row {
@@ -1991,7 +1991,7 @@ h1 {
 .document-view-header {
   border-radius: 0 !important;
   margin: 0 !important;
-  padding: 14px 16px !important;
+  padding: 1px 1px !important;
 }
 
 .document-content-section {

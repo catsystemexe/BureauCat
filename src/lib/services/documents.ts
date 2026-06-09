@@ -137,3 +137,40 @@ export async function unlinkDocumentFromSituation(situationId: string, documentI
     }
   });
 }
+
+
+export function updateDocumentValidationStatus(id: string, validationStatus: "pending_validation" | "validated") {
+  return prisma.document.update({
+    where: { id },
+    data: { validation_status: validationStatus },
+    select: documentSelect
+  });
+}
+
+export function updateDocumentProcessedText(id: string, processedText: string) {
+  return prisma.document.update({
+    where: { id },
+    data: {
+      processed_text: processedText,
+      validation_status: "pending_validation"
+    },
+    select: documentSelect
+  });
+}
+
+export async function deleteDocumentById(id: string) {
+  const document = await prisma.document.findUnique({
+    where: { id },
+    select: { id: true, original_file: true }
+  });
+
+  if (!document) {
+    return null;
+  }
+
+  await prisma.document.delete({
+    where: { id }
+  });
+
+  return document;
+}

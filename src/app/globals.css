@@ -2675,3 +2675,636 @@ body {
 }
 
 /* === DIRECT DOCUMENT UPLOAD FINAL END === */
+
+
+/* === DOCUMENT REVIEW WORKFLOW V03 START === */
+
+.document-review-title-row {
+  align-items: flex-start !important;
+  gap: 14px !important;
+}
+
+.document-title-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.document-title-meta h2 {
+  margin: 0 !important;
+}
+
+.document-main-actions {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.document-icon-action,
+.document-validation-toggle {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 8px;
+  color: #5f5850;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 650;
+  gap: 6px;
+  height: 32px;
+  justify-content: center;
+  padding: 0 9px;
+}
+
+.document-icon-action {
+  width: 32px;
+}
+
+.document-icon-action:hover,
+.document-icon-action:focus-visible,
+.document-validation-toggle:hover,
+.document-validation-toggle:focus-visible,
+.document-icon-action.active {
+  background: #f6f6f4;
+  outline: none;
+}
+
+.document-icon-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.document-icon-action.danger {
+  color: #a23a2a;
+}
+
+.document-icon-action.danger:hover,
+.document-icon-action.danger:focus-visible {
+  background: #fff1ed;
+  border-color: #efc7bd;
+}
+
+.document-action-icon {
+  display: block;
+  height: 18px;
+  width: 18px;
+}
+
+.document-validation-toggle.pending {
+  color: #9b6632;
+}
+
+.document-validation-toggle.validated {
+  background: #e9f7ef;
+  border-color: #c8e8d3;
+  color: #1f7a45;
+}
+
+.document-review-error {
+  margin: 10px 16px 0 !important;
+}
+
+.document-original-placeholder {
+  background: #f6f6f4;
+  border-bottom: 1px solid #e5e2dc;
+  color: #6f655c;
+  font-size: 0.78rem;
+  padding: 10px 16px;
+}
+
+.document-annotation-toolbar {
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 999px;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.10);
+  display: grid;
+  gap: 4px;
+  padding: 5px;
+  position: absolute;
+  right: 14px;
+  top: 72px;
+  z-index: 3;
+}
+
+.document-annotation-toolbar button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.95rem;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.document-annotation-toolbar button:hover,
+.document-annotation-toolbar button:focus-visible {
+  background: #f6f6f4;
+  outline: none;
+}
+
+.document-edit-shell {
+  display: grid;
+  gap: 10px;
+  padding: 8px 16px 14px;
+}
+
+.document-text-editor {
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 10px;
+  color: #1d1d1b;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  min-height: 500px;
+  padding: 14px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.document-view-panel-fullscreen {
+  background: #ffffff;
+  bottom: 16px;
+  left: 16px;
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: 1000;
+}
+
+.document-view-panel-fullscreen .document-extracted-text,
+.document-view-panel-fullscreen .document-text-editor {
+  height: calc(100vh - 190px) !important;
+  max-height: calc(100vh - 190px) !important;
+}
+
+/* hide old floating fullscreen button if any legacy CSS remains */
+.document-fullscreen-button {
+  display: none !important;
+}
+
+/* === DOCUMENT REVIEW WORKFLOW V03 END === */
+
+
+/* === DOCUMENT TOOLBAR POLISH START === */
+
+.document-view-header {
+  background: transparent !important;
+}
+
+.document-title-meta h2 {
+  color: #0869d7 !important;
+  font-weight: 760 !important;
+}
+
+.document-icon-action,
+.document-validation-toggle {
+  color: #0869d7 !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  height: 38px !important;
+  min-width: 38px !important;
+}
+
+.document-action-icon {
+  height: 23px !important;
+  width: 23px !important;
+}
+
+.document-icon-action:hover,
+.document-icon-action:focus-visible,
+.document-icon-action.active {
+  background: #edf5ff !important;
+  border-color: #d7e9ff !important;
+}
+
+.document-icon-action:disabled {
+  color: #a8b5c4 !important;
+  opacity: 0.55 !important;
+}
+
+.document-validation-toggle {
+  padding: 0 10px !important;
+}
+
+.document-validation-toggle.pending {
+  color: #d18b38 !important;
+}
+
+.document-validation-toggle.validated {
+  background: #e9f7ef !important;
+  border-color: #c8e8d3 !important;
+  color: #1f7a45 !important;
+}
+
+.document-icon-action.danger {
+  color: #b42318 !important;
+}
+
+.document-icon-action.danger:hover,
+.document-icon-action.danger:focus-visible {
+  background: #fff1ed !important;
+  border-color: #efc7bd !important;
+}
+
+.document-view-panel-fullscreen .document-main-actions,
+.document-view-panel-fullscreen .document-annotation-toolbar {
+  display: inline-flex;
+  visibility: visible;
+}
+
+.document-view-panel-fullscreen .document-annotation-toolbar {
+  display: grid;
+  position: fixed;
+  right: 34px;
+  top: 150px;
+  z-index: 1002;
+}
+
+/* === DOCUMENT TOOLBAR POLISH END === */
+
+
+/* === DOCUMENT TOOLBAR LAYOUT V04 START === */
+
+.document-main-actions {
+  margin-left: auto !important;
+  padding-right: 10 px !important;
+}
+
+.document-icon-action,
+.document-validation-toggle {
+  color: #0869d7 !important;
+}
+
+.document-icon-action {
+  height: 44px !important;
+  width: 44px !important;
+}
+
+.document-action-icon {
+  height: 30px !important;
+  width: 30px !important;
+}
+
+.document-validation-toggle {
+  min-height: 44px !important;
+  padding: 0 14px !important;
+}
+
+.document-validation-toggle.validated {
+  background: #edf5ff !important;
+  border-color: #cfe3ff !important;
+  color: #0869d7 !important;
+}
+
+.document-validation-toggle.pending {
+  background: #fff8ef !important;
+  border-color: #efd6b5 !important;
+  color: #d18b38 !important;
+}
+
+.document-validation-toggle span {
+  font-size: 0.88rem !important;
+  font-weight: 760 !important;
+}
+
+.document-annotation-toolbar {
+  right: 28px !important;
+}
+
+.document-view-panel-fullscreen .document-main-actions {
+  padding-right: 42px !important;
+}
+
+.document-view-panel-fullscreen .document-annotation-toolbar {
+  right: 34px !important;
+}
+
+/* === DOCUMENT TOOLBAR LAYOUT V04 END === */
+
+
+/* === DOCUMENT VALIDATION ICON ONLY START === */
+
+.document-validation-control {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  position: relative;
+}
+
+.document-validation-icon-button {
+  align-items: center;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  padding: 0;
+  width: 44px;
+}
+
+.document-validation-icon-button.pending {
+  color: #d18b38 !important;
+}
+
+.document-validation-icon-button.validated {
+  color: #0869d7 !important;
+}
+
+.document-validation-icon-button:hover,
+.document-validation-icon-button:focus-visible {
+  background: #edf5ff !important;
+  outline: none;
+}
+
+.document-validation-icon-button.pending:hover,
+.document-validation-icon-button.pending:focus-visible {
+  background: #fff8ef !important;
+}
+
+.document-validation-floating-label {
+  background: #fff8ef;
+  border: 1px solid #efd6b5;
+  border-radius: 999px;
+  color: #d18b38;
+  font-size: 0.72rem;
+  font-weight: 760;
+  left: 50%;
+  padding: 3px 8px;
+  position: absolute;
+  top: 42px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 4;
+}
+
+.document-validation-toggle {
+  display: none !important;
+}
+
+/* === DOCUMENT VALIDATION ICON ONLY END === */
+
+
+/* === LUCIDE DOCUMENT ICONS START === */
+
+.document-action-icon {
+  stroke-width: 2.15 !important;
+}
+
+.document-icon-action.active .document-action-icon,
+.document-validation-icon-button.validated .document-action-icon {
+  stroke-width: 2.85 !important;
+}
+
+.document-mini-icon {
+  color: #0869d7;
+  height: 18px;
+  stroke-width: 2.15;
+  width: 18px;
+}
+
+/* === LUCIDE DOCUMENT ICONS END === */
+
+/* === DOCUMENT LUCIDE ALIGNMENT V06 START === */
+
+/* Top-right right-panel icons: upload + document list */
+.right-panel-action-icon {
+  color: #0869d7 !important;
+  stroke-width: 2.2 !important;
+}
+
+.right-panel-icon-action {
+  color: #0869d7 !important;
+}
+
+.right-panel-icon-action:hover,
+.right-panel-icon-action:focus-visible,
+.right-panel-icon-action[aria-pressed="true"] {
+  background: #edf5ff !important;
+}
+
+/* Move document header up and remove excess vertical air */
+.document-view-header {
+  padding-top: 4px !important;
+  padding-bottom: 10px !important;
+}
+
+/* Title/actions sit on one clean horizontal axis */
+.document-review-title-row {
+  align-items: flex-start !important;
+  grid-template-columns: minmax(300px, 0.64fr) auto !important;
+}
+
+/* Title slightly higher and tighter */
+.document-title-meta {
+  gap: 3px !important;
+  padding-top: -12px !important;
+}
+
+.document-title-meta h2 {
+  font-size: 1.05rem !important;
+  line-height: 1.08 !important;
+}
+
+.document-upload-date {
+  font-size: 0.78rem !important;
+}
+
+/* Main toolbar: move right and up */
+.document-main-actions {
+  align-self: start !important;
+  gap: 18px !important;
+  justify-content: flex-end !important;
+  padding-right: 10px !important;
+  padding-top: 0 !important;
+  transform: translateY(-2px);
+}
+
+/* Normalize all main document icons */
+.document-icon-action,
+.document-validation-icon-button {
+  height: 38px !important;
+  min-width: 38px !important;
+  width: 38px !important;
+}
+
+.document-action-icon {
+  height: 24px !important;
+  width: 24px !important;
+}
+
+/* Validation icon was visually too dominant */
+.document-validation-icon-button .document-action-icon {
+  height: 24px !important;
+  width: 24px !important;
+}
+
+.document-validation-floating-label {
+  top: 38px !important;
+}
+
+/* Move vertical annotation toolbar right and up */
+.document-annotation-toolbar {
+  right: 1px !important;
+  top: 4px !important;
+}
+
+.document-annotation-toolbar button {
+  height: 28px !important;
+  width: 28px !important;
+}
+
+.document-mini-icon {
+  height: 17px !important;
+  width: 17px !important;
+}
+
+/* Fullscreen keeps same visible controls */
+.document-view-panel-fullscreen .document-view-header {
+  padding-top: 18px !important;
+}
+
+.document-view-panel-fullscreen .document-main-actions {
+  padding-right: 16px !important;
+  transform: translateY(0);
+}
+
+.document-view-panel-fullscreen .document-annotation-toolbar {
+  right: 24px !important;
+  top: 118px !important;
+}
+
+/* === DOCUMENT LUCIDE ALIGNMENT V06 END === */
+
+/* === DOCUMENT TITLE BLUE HIGHLIGHT === */
+
+.document-title-meta h2 {
+  background: #edf5ff;
+  border-radius: 6px;
+  color: #0869d7 !important;
+  display: inline-block;
+  padding: 4px 10px;
+}
+
+/* === DOCUMENT TITLE BLUE HIGHLIGHT END === */
+
+
+/* === DOCUMENT HEADER BLUE STRIP V07 START === */
+
+.document-view-header {
+  background: #edf5ff !important;
+  margin: 0 !important;
+  padding: 8px 18px 8px 18px !important;
+}
+
+.document-title-meta h2 {
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+.document-review-title-row {
+  align-items: center !important;
+}
+
+.document-main-actions {
+  transform: translate(0, 0) !important;
+}
+
+.document-upload-date {
+  color: #6f7780 !important;
+}
+
+/* === DOCUMENT HEADER BLUE STRIP V07 END === */
+
+
+/* === DOCUMENT TOOLBAR ALIGNMENT HOTFIX === */
+
+.document-main-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 28px !important;
+  margin-left: auto !important;
+  padding-right: 16px !important;
+}
+
+.document-validation-icon-button .document-action-icon {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* === DOCUMENT TOOLBAR ALIGNMENT HOTFIX END === */
+
+
+/* === DOCUMENT TOOLBAR FINAL ALIGN FIX === */
+
+/* Make the title block narrow and give the actions the rest of the row */
+.document-review-title-row {
+  display: grid !important;
+  grid-template-columns: minmax(300px, 1fr) minmax(420px, 0.95fr) !important;
+  align-items: center !important;
+  gap: 24px !important;
+}
+
+/* Now this flexbox has real width, so icons can align to the right */
+.document-main-actions {
+  width: 100% !important;
+  justify-self: end !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 28px !important;
+  padding-right: 22px !important;
+  transform: none !important;
+}
+
+/* Keep validation same optical size as other icons */
+.document-validation-icon-button,
+.document-icon-action {
+  height: 38px !important;
+  min-width: 38px !important;
+  width: 38px !important;
+}
+
+.document-validation-icon-button .document-action-icon,
+.document-icon-action .document-action-icon {
+  height: 24px !important;
+  width: 24px !important;
+}
+
+/* Slightly reduce visual dominance of circled check */
+.document-validation-icon-button.validated .document-action-icon {
+  height: 23px !important;
+  width: 23px !important;
+}
+
+/* === DOCUMENT TOOLBAR FINAL ALIGN FIX END === */
+
+
+/* === DOCUMENT TOOLBAR PUSH RIGHT === */
+
+.document-review-title-row {
+  grid-template-columns: minmax(300px, 1fr) minmax(480px, 0.95fr) !important;
+}
+
+.document-main-actions {
+  padding-right: 8px !important;
+}
+
+/* === DOCUMENT TOOLBAR PUSH RIGHT END === */
+

@@ -77,6 +77,8 @@ export type CaseDocument = {
   filetype: string;
   original_file: string;
   extracted_text: string | null;
+  processed_text: string | null;
+  validation_status: "pending_validation" | "validated";
   ai_summary: string | null;
   created_at: string;
 };
