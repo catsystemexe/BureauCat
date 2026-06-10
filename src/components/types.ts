@@ -78,6 +78,10 @@ export type CaseDocument = {
   original_file: string;
   extracted_text: string | null;
   processed_text: string | null;
+  processed_markdown: string | null;
+  processing_status: string;
+  processing_error: string | null;
+  markdown_version: number;
   validation_status: "pending_validation" | "validated";
   ai_summary: string | null;
   created_at: string;
@@ -136,4 +140,34 @@ export type MeetingPrepReport = {
   documents_to_bring: string[];
   questions_to_ask: string[];
   strategy: string;
+};
+
+export type DocumentAnnotationType = "highlight" | "note" | "question" | "issue";
+
+export type DocumentAnnotation = {
+  id: string;
+  document_id: string;
+  selected_text: string;
+  start_offset: number | null;
+  end_offset: number | null;
+  visual_offset: number | null;
+  annotation_type: DocumentAnnotationType;
+  highlight_color: string | null;
+  note_text: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+
+export type DocumentPin = {
+  id: string;
+  document_id: string;
+  selected_text: string;
+  start_offset: number;
+  end_offset: number;
+  visual_offset: number | null;
+  color: string;
+  note_text: string | null;
+  created_at: string;
+  updated_at: string;
 };

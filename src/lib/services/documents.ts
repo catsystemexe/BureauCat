@@ -3,6 +3,8 @@ import { extractDocumentText } from "@/lib/documents/extraction";
 import { evidenceStateRecheckForCase } from "@/lib/services/evidenceStateService";
 import { storeOriginalDocument } from "@/lib/documents/storage";
 import type { ValidatedDocumentFile } from "@/lib/validation/documents";
+import { convertDocumentWithMarkItDown } from "@/lib/documents/markitdown";
+
 
 const documentSelect = {
   id: true,
@@ -14,14 +16,21 @@ const documentSelect = {
   processed_text: true,
   validation_status: true,
   ai_summary: true,
-  created_at: true
+  created_at: true,
+  processed_markdown: true,
+  processing_status: true,
+  processing_error: true,
+  markdown_version: true,
 };
 
 export async function createDocumentForCase(caseId: string, upload: ValidatedDocumentFile) {
-  const [{ extracted_text, ai_summary }, storedFile] = await Promise.all([
-    extractDocumentText(upload.file, upload.filetype),
-    storeOriginalDocument(upload.file, upload.originalFilename)
-  ]);
+  const storedFile = await storeOriginalDocument(upload.file, upload.originalFilename);
+  const markitdownResult = await convertDocumentWithMarkItDown(storedFile.absolutePath);
+  const extractionResult = await extractDocumentText(upload.file, upload.filetype);
+
+  const normalizedMarkdown = markitdownResult.markdown?.trim() ? markitdownResult.markdown : null;
+  const fallbackText = extractionResult.extracted_text;
+  const processedText = normalizedMarkdown ?? fallbackText;
 
   const document = await prisma.document.create({
     data: {
@@ -29,10 +38,16 @@ export async function createDocumentForCase(caseId: string, upload: ValidatedDoc
       filename: upload.originalFilename,
       filetype: upload.filetype,
       original_file: storedFile.relativePath,
-      extracted_text,
-      processed_text: extracted_text,
+      extracted_text: fallbackText,
+      processed_text: processedText,
+      processed_markdown: normalizedMarkdown,
+      processing_status: normalizedMarkdown ? "processed" : "fallback",
+      processing_error: markitdownResult.ok ? null : markitdownResult.error,
+      markdown_version: 1,
       validation_status: "pending_validation",
-      ai_summary
+      ai_summary: normalizedMarkdown
+        ? "Dokument byl normalizován pomocí MarkItDown."
+        : extractionResult.ai_summary
     },
     select: documentSelect
   });
@@ -152,6 +167,7 @@ export function updateDocumentProcessedText(id: string, processedText: string) {
     where: { id },
     data: {
       processed_text: processedText,
+      processed_markdown: processedText,
       validation_status: "pending_validation"
     },
     select: documentSelect

@@ -1,6 +1,6 @@
 const TXT_CONTEXT_LIMIT = 10000;
 const NOT_IMPLEMENTED_SUMMARY = "Extrahování textu pro tento typ souboru zatím není implementováno.";
-const TXT_PLACEHOLDER_SUMMARY = "Dokument TXT byl nahrán. Automatické shrnutí zatím není implementováno.";
+const TXT_PLACEHOLDER_SUMMARY = "Textový dokument byl nahrán. Automatické shrnutí zatím není implementováno.";
 const TXT_LIMIT_SUMMARY = "Dokument TXT překročil limit kontextu MVP. Do extrahovaného textu bylo uloženo pouze prvních 10 000 znaků.";
 
 export type DocumentTextExtractionResult = {
@@ -9,7 +9,7 @@ export type DocumentTextExtractionResult = {
 };
 
 export async function extractDocumentText(file: File, filetype: string): Promise<DocumentTextExtractionResult> {
-  if (filetype !== "txt") {
+  if (!["txt", "md", "rtf"].includes(filetype)) {
     return {
       extracted_text: null,
       ai_summary: NOT_IMPLEMENTED_SUMMARY

@@ -1,7 +1,7 @@
 import path from "node:path";
 import { z } from "zod";
 
-export const allowedDocumentExtensions = [".txt", ".pdf", ".docx", ".jpg", ".jpeg", ".png"] as const;
+export const allowedDocumentExtensions = [".txt", ".md", ".rtf", ".pdf", ".docx", ".jpg", ".jpeg", ".png"] as const;
 export const maxDocumentUploadBytes = 10 * 1024 * 1024;
 
 export type AllowedDocumentExtension = (typeof allowedDocumentExtensions)[number];
@@ -48,7 +48,7 @@ export function validateDocumentUploadFile(value: FormDataEntryValue | null): Va
   const extension = path.extname(originalFilename).toLowerCase();
 
   if (!isAllowedDocumentExtension(extension)) {
-    throw new DocumentValidationError("Unsupported file type. Allowed extensions: .txt, .pdf, .docx, .jpg, .jpeg, .png.");
+    throw new DocumentValidationError("Unsupported file type. Allowed extensions: .txt, .md, .rtf, .pdf, .docx, .jpg, .jpeg, .png.");
   }
 
   return {

@@ -11,11 +11,11 @@ import {
   MessageCircle,
   Move,
   Palette,
-  Bookmark,
   Pin,
   SquarePen,
   Trash2,
-  TriangleAlert} from "lucide-react";
+  TriangleAlert
+} from "lucide-react";
 import type { CaseDocument, DocumentAnnotation, DocumentAnnotationType, DocumentPin } from "@/components/types";
 
 function formatDate(value: string) {
@@ -119,7 +119,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   const [annotations, setAnnotations] = useState<DocumentAnnotation[]>([]);
   const [pins, setPins] = useState<DocumentPin[]>([]);
   const [pinPositions, setPinPositions] = useState<Record<string, number>>({});
-  const [isPinDragging, setIsPinDragging] = useState(false);
   const [selectedText, setSelectedText] = useState("");
   const [annotationNote, setAnnotationNote] = useState("");
   const [isAnnotationNoteOpen, setIsAnnotationNoteOpen] = useState(false);
@@ -141,21 +140,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   const [editingPinId, setEditingPinId] = useState<string | null>(null);
   const [pinNote, setPinNote] = useState("");
   const [pinEditorPosition, setPinEditorPosition] = useState<{ x: number; y: number } | null>(null);
-  const [hoveredPin, setHoveredPin] = useState<{
-    pin: DocumentPin;
-    x: number;
-    y: number;
-  } | null>(null);
-  const suppressPinClickRef = useRef(false);
-  const dragPinRef = useRef<{
-    pinId: string | null;
-    lastOffset: number | null;
-    didMove: boolean;
-  }>({
-    pinId: null,
-    lastOffset: null,
-    didMove: false
-  });
   const [activeAnnotationTool, setActiveAnnotationTool] = useState<"highlight" | "note" | "pin" | "erase" | null>(null);
 
   const displayText =
@@ -212,7 +196,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   }, [initialDocument.id]);
 
   useEffect(() => {
-    if (!isAnnotationNoteOpen && !isPinEditorOpen) {
+    if (!isAnnotationNoteOpen) {
       return;
     }
 
@@ -244,8 +228,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
         setIsFullscreen(false);
         setIsOriginalVisible(false);
         closeNoteEditor();
-    closePinEditor();
-    setHoveredPin(null);
       }
     }
 
@@ -655,11 +637,10 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
     const nextPositions: Record<string, number> = {};
     const shell = documentTextShellRef.current;
     const shellRect = shell?.getBoundingClientRect() ?? root.getBoundingClientRect();
-    // Pin layer is outside the scrolling <pre>, so use visible viewport position, not document-scroll position.
+    const scrollTop = root.scrollTop;
 
     for (const pin of pins) {
-      const effectiveOffset = pin.visual_offset ?? pin.start_offset;
-      const target = getTextNodeAtOffset(root, effectiveOffset);
+      const target = getTextNodeAtOffset(root, pin.start_offset);
 
       if (!target) {
         continue;
@@ -670,8 +651,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
       range.setEnd(target.node, target.offset);
 
       const rect = range.getBoundingClientRect();
-      const lineHeight = Number.parseFloat(window.getComputedStyle(root).lineHeight) || rect.height || 22;
-      nextPositions[pin.id] = rect.top - shellRect.top + lineHeight / 2;
+      nextPositions[pin.id] = rect.top - shellRect.top + scrollTop;
     }
 
     setPinPositions(nextPositions);
@@ -683,30 +663,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
       .findIndex((item) => item.id === pin.id) + 1;
   }
 
-  async function movePinToOffset(pinId: string, visualOffset: number) {
-    setPins((current) =>
-      current.map((pin) =>
-        pin.id === pinId
-          ? {
-              ...pin,
-              visual_offset: visualOffset
-            }
-          : pin
-      )
-    );
-
-    await fetch(`/api/document-pins/${pinId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        visual_offset: visualOffset
-      })
-    });
-
-    window.requestAnimationFrame(measurePinPositions);
-  }
   function closePinEditor() {
     setIsPinEditorOpen(false);
     setEditingPinId(null);
@@ -715,7 +671,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   }
 
   function openPinEditor(pin: DocumentPin, x: number, y: number) {
-    setHoveredPin(null);
     setEditingPinId(pin.id);
     setPinNote(pin.note_text ?? "");
     setActivePinColor(pin.color ?? "red");
@@ -798,6 +753,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
       }
 
       setPins((current) => current.map((pin) => (pin.id === pinId ? data.pin! : pin)));
+      closePinEditor();
     } catch (pinError) {
       setError(pinError instanceof Error ? pinError.message : "Pin se nepodařilo uložit.");
     } finally {
@@ -1200,7 +1156,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   }
 
   function handleDocumentRootPointerDown(event: React.PointerEvent<HTMLElement>) {
-    if (!isAnnotationNoteOpen && !isPinEditorOpen) {
+    if (!isAnnotationNoteOpen) {
       return;
     }
 
@@ -1211,8 +1167,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
     }
 
     closeNoteEditor();
-    closePinEditor();
-    setHoveredPin(null);
   }
 
   function resizeNoteTextarea() {
@@ -1722,7 +1676,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
             </div>
           </div>
         ) : displayText.trim().length > 0 ? (
-          <div className={`document-text-pin-shell${isPinDragging ? " pin-dragging" : ""}`} ref={documentTextShellRef}>
+          <div className="document-text-pin-shell" ref={documentTextShellRef}>
           <pre
             ref={documentTextRef}
             className={`document-extracted-text${activeAnnotationTool ? ` sentence-tool-mode sentence-tool-${activeAnnotationTool}` : ""}`}
@@ -1745,159 +1699,11 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
               <button
                 className="document-pin-marker"
                 key={pin.id}
-                onPointerDown={(event) => {
-                  event.stopPropagation();
-
-                  if (isPinEditorOpen && editingPinId !== pin.id) {
-                    closePinEditor();
-                    setHoveredPin(null);
-                  }
-
-                  dragPinRef.current = {
-                    pinId: pin.id,
-                    lastOffset: pin.visual_offset ?? pin.start_offset,
-                    didMove: false
-                  };
-                  setIsPinDragging(true);
-                  window.getSelection()?.removeAllRanges();
-
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                }}
-                onPointerMove={(event) => {
-                  if (dragPinRef.current.pinId !== pin.id) {
-                    return;
-                  }
-
-                  const offset = getTextOffsetFromPoint(event.clientX, event.clientY);
-
-                  if (offset === null) {
-                    return;
-                  }
-
-                  dragPinRef.current.lastOffset = offset;
-                  dragPinRef.current.didMove = true;
-
-                  const root = documentTextRef.current;
-                  const shell = documentTextShellRef.current;
-
-                  if (root && shell) {
-                    const target = getTextNodeAtOffset(root, offset);
-
-                    if (target) {
-                      const range = document.createRange();
-                      range.setStart(target.node, target.offset);
-                      range.setEnd(target.node, target.offset);
-
-                      const rect = range.getBoundingClientRect();
-                      const shellRect = shell.getBoundingClientRect();
-                      const lineHeight =
-                        Number.parseFloat(window.getComputedStyle(root).lineHeight) ||
-                        rect.height ||
-                        22;
-
-                      const nextPinY = rect.top - shellRect.top + lineHeight / 2;
-                      const nextBoxX = event.currentTarget.getBoundingClientRect().right + 12;
-                      const nextBoxY = rect.top;
-
-                      setPinPositions((current) => ({
-                        ...current,
-                        [pin.id]: nextPinY
-                      }));
-
-                      if (isPinEditorOpen && editingPinId === pin.id) {
-                        setPinEditorPosition({
-                          x: nextBoxX,
-                          y: Math.max(12, nextBoxY)
-                        });
-                      }
-
-                      setHoveredPin((current) =>
-                        current?.pin.id === pin.id
-                          ? {
-                              ...current,
-                              x: nextBoxX,
-                              y: Math.max(12, nextBoxY)
-                            }
-                          : current
-                      );
-                    }
-                  }
-
-                  setPins((current) =>
-                    current.map((p) =>
-                      p.id === pin.id
-                        ? {
-                            ...p,
-                            visual_offset: offset
-                          }
-                        : p
-                    )
-                  );
-                }}
-                onPointerUp={async (event) => {
-                  if (dragPinRef.current.pinId !== pin.id) {
-                    return;
-                  }
-
-                  event.stopPropagation();
-
-                  const didMove = dragPinRef.current.didMove;
-                  const finalOffset = dragPinRef.current.lastOffset;
-
-                  dragPinRef.current = {
-                    pinId: null,
-                    lastOffset: null,
-                    didMove: false
-                  };
-
-                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                    event.currentTarget.releasePointerCapture(event.pointerId);
-                  }
-
-                  if (didMove && finalOffset !== null) {
-                    suppressPinClickRef.current = true;
-
-                    window.setTimeout(() => {
-                      suppressPinClickRef.current = false;
-                    }, 120);
-
-                    await movePinToOffset(pin.id, finalOffset);
-                  }
-
-                  setIsPinDragging(false);
-                }}
-                onPointerCancel={(event) => {
-                  dragPinRef.current = {
-                    pinId: null,
-                    lastOffset: null,
-                    didMove: false
-                  };
-
-                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                    event.currentTarget.releasePointerCapture(event.pointerId);
-                  }
-
-                  setIsPinDragging(false);
-                }}
-                
                 onClick={(event) => {
-                  if (suppressPinClickRef.current) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    return;
-                  }
-
                   event.stopPropagation();
                   const rect = event.currentTarget.getBoundingClientRect();
-                  setHoveredPin(null);
-                  openPinEditor(pin, rect.right + 12, rect.top);
+                  openPinEditor(pin, rect.left, Math.max(12, rect.top - 12));
                 }}
-                onMouseEnter={(event) => {
-                  if (isPinEditorOpen) return;
-                  const rect = event.currentTarget.getBoundingClientRect();
-                  setHoveredPin({ pin, x: rect.right + 12, y: rect.top });
-                }}
-                onMouseLeave={() => setHoveredPin(null)}
                 style={{
                   "--pin-color": getPinCssColor(pin.color),
                   top: `${pinPositions[pin.id] ?? -9999}px`,
@@ -1906,8 +1712,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
                 title={pin.note_text?.trim() || "Pin dokumentu"}
                 type="button"
               >
-                <Bookmark aria-hidden="true" className="document-pin-icon" />
-                <span className="document-pin-index">{getPinNumber(pin)}</span>
+                {index + 1}
               </button>
             ))}
           </div>
@@ -1938,100 +1743,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
           </section>
         ) : null}
       </section>
-
-
-      {isPinEditorOpen && editingPinId ? (
-        <div
-          className="document-pin-floating-editor"
-          onPointerDown={(event) => event.stopPropagation()}
-          style={{
-            left: pinEditorPosition?.x ?? 240,
-            top: pinEditorPosition?.y ?? 120,
-            "--pin-color": getPinCssColor(activePinColor)
-          } as React.CSSProperties}
-        >
-          <div className="document-pin-editor-toolbar" aria-label="Akce pinu">
-            <div className="document-pin-editor-colors">
-              {pinColors.map((color) => (
-                <button
-                  aria-label={color.label}
-                  className={`document-tool-color-button${activePinColor === color.value ? " active" : ""}`}
-                  key={color.value}
-                  onClick={() => {
-                    setActivePinColor(color.value);
-                    setPins((current) =>
-                      current.map((pin) =>
-                        pin.id === editingPinId ? { ...pin, color: color.value } : pin
-                      )
-                    );
-                    void updatePin(editingPinId, pinNote, color.value);
-                  }}
-                  style={{ backgroundColor: color.css }}
-                  title={color.label}
-                  type="button"
-                />
-              ))}
-            </div>
-
-            <button
-              aria-label="Smazat pin"
-              className="document-pin-delete-button"
-              disabled={isSaving}
-              onClick={() => void deletePin(editingPinId)}
-              title="Smazat pin"
-              type="button"
-            >
-              <Trash2 aria-hidden="true" className="document-mini-icon" />
-            </button>
-          </div>
-
-          <div className="document-pin-floating-content">
-            <strong>Pin {getPinNumber(pins.find((pin) => pin.id === editingPinId)!)}</strong>
-            <textarea
-              ref={pinTextareaRef}
-              aria-label="Krátký popis pinu"
-              onBlur={() => {
-                if (editingPinId) {
-                  void updatePin(editingPinId, pinNote, activePinColor);
-                }
-              }}
-              onChange={(event) => {
-                const nextNote = event.target.value;
-                setPinNote(nextNote);
-                setPins((current) =>
-                  current.map((pin) =>
-                    pin.id === editingPinId ? { ...pin, note_text: nextNote } : pin
-                  )
-                );
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void updatePin(editingPinId, pinNote, activePinColor);
-                  closePinEditor();
-                }
-              }}
-              placeholder="Krátký popis pro zápisník…"
-              rows={Math.max(1, pinNote.split("\n").length)}
-              value={pinNote}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {hoveredPin && !isPinEditorOpen ? (
-        <div
-          className="document-pin-hover-box"
-          style={{
-            left: hoveredPin.x,
-            top: hoveredPin.y,
-            "--pin-color": getPinCssColor(hoveredPin.pin.color)
-          } as React.CSSProperties}
-        >
-          <strong>Pin {getPinNumber(hoveredPin.pin)}</strong>
-          <p>{hoveredPin.pin.note_text?.trim() || "Bez popisu"}</p>
-        </div>
-      ) : null}
 
       {hoveredNote ? (
         <div

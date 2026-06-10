@@ -10,4 +10,4 @@ localPort = 3001
 externalPort = 3001
 
 [nix]
-packages = ["sqlite"]
+packages = ["sqlite", "tesseract4"]

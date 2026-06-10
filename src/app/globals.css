@@ -3308,3 +3308,1597 @@ body {
 
 /* === DOCUMENT TOOLBAR PUSH RIGHT END === */
 
+
+.document-original-overlay {
+  position: fixed;
+  top: 96px;
+  left: 24px;
+  bottom: 24px;
+  width: calc(66vw - 36px);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 32%);
+}
+
+.document-original-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.document-original-frame {
+  width: 100%;
+  flex: 1;
+  border: 0;
+  background: white;
+}
+
+.document-original-download {
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  min-height: 320px;
+  padding: 32px;
+  text-align: center;
+}
+
+.document-original-overlay {
+  resize: both;
+  min-width: 420px;
+  min-height: 320px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+}
+
+.document-original-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.document-original-window-controls button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.document-original-window-controls span {
+  min-width: 44px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+
+.document-original-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+  z-index: 5;
+}
+
+.document-original-resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+}
+
+.document-original-overlay {
+  position: fixed;
+}
+
+
+.document-original-docx-preview {
+  flex: 1;
+  overflow: auto;
+  background: white;
+  color: #111827;
+}
+
+.document-original-docx-preview-note {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff8dc;
+  color: #3f3f46;
+  font-size: 0.86rem;
+}
+
+.document-original-docx-preview-note a {
+  white-space: nowrap;
+  color: #111827;
+  font-weight: 700;
+}
+
+.document-original-docx-preview-text {
+  margin: 0;
+  padding: 24px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+
+.document-original-docx-preview-empty {
+  padding: 32px;
+  color: #374151;
+  background: white;
+  font-size: 0.95rem;
+}
+
+
+/* === DOCUMENT LONG CONTENT HOTFIX === */
+
+.document-view-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.document-view-header {
+  flex: 0 0 auto;
+}
+
+.document-content-section {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.document-extracted-text {
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* RTF/very long filenames must not push toolbar away */
+.document-title-meta {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.document-title-meta h2 {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-main-actions {
+  flex-shrink: 0 !important;
+  min-width: 260px !important;
+}
+
+
+.document-annotation-note-editor {
+  display: grid;
+  gap: 10px;
+  margin: 12px 16px;
+  padding: 12px;
+  border: 1px solid #d7e9ff;
+  border-radius: 12px;
+  background: #f7fbff;
+}
+
+.document-annotation-note-editor blockquote,
+.document-annotation-card blockquote {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid #0869d7;
+  background: #ffffff;
+  color: #1f2937;
+  white-space: pre-wrap;
+}
+
+.document-annotation-note-editor textarea {
+  min-height: 90px;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid #d7dce2;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.document-annotations-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 16px 24px;
+}
+
+.document-annotations-list h3 {
+  margin: 0;
+  color: #0869d7;
+}
+
+.document-annotation-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e5e2dc;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.document-annotation-card.highlight {
+  border-color: #ffe08a;
+  background: #fff9db;
+}
+
+.document-annotation-card.note {
+  border-color: #d7e9ff;
+  background: #f7fbff;
+}
+
+.document-annotation-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.document-annotation-card-header strong {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: #0869d7;
+}
+
+.document-annotation-card-header button {
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+
+/* === DOCUMENT HIGHLIGHT UI PATCH === */
+
+.document-annotation-toolbar {
+  right: 48px !important;
+  top: 56px !important;
+  z-index: 30 !important;
+}
+
+.document-highlight-tool {
+  position: relative;
+  display: inline-flex;
+}
+
+.document-highlight-palette {
+  position: absolute;
+  right: 42px;
+  top: 0;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #d7dce2;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16);
+  z-index: 40;
+}
+
+.document-highlight-color-button {
+  width: 24px !important;
+  height: 24px !important;
+  border: 1px solid #cfd6df !important;
+  border-radius: 999px !important;
+  cursor: pointer;
+}
+
+.document-highlight-color-button[title="Transparent"] {
+  background:
+    linear-gradient(45deg, transparent 46%, #c2410c 48%, #c2410c 52%, transparent 54%),
+    #ffffff !important;
+}
+
+.document-inline-highlight {
+  background: #ffe766;
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+
+.document-highlight-tool {
+  gap: 4px;
+}
+
+.document-highlight-active-color {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  border: 1px solid #9ca3af !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+}
+
+
+.document-inline-highlight {
+  padding: 0 !important;
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+
+/* === SENTENCE HIGHLIGHT MODE === */
+
+.document-extracted-text.sentence-highlight-mode {
+  cursor: crosshair;
+}
+
+.document-extracted-text.sentence-highlight-mode:hover {
+  background:
+    linear-gradient(rgba(255, 231, 102, 0.08), rgba(255, 231, 102, 0.08));
+}
+
+.document-highlight-tool > button.active {
+  background: #edf5ff !important;
+  color: #0869d7 !important;
+}
+
+
+/* === DOCUMENT VERTICAL TOOLBAR VISIBILITY HOTFIX === */
+
+.document-content-section {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.document-annotation-toolbar {
+  position: sticky !important;
+  float: right;
+  top: 72px !important;
+  right: auto !important;
+  margin-right: 54px !important;
+  margin-left: auto !important;
+  z-index: 200 !important;
+  width: max-content !important;
+}
+
+.document-extracted-text {
+  clear: both;
+}
+
+
+/* === DOCUMENT TOOL MODES === */
+
+.document-annotation-toolbar button.active {
+  background: #edf5ff !important;
+  color: #0869d7 !important;
+  outline: 2px solid #b9d7ff !important;
+}
+
+.document-extracted-text.sentence-tool-mode {
+  cursor: crosshair;
+}
+
+.document-extracted-text.sentence-tool-highlight:hover {
+  background: rgba(255, 231, 102, 0.08);
+}
+
+.document-extracted-text.sentence-tool-note:hover {
+  background: rgba(191, 227, 255, 0.10);
+}
+
+.document-extracted-text.sentence-tool-erase:hover {
+  background: rgba(255, 100, 100, 0.08);
+}
+
+
+/* === DOCUMENT TOOLBAR V2 COLOR RAIL === */
+
+.document-annotation-toolbar {
+  position: sticky !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 6px !important;
+  overflow: visible !important;
+}
+
+.document-tool-color-rail {
+  position: absolute;
+  right: 44px;
+  top: 0;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #d7dce2;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16);
+  z-index: 220;
+}
+
+.document-tool-color-button {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  border: 1px solid #cfd6df !important;
+  border-radius: 999px !important;
+  cursor: pointer;
+  padding: 0 !important;
+}
+
+.document-tool-color-button.active {
+  outline: 2px solid #0869d7 !important;
+  outline-offset: 2px;
+}
+
+.document-tool-color-button[title="Transparent"] {
+  background:
+    linear-gradient(45deg, transparent 46%, #c2410c 48%, #c2410c 52%, transparent 54%),
+    #ffffff !important;
+}
+
+.document-highlight-active-color,
+.document-highlight-palette {
+  display: none !important;
+}
+
+
+/* === DOCUMENT TOOLBAR V2 BUGFIX === */
+
+.document-tool-color-button.active {
+  outline: 2px solid #0869d7 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px #ffffff !important;
+}
+
+.document-tool-color-button.active:hover,
+.document-tool-color-button.active:focus-visible {
+  filter: brightness(0.98);
+}
+
+
+/* === COLOR BUTTON ACTIVE BACKGROUND FIX === */
+
+.document-tool-color-rail .document-tool-color-button.active[title="Žlutá"] {
+  background-color: #ffe766 !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Zelená"] {
+  background-color: #b7f7c2 !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Modrá"] {
+  background-color: #bfe3ff !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Růžová"] {
+  background-color: #ffc6df !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Oranžová"] {
+  background-color: #ffd49a !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Červená"] {
+  background-color: #ef4444 !important;
+}
+
+
+/* === DOCUMENT NOTE MARKERS === */
+
+.document-note-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  min-width: 17px;
+  margin: 0 2px;
+  padding: 0;
+  border: 1px solid rgba(0,0,0,.18);
+  border-radius: 999px;
+  color: #1f2937;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: super;
+  box-shadow: 0 1px 2px rgba(0,0,0,.16);
+}
+
+.document-note-marker:hover,
+.document-note-marker:focus-visible {
+  outline: 2px solid #0869d7;
+  outline-offset: 1px;
+}
+
+
+/* === DOCUMENT NOTE V2 === */
+
+.document-note-hover-box {
+  position: fixed;
+  z-index: 10000;
+  max-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #d7dce2;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  pointer-events: none;
+}
+
+.document-note-hover-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-note-hover-box p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.secondary-action.danger {
+  color: #b42318 !important;
+}
+
+
+/* === DOCUMENT NOTE V2 FINISH === */
+
+.document-note-hover-box {
+  position: fixed;
+  z-index: 10000;
+  max-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #d7dce2;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  pointer-events: none;
+}
+
+.document-note-hover-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-note-hover-box p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.secondary-action.danger {
+  color: #b42318 !important;
+}
+
+
+/* === FLOATING NOTE EDITOR === */
+
+.document-annotation-note-editor-floating {
+  position: fixed !important;
+  z-index: 10001 !important;
+  width: min(360px, calc(100vw - 32px));
+  margin: 0 !important;
+  box-shadow: 0 14px 44px rgba(29, 29, 27, 0.22);
+}
+
+.document-note-hover-box {
+  transform: translateY(-100%);
+}
+
+
+/* === NOTE EDITOR COMPACT FLOATING === */
+
+.document-note-floating-editor {
+  position: fixed;
+  z-index: 10001;
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) 34px;
+  gap: 6px;
+  border: 2px solid #ffe766;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+}
+
+.document-note-floating-content {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.document-note-floating-content strong {
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+
+.document-note-floating-actions {
+  display: grid;
+  grid-template-rows: 30px 30px 30px 1fr 30px;
+  gap: 4px;
+  padding: 6px 5px 6px 0;
+}
+
+.document-note-floating-actions button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  height: 30px;
+  width: 30px;
+}
+
+.document-note-floating-actions button:hover,
+.document-note-floating-actions button:focus-visible {
+  background: #edf5ff;
+  outline: none;
+}
+
+.document-note-floating-actions button.danger {
+  color: #b42318;
+}
+
+.document-note-floating-spacer {
+  min-height: 12px;
+}
+
+.document-note-floating-color-panel {
+  position: absolute;
+  right: 40px;
+  top: 6px;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #d7dce2;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16);
+}
+
+.document-annotation-note-editor-floating {
+  display: none !important;
+}
+
+
+/* === NOTE PREVIEW / EDITOR UNIFIED BOX === */
+
+.document-note-hover-box,
+.document-note-floating-editor {
+  width: 340px !important;
+  min-height: 126px !important;
+  max-width: min(340px, calc(100vw - 32px)) !important;
+  border: 2px solid #ffe766 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18) !important;
+  color: #1f2937 !important;
+}
+
+.document-note-hover-box {
+  padding: 10px 12px !important;
+}
+
+.document-note-floating-editor {
+  grid-template-columns: minmax(240px, 1fr) 34px !important;
+  gap: 6px !important;
+  padding: 0 !important;
+}
+
+.document-note-hover-box strong,
+.document-note-floating-content strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-note-hover-box p,
+.document-note-floating-content textarea {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.document-note-floating-content {
+  padding: 10px 12px !important;
+}
+
+
+.document-note-floating-actions {
+  border-left: 1px solid #edf0f3;
+  padding: 6px 5px 6px 0 !important;
+}
+
+
+/* === NOTE EDITOR POLISH === */
+
+.document-note-hover-box,
+.document-note-floating-editor {
+  width: max-content !important;
+  min-width: 220px !important;
+  max-width: min(420px, calc(100vw - 32px)) !important;
+  min-height: unset !important;
+}
+
+.document-note-hover-box {
+  padding: 10px 12px !important;
+}
+
+.document-note-floating-editor {
+  grid-template-columns: minmax(220px, max-content) 34px !important;
+  align-items: start !important;
+}
+
+.document-note-hover-box p {
+  max-width: 380px;
+}
+
+.document-note-floating-content {
+  min-width: 220px;
+  max-width: 380px;
+}
+
+.document-note-title-spacer {
+  height: 8px;
+}
+
+.document-note-floating-content textarea {
+  width: 100%;
+  min-width: 220px;
+  max-width: 380px;
+
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
+
+  border: 0 !important;
+  outline: none !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  resize: none !important;
+  overflow: hidden !important;
+
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  background: transparent;
+}
+
+.document-note-floating-actions {
+  align-self: stretch !important;
+  grid-template-rows: 30px 30px 30px 1fr 30px !important;
+  min-height: 150px;
+  border-left: 1px solid #edf0f3;
+}
+
+.document-note-floating-editor:has(textarea:placeholder-shown) .document-note-floating-actions {
+  min-height: 150px;
+}
+
+
+/* === NOTE EDITOR MENU ADJUST === */
+
+.document-note-title-spacer {
+  display: none !important;
+}
+
+.document-note-floating-editor {
+  align-items: start !important;
+}
+
+.document-note-floating-actions {
+  align-self: start !important;
+  min-height: 150px !important;
+}
+
+.document-note-floating-content {
+  padding-bottom: 10px !important;
+}
+
+
+/* === NOTE MENU ATTACHED OUTSIDE BOX === */
+
+.document-note-floating-editor {
+  display: block !important;
+  position: fixed !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-note-floating-content {
+  display: block !important;
+  min-width: 260px !important;
+  max-width: 380px !important;
+  padding: 10px 12px !important;
+}
+
+.document-note-floating-actions {
+  position: absolute !important;
+  left: calc(100% + 4px) !important;
+  top: 0 !important;
+  display: grid !important;
+  grid-template-rows: 30px 30px 30px 1fr 30px !important;
+  gap: 4px !important;
+  min-height: 150px !important;
+  width: 34px !important;
+  padding: 6px 4px !important;
+  border: 2px solid inherit !important;
+  border-left: 2px solid inherit !important;
+  border-radius: 0 10px 10px 0 !important;
+  background: #ffffff !important;
+  box-shadow: 8px 10px 24px rgba(29, 29, 27, 0.12) !important;
+}
+
+.document-note-floating-color-panel {
+  right: 40px !important;
+  top: 0 !important;
+}
+
+
+/* === NOTE TEXTAREA FINAL COMPACT FIX === */
+
+.document-note-title-spacer {
+  display: none !important;
+  height: 0 !important;
+}
+
+.document-note-floating-content {
+  gap: 0 !important;
+}
+
+.document-note-floating-content strong {
+  margin-bottom: 4px !important;
+}
+
+.document-note-floating-content textarea {
+  display: block !important;
+  min-height: 1.4em !important;
+  height: 1.4em !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+  overflow: hidden !important;
+}
+
+
+/* === NOTE EDITOR HORIZONTAL TOP MENU === */
+
+.document-note-floating-editor {
+  overflow: visible !important;
+}
+
+.document-note-floating-actions {
+  position: absolute !important;
+  left: 0 !important;
+  right: auto !important;
+  top: -38px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 4px !important;
+  width: max-content !important;
+  min-height: 0 !important;
+  height: 34px !important;
+  padding: 2px 4px !important;
+  border: 1px solid #d7dce2 !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16) !important;
+}
+
+.document-note-floating-actions button {
+  height: 30px !important;
+  width: 30px !important;
+  min-width: 30px !important;
+}
+
+.document-note-floating-spacer {
+  width: 10px !important;
+  min-width: 10px !important;
+  height: 1px !important;
+}
+
+.document-note-floating-color-panel {
+  left: 0 !important;
+  right: auto !important;
+  top: -84px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  border-radius: 999px !important;
+}
+
+
+/* === NOTE COLOR / REVERT FINAL FIX === */
+
+.document-note-floating-editor,
+.document-note-hover-box {
+  border-color: var(--note-color, #ffe766) !important;
+}
+
+
+/* === NOTE TEXTAREA AUTOSIZE === */
+
+.document-note-floating-content textarea {
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+}
+
+
+/* === NOTE BOX FINAL ALIGN === */
+
+.document-note-hover-box,
+.document-note-floating-editor {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+  box-sizing: border-box !important;
+}
+
+.document-note-hover-box {
+  z-index: 10000 !important;
+}
+
+.document-note-floating-editor {
+  z-index: 10002 !important;
+}
+
+.document-note-floating-content {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+.document-note-floating-content textarea {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+  resize: none !important;
+  white-space: pre-wrap !important;
+}
+
+.document-note-hover-box p {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+
+/* === NOTE TEXTAREA REMOVE 2-LINE LIMIT === */
+
+.document-note-floating-content textarea {
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  resize: none !important;
+}
+
+.document-note-floating-content {
+  overflow: visible !important;
+}
+
+.document-note-floating-editor {
+  height: auto !important;
+  min-height: unset !important;
+}
+
+
+/* === NOTE TEXTAREA ROW SYNC WITH PREVIEW === */
+
+.document-note-floating-content textarea {
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  resize: none !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.document-note-hover-box p,
+.document-note-floating-content textarea {
+  font-size: 0.84rem !important;
+  line-height: 1.4 !important;
+}
+
+
+/* === NOTE TEXTAREA CARET / EXTRA ROW FINAL === */
+
+.document-note-floating-content textarea {
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: content-box !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+
+/* === DOCUMENT PINS V1 === */
+
+.document-content-section {
+  position: relative !important;
+}
+
+.document-pin-layer {
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 32px;
+  z-index: 80;
+}
+
+.document-pin-marker {
+  align-items: center;
+  background: var(--pin-color, #ef4444) !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 999px !important;
+  box-shadow: 0 2px 8px rgba(29, 29, 27, 0.22);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 900;
+  height: 22px;
+  justify-content: center;
+  left: 4px;
+  line-height: 1;
+  pointer-events: auto;
+  position: absolute;
+  transform: translateY(-50%);
+  width: 22px;
+}
+
+.document-pin-marker:hover,
+.document-pin-marker:focus-visible {
+  outline: 2px solid #0869d7;
+  outline-offset: 2px;
+}
+
+.document-extracted-text {
+  padding-left: 42px !important;
+}
+
+.document-pin-floating-editor {
+  background: #ffffff;
+  border: 2px solid var(--pin-color, #ef4444);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  display: grid;
+  gap: 8px;
+  max-width: 320px;
+  padding: 10px 12px;
+  position: fixed;
+  width: 320px;
+  z-index: 10003;
+}
+
+.document-pin-floating-editor strong {
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-pin-floating-editor textarea {
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  padding: 8px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-pin-editor-colors,
+.document-pin-editor-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+
+/* === PIN LAYOUT / TOOLBAR FLOW FIX === */
+
+/* The floating annotation toolbar must not reserve layout space. */
+.document-annotation-toolbar {
+  position: absolute !important;
+  right: 22px !important;
+  top: 12px !important;
+  float: none !important;
+  margin: 0 !important;
+  z-index: 200 !important;
+}
+
+/* Shared coordinate context for text and pins. */
+.document-text-pin-shell {
+  position: relative !important;
+  min-height: 0 !important;
+  width: 100% !important;
+}
+
+/* Text keeps its own scroll, pin layer follows the same visual area. */
+.document-text-pin-shell .document-extracted-text {
+  margin: 0 !important;
+  padding-left: 42px !important;
+}
+
+/* Pin layer is anchored to the text shell, not to the whole document section. */
+.document-text-pin-shell .document-pin-layer {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: auto !important;
+  width: 34px !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 90 !important;
+}
+
+/* Pin marker uses measured px top inside shell. */
+.document-text-pin-shell .document-pin-marker {
+  left: 6px !important;
+  position: absolute !important;
+  pointer-events: auto !important;
+}
+
+
+/* === DOCUMENT PIN EDITOR SAFE === */
+
+.document-pin-hover-box,
+.document-pin-floating-editor {
+  background: #ffffff;
+  border: 2px solid var(--pin-color, #ef4444);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  position: fixed;
+  width: 300px;
+  z-index: 10004;
+}
+
+.document-pin-hover-box {
+  padding: 10px 12px;
+  pointer-events: none;
+}
+
+.document-pin-hover-box strong {
+  color: #0869d7;
+  display: block;
+  font-size: 0.72rem;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.document-pin-hover-box p {
+  font-size: 0.84rem;
+  line-height: 1.4;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.document-pin-floating-editor {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.document-pin-floating-editor textarea {
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  padding: 8px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-pin-editor-colors {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.document-pin-delete-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: #b42318;
+  cursor: pointer;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  justify-self: end;
+  width: 30px;
+}
+
+.document-pin-delete-button:hover,
+.document-pin-delete-button:focus-visible {
+  background: #fff1ed;
+  outline: none;
+}
+
+
+/* === PIN EDITOR MATCH PREVIEW FINAL === */
+
+.document-pin-hover-box,
+.document-pin-floating-editor {
+  background: #ffffff !important;
+  border: 2px solid var(--pin-color, #ef4444) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18) !important;
+  color: #1f2937 !important;
+  max-width: min(360px, calc(100vw - 32px)) !important;
+  min-width: 240px !important;
+  width: max-content !important;
+  position: fixed !important;
+  z-index: 10004 !important;
+}
+
+.document-pin-hover-box {
+  padding: 10px 12px !important;
+  pointer-events: none !important;
+}
+
+.document-pin-floating-editor {
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-floating-content {
+  display: grid !important;
+  gap: 4px !important;
+  max-width: 360px !important;
+  min-width: 240px !important;
+  padding: 10px 12px !important;
+}
+
+.document-pin-hover-box strong,
+.document-pin-floating-content strong {
+  color: #0869d7 !important;
+  display: block !important;
+  font-size: 0.72rem !important;
+  margin-bottom: 4px !important;
+  text-transform: uppercase !important;
+}
+
+.document-pin-hover-box p,
+.document-pin-floating-content textarea {
+  font-size: 0.84rem !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  white-space: pre-wrap !important;
+}
+
+.document-pin-floating-content textarea {
+  background: transparent !important;
+  border: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  min-height: 1.4em !important;
+  outline: none !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  resize: none !important;
+  width: 100% !important;
+}
+
+.document-pin-editor-toolbar {
+  align-items: center !important;
+  background: #ffffff !important;
+  border: 1px solid #d7dce2 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16) !important;
+  display: flex !important;
+  gap: 6px !important;
+  height: 34px !important;
+  left: 0 !important;
+  padding: 2px 4px !important;
+  position: absolute !important;
+  top: -38px !important;
+  width: max-content !important;
+}
+
+.document-pin-editor-colors {
+  align-items: center !important;
+  display: flex !important;
+  gap: 5px !important;
+}
+
+.document-pin-delete-button {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: #b42318 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  height: 28px !important;
+  justify-content: center !important;
+  width: 28px !important;
+}
+
+.document-pin-delete-button:hover,
+.document-pin-delete-button:focus-visible {
+  background: #fff1ed !important;
+  outline: none !important;
+}
+
+
+/* === PIN Z-INDEX BELOW DOCUMENT HEADER === */
+
+.document-view-header {
+  position: relative !important;
+  z-index: 120 !important;
+}
+
+.document-text-pin-shell .document-pin-layer {
+  z-index: 20 !important;
+}
+
+.document-text-pin-shell .document-pin-marker {
+  z-index: 21 !important;
+}
+
+
+/* === PIN DRAG NO TEXT SELECTION === */
+
+.document-text-pin-shell.pin-dragging,
+.document-text-pin-shell.pin-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.document-text-pin-shell.pin-dragging .document-extracted-text {
+  cursor: grabbing !important;
+}
+
+
+/* === PIN MARKER MAP ICON === */
+
+.document-pin-marker {
+  gap: 1px !important;
+  height: 28px !important;
+  width: 28px !important;
+  flex-direction: column !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+}
+
+.document-pin-marker-icon {
+  height: 13px !important;
+  width: 13px !important;
+  stroke-width: 3 !important;
+}
+
+.document-pin-marker span {
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  margin-top: -2px !important;
+}
+
+
+/* === PIN MARKER PSEUDO SOLID MAP PIN FINAL === */
+
+.document-pin-marker {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--pin-color, #ef4444) !important;
+  height: 30px !important;
+  width: 30px !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-icon {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  fill: var(--pin-color, #ef4444) !important;
+  stroke: var(--pin-color, #ef4444) !important;
+  stroke-width: 1.7 !important;
+  filter: drop-shadow(0 1px 1px rgba(29, 29, 27, 0.25));
+  pointer-events: none !important;
+}
+
+.document-pin-index {
+  position: absolute !important;
+  left: -7px !important;
+  top: 4px !important;
+  min-width: 13px !important;
+  height: 13px !important;
+  align-items: center !important;
+  background: #ffffff !important;
+  border: 1px solid var(--pin-color, #ef4444) !important;
+  border-radius: 999px !important;
+  color: var(--pin-color, #ef4444) !important;
+  display: inline-flex !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  padding: 0 2px !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+.document-pin-marker:hover,
+.document-pin-marker:focus-visible {
+  outline: 2px solid rgba(8, 105, 215, 0.45) !important;
+  outline-offset: 2px !important;
+}
+
+
+/* === PIN MARKER OUTLINE + BOTTOM INDEX FINAL === */
+
+.document-pin-marker {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--pin-color, #ef4444) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  height: 34px !important;
+  width: 28px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-icon {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  fill: transparent !important;
+  stroke: var(--pin-color, #ef4444) !important;
+  stroke-width: 2.6 !important;
+  filter: drop-shadow(0 1px 1px rgba(29, 29, 27, 0.18));
+  pointer-events: none !important;
+}
+
+.document-pin-index {
+  position: static !important;
+  min-width: 0 !important;
+  height: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--pin-color, #ef4444) !important;
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+.document-pin-marker span {
+  margin-top: 0 !important;
+}
+
+
+/* === BOOKMARK SOLID PIN === */
+
+.document-pin-marker {
+  position: absolute !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 24px !important;
+  height: 28px !important;
+
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-icon {
+  position: absolute !important;
+
+  width: 24px !important;
+  height: 24px !important;
+
+  color: var(--pin-color, #ef4444) !important;
+
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+
+  filter: drop-shadow(0 1px 1px rgba(29,29,27,.18));
+}
+
+.document-pin-index {
+  position: absolute !important;
+
+  top: 5px !important;
+  left: 50% !important;
+
+  transform: translateX(-50%) !important;
+
+  color: white !important;
+
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+
+/* === BOOKMARK PIN POSITION POLISH === */
+
+.document-text-pin-shell .document-pin-marker {
+  left: 0px !important;
+}
+
+.document-pin-index {
+  top: 7px !important;
+}
+

@@ -65,18 +65,60 @@ model Document {
   filetype          String
   original_file     String
 
-  extracted_text    String?
-  processed_text    String?
+  extracted_text      String?
+  processed_text      String?
+  processed_markdown  String?
+  processing_status   String @default("processed")
+  processing_error    String?
+  markdown_version    Int @default(1)
 
-  validation_status String @default("pending_validation")
+  validation_status   String @default("pending_validation")
 
   ai_summary        String?
   created_at        DateTime @default(now())
 
   case                Case                @relation(fields: [case_id], references: [id], onDelete: Cascade)
   situation_documents SituationDocument[]
+  annotations         DocumentAnnotation[]
+  pins                DocumentPin[]
 
   @@index([case_id])
+}
+
+model DocumentAnnotation {
+  id              String   @id @default(cuid())
+  document_id     String
+  selected_text   String
+  start_offset    Int?
+  end_offset      Int?
+  annotation_type String   @default("note")
+  highlight_color String?
+  note_text       String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  document Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@index([document_id])
+  @@index([document_id, annotation_type])
+}
+
+model DocumentPin {
+  id            String   @id @default(cuid())
+  document_id   String
+  selected_text String
+  start_offset  Int
+  end_offset    Int
+  visual_offset Int?
+  color         String   @default("red")
+  note_text     String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  document Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@index([document_id])
+  @@index([document_id, start_offset])
 }
 
 model SituationDocument {

@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { archiveGoal, updateGoal } from "@/lib/services/goals";
@@ -20,7 +19,11 @@ function notFoundResponse() {
 }
 
 function isNotFoundError(error: unknown) {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2025"
+  );
 }
 
 async function readJson(request: Request) {

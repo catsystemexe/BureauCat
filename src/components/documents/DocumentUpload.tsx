@@ -9,7 +9,7 @@ import {
 } from "react";
 import type { CaseDocument } from "@/components/types";
 
-const ACCEPTED_DOCUMENT_TYPES = ".pdf,.docx,.txt,.jpg,.jpeg,.png";
+const ACCEPTED_DOCUMENT_TYPES = ".pdf,.docx,.txt,.jpg,.jpeg,.png,.rtf";
 
 type DocumentUploadResponse = {
   document?: CaseDocument;
