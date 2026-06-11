@@ -110,10 +110,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   const documentTextShellRef = useRef<HTMLDivElement | null>(null);
   const noteTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const pinTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const pinEditorRef = useRef<HTMLDivElement | null>(null);
-  const hoveredPinRef = useRef<HTMLDivElement | null>(null);
-  const pinMeasurementFrameRef = useRef<number | null>(null);
-  const pinDragFrameRef = useRef<number | null>(null);
 
   const [draftText, setDraftText] = useState(
     initialDocument.processed_markdown ?? initialDocument.processed_text ?? initialDocument.extracted_text ?? ""
@@ -151,23 +147,13 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
     y: number;
   } | null>(null);
   const suppressPinClickRef = useRef(false);
-  const pinsRef = useRef(pins);
-  pinsRef.current = pins;
   const dragPinRef = useRef<{
     pinId: string | null;
     lastOffset: number | null;
-    lastBoxPosition: { x: number; y: number } | null;
-    pendingPoint: { x: number; y: number } | null;
-    marker: HTMLButtonElement | null;
-    initialMarkerTop: string;
     didMove: boolean;
   }>({
     pinId: null,
     lastOffset: null,
-    lastBoxPosition: null,
-    pendingPoint: null,
-    marker: null,
-    initialMarkerTop: "",
     didMove: false
   });
   const [activeAnnotationTool, setActiveAnnotationTool] = useState<"highlight" | "note" | "pin" | "erase" | null>(null);
@@ -183,9 +169,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
     () => new Map(orderedPins.map((pin, index) => [pin.id, index + 1])),
     [orderedPins]
   );
-  const pinGeometryKey = pins
-    .map((pin) => `${pin.id}:${pin.visual_offset ?? pin.start_offset}`)
-    .join("|");
   const renderedDisplayText = useMemo(
     () => renderDisplayTextWithHighlights(displayText),
     [annotations, displayText, isAnnotationNoteOpen]
@@ -220,20 +203,8 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   }, [initialDocument.id]);
 
   useEffect(() => {
-    measurePinPositions();
-  }, [pinGeometryKey, displayText, isEditing, isFullscreen]);
-
-  useEffect(() => {
-    return () => {
-      if (pinMeasurementFrameRef.current !== null) {
-        window.cancelAnimationFrame(pinMeasurementFrameRef.current);
-      }
-
-      if (pinDragFrameRef.current !== null) {
-        window.cancelAnimationFrame(pinDragFrameRef.current);
-      }
-    };
-  }, []);
+    window.requestAnimationFrame(measurePinPositions);
+  }, [pins, displayText, isEditing, isFullscreen]);
 
   useEffect(() => {
     async function loadPins() {
@@ -687,17 +658,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   }
 
   function measurePinPositions() {
-    if (pinMeasurementFrameRef.current !== null) {
-      return;
-    }
-
-    pinMeasurementFrameRef.current = window.requestAnimationFrame(() => {
-      pinMeasurementFrameRef.current = null;
-      measurePinPositionsNow();
-    });
-  }
-
-  function measurePinPositionsNow() {
     const root = documentTextRef.current;
 
     if (!root) {
@@ -707,33 +667,22 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
     const nextPositions: Record<string, number> = {};
     const shell = documentTextShellRef.current;
     const shellRect = shell?.getBoundingClientRect() ?? root.getBoundingClientRect();
-    const computedLineHeight = Number.parseFloat(window.getComputedStyle(root).lineHeight);
-    const pinsByOffset = pinsRef.current
-      .map((pin) => ({ id: pin.id, offset: pin.visual_offset ?? pin.start_offset }))
-      .sort((a, b) => a.offset - b.offset);
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    let currentNode = walker.nextNode();
-    let currentOffset = 0;
-
     // Pin layer is outside the scrolling <pre>, so use visible viewport position, not document-scroll position.
-    for (const pin of pinsByOffset) {
-      while (currentNode && currentOffset + (currentNode.textContent?.length ?? 0) < pin.offset) {
-        currentOffset += currentNode.textContent?.length ?? 0;
-        currentNode = walker.nextNode();
-      }
 
-      if (!currentNode) {
+    for (const pin of pins) {
+      const effectiveOffset = pin.visual_offset ?? pin.start_offset;
+      const target = getTextNodeAtOffset(root, effectiveOffset);
+
+      if (!target) {
         continue;
       }
 
-      const nodeLength = currentNode.textContent?.length ?? 0;
-      const nodeOffset = Math.max(0, Math.min(nodeLength, pin.offset - currentOffset));
       const range = document.createRange();
-      range.setStart(currentNode, nodeOffset);
-      range.setEnd(currentNode, nodeOffset);
+      range.setStart(target.node, target.offset);
+      range.setEnd(target.node, target.offset);
 
       const rect = range.getBoundingClientRect();
-      const lineHeight = computedLineHeight || rect.height || 22;
+      const lineHeight = Number.parseFloat(window.getComputedStyle(root).lineHeight) || rect.height || 22;
       nextPositions[pin.id] = rect.top - shellRect.top + lineHeight / 2;
     }
 
@@ -745,108 +694,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
 
       return positionsAreEqual ? currentPositions : nextPositions;
     });
-  }
-
-  function updateDraggedPinPosition() {
-    pinDragFrameRef.current = null;
-
-    const drag = dragPinRef.current;
-    const point = drag.pendingPoint;
-    const marker = drag.marker;
-
-    if (!drag.pinId || !point || !marker) {
-      return;
-    }
-
-    drag.pendingPoint = null;
-    const offset = getTextOffsetFromPoint(point.x, point.y);
-
-    if (offset === null) {
-      return;
-    }
-
-    const root = documentTextRef.current;
-    const shell = documentTextShellRef.current;
-
-    if (!root || !shell) {
-      return;
-    }
-
-    const target = getTextNodeAtOffset(root, offset);
-
-    if (!target) {
-      return;
-    }
-
-    const range = document.createRange();
-    range.setStart(target.node, target.offset);
-    range.setEnd(target.node, target.offset);
-
-    // Complete layout reads before applying any transient visual writes.
-    const rect = range.getBoundingClientRect();
-    const shellRect = shell.getBoundingClientRect();
-    const markerRect = marker.getBoundingClientRect();
-    const lineHeight = Number.parseFloat(window.getComputedStyle(root).lineHeight) || rect.height || 22;
-    const nextPinY = rect.top - shellRect.top + lineHeight / 2;
-    const nextBoxPosition = { x: markerRect.right + 12, y: Math.max(12, rect.top) };
-
-    drag.lastOffset = offset;
-    drag.lastBoxPosition = nextBoxPosition;
-    drag.didMove = true;
-
-    marker.style.top = `${nextPinY}px`;
-
-    if (isPinEditorOpen && editingPinId === drag.pinId && pinEditorRef.current) {
-      pinEditorRef.current.style.left = `${nextBoxPosition.x}px`;
-      pinEditorRef.current.style.top = `${nextBoxPosition.y}px`;
-    }
-
-    if (hoveredPin?.pin.id === drag.pinId && hoveredPinRef.current) {
-      hoveredPinRef.current.style.left = `${nextBoxPosition.x}px`;
-      hoveredPinRef.current.style.top = `${nextBoxPosition.y}px`;
-    }
-  }
-
-  function scheduleDraggedPinPosition(x: number, y: number) {
-    dragPinRef.current.pendingPoint = { x, y };
-
-    if (pinDragFrameRef.current !== null) {
-      return;
-    }
-
-    pinDragFrameRef.current = window.requestAnimationFrame(updateDraggedPinPosition);
-  }
-
-  function flushDraggedPinPosition() {
-    if (pinDragFrameRef.current !== null) {
-      window.cancelAnimationFrame(pinDragFrameRef.current);
-      pinDragFrameRef.current = null;
-    }
-
-    updateDraggedPinPosition();
-  }
-
-  function cancelDraggedPinPosition() {
-    if (pinDragFrameRef.current !== null) {
-      window.cancelAnimationFrame(pinDragFrameRef.current);
-      pinDragFrameRef.current = null;
-    }
-
-    const drag = dragPinRef.current;
-
-    if (drag.marker) {
-      drag.marker.style.top = drag.initialMarkerTop;
-    }
-
-    if (pinEditorRef.current && pinEditorPosition) {
-      pinEditorRef.current.style.left = `${pinEditorPosition.x}px`;
-      pinEditorRef.current.style.top = `${pinEditorPosition.y}px`;
-    }
-
-    if (hoveredPinRef.current && hoveredPin) {
-      hoveredPinRef.current.style.left = `${hoveredPin.x}px`;
-      hoveredPinRef.current.style.top = `${hoveredPin.y}px`;
-    }
   }
 
   function getPinNumber(pin: DocumentPin) {
@@ -875,6 +722,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
       })
     });
 
+    window.requestAnimationFrame(measurePinPositions);
   }
   function closePinEditor() {
     setIsPinEditorOpen(false);
@@ -1910,10 +1758,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
                   dragPinRef.current = {
                     pinId: pin.id,
                     lastOffset: pin.visual_offset ?? pin.start_offset,
-                    lastBoxPosition: null,
-                    pendingPoint: null,
-                    marker: event.currentTarget,
-                    initialMarkerTop: event.currentTarget.style.top,
                     didMove: false
                   };
                   setIsPinDragging(true);
@@ -1926,7 +1770,71 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
                     return;
                   }
 
-                  scheduleDraggedPinPosition(event.clientX, event.clientY);
+                  const offset = getTextOffsetFromPoint(event.clientX, event.clientY);
+
+                  if (offset === null) {
+                    return;
+                  }
+
+                  dragPinRef.current.lastOffset = offset;
+                  dragPinRef.current.didMove = true;
+
+                  const root = documentTextRef.current;
+                  const shell = documentTextShellRef.current;
+
+                  if (root && shell) {
+                    const target = getTextNodeAtOffset(root, offset);
+
+                    if (target) {
+                      const range = document.createRange();
+                      range.setStart(target.node, target.offset);
+                      range.setEnd(target.node, target.offset);
+
+                      const rect = range.getBoundingClientRect();
+                      const shellRect = shell.getBoundingClientRect();
+                      const lineHeight =
+                        Number.parseFloat(window.getComputedStyle(root).lineHeight) ||
+                        rect.height ||
+                        22;
+
+                      const nextPinY = rect.top - shellRect.top + lineHeight / 2;
+                      const nextBoxX = event.currentTarget.getBoundingClientRect().right + 12;
+                      const nextBoxY = rect.top;
+
+                      setPinPositions((current) => ({
+                        ...current,
+                        [pin.id]: nextPinY
+                      }));
+
+                      if (isPinEditorOpen && editingPinId === pin.id) {
+                        setPinEditorPosition({
+                          x: nextBoxX,
+                          y: Math.max(12, nextBoxY)
+                        });
+                      }
+
+                      setHoveredPin((current) =>
+                        current?.pin.id === pin.id
+                          ? {
+                              ...current,
+                              x: nextBoxX,
+                              y: Math.max(12, nextBoxY)
+                            }
+                          : current
+                      );
+                    }
+                  }
+
+                  setPins((current) =>
+                    current.map((p) =>
+                      p.id === pin.id
+                        ? {
+                            ...p,
+                            visual_offset: offset
+                          }
+                        : p
+                    )
+                  );
                 }}
                 onPointerUp={async (event) => {
                   if (dragPinRef.current.pinId !== pin.id) {
@@ -1934,19 +1842,13 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
                   }
 
                   event.stopPropagation();
-                  flushDraggedPinPosition();
 
                   const didMove = dragPinRef.current.didMove;
                   const finalOffset = dragPinRef.current.lastOffset;
-                  const finalBoxPosition = dragPinRef.current.lastBoxPosition;
 
                   dragPinRef.current = {
                     pinId: null,
                     lastOffset: null,
-                    lastBoxPosition: null,
-                    pendingPoint: null,
-                    marker: null,
-                    initialMarkerTop: "",
                     didMove: false
                   };
 
@@ -1961,30 +1863,15 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
                       suppressPinClickRef.current = false;
                     }, 120);
 
-                    if (finalBoxPosition && isPinEditorOpen && editingPinId === pin.id) {
-                      setPinEditorPosition(finalBoxPosition);
-                    }
-
-                    if (finalBoxPosition) {
-                      setHoveredPin((current) =>
-                        current?.pin.id === pin.id ? { ...current, ...finalBoxPosition } : current
-                      );
-                    }
-
                     await movePinToOffset(pin.id, finalOffset);
                   }
 
                   setIsPinDragging(false);
                 }}
                 onPointerCancel={(event) => {
-                  cancelDraggedPinPosition();
                   dragPinRef.current = {
                     pinId: null,
                     lastOffset: null,
-                    lastBoxPosition: null,
-                    pendingPoint: null,
-                    marker: null,
-                    initialMarkerTop: "",
                     didMove: false
                   };
 
@@ -2038,7 +1925,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
       {isPinEditorOpen && editingPinId ? (
         <div
           className="document-pin-floating-editor"
-          ref={pinEditorRef}
           onPointerDown={(event) => event.stopPropagation()}
           style={{
             left: pinEditorPosition?.x ?? 240,
@@ -2112,7 +1998,6 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
       {hoveredPin && !isPinEditorOpen ? (
         <div
           className="document-pin-hover-box"
-          ref={hoveredPinRef}
           style={{
             left: hoveredPin.x,
             top: hoveredPin.y,
