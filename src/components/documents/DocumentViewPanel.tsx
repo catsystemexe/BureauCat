@@ -1918,27 +1918,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
           <p className="panel-note">Zpracovaný text pro tento dokument není k dispozici.</p>
         )}
 
-        {annotations.length > 0 ? (
-          <section className="document-annotations-list" aria-label="Anotace dokumentu">
-            <h3>Anotace</h3>
-            {annotations.map((annotation) => (
-              <article key={annotation.id} className={`document-annotation-card ${annotation.annotation_type}`}>
-                <div className="document-annotation-card-header">
-                  <strong>{annotation.annotation_type}</strong>
-                  <button
-                    disabled={isSaving}
-                    onClick={() => deleteAnnotation(annotation.id)}
-                    type="button"
-                  >
-                    Smazat
-                  </button>
-                </div>
-                <blockquote>{annotation.selected_text}</blockquote>
-                {annotation.note_text ? <p>{annotation.note_text}</p> : null}
-              </article>
-            ))}
-          </section>
-        ) : null}
+        {/* Annotation cards are intentionally hidden. Highlights, notes and pins stay contextual in the document only. */}
       </section>
 
 
