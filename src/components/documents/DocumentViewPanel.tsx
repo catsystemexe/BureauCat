@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   CircleCheck,
@@ -161,6 +161,18 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   const displayText =
     currentDocument.processed_markdown ?? currentDocument.processed_text ?? currentDocument.extracted_text ?? "";
   const isValidated = currentDocument.validation_status === "validated";
+  const orderedPins = useMemo(
+    () => [...pins].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+    [pins]
+  );
+  const pinNumberById = useMemo(
+    () => new Map(orderedPins.map((pin, index) => [pin.id, index + 1])),
+    [orderedPins]
+  );
+  const renderedDisplayText = useMemo(
+    () => renderDisplayTextWithHighlights(displayText),
+    [annotations, displayText, isAnnotationNoteOpen]
+  );
 
   useEffect(() => {
     setCurrentDocument(initialDocument);
@@ -674,13 +686,18 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
       nextPositions[pin.id] = rect.top - shellRect.top + lineHeight / 2;
     }
 
-    setPinPositions(nextPositions);
+    setPinPositions((currentPositions) => {
+      const nextPinIds = Object.keys(nextPositions);
+      const positionsAreEqual =
+        nextPinIds.length === Object.keys(currentPositions).length &&
+        nextPinIds.every((pinId) => currentPositions[pinId] === nextPositions[pinId]);
+
+      return positionsAreEqual ? currentPositions : nextPositions;
+    });
   }
 
   function getPinNumber(pin: DocumentPin) {
-    return [...pins]
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-      .findIndex((item) => item.id === pin.id) + 1;
+    return pinNumberById.get(pin.id) ?? 0;
   }
 
   async function movePinToOffset(pinId: string, visualOffset: number) {
@@ -1581,20 +1598,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
                 ref={noteTextareaRef}
                 aria-label="Text poznámky"
                 onChange={(event) => {
-                  const nextText = event.target.value;
-                  setAnnotationNote(nextText);
-
-                  window.requestAnimationFrame(resizeNoteTextarea);
-
-                  if (editingAnnotationId) {
-                    setAnnotations((current) =>
-                      current.map((annotation) =>
-                        annotation.id === editingAnnotationId
-                          ? { ...annotation, note_text: nextText }
-                          : annotation
-                      )
-                    );
-                  }
+                  setAnnotationNote(event.target.value);
                 }}
                 placeholder="Napiš poznámku…"
                 rows={Math.max(1, annotationNote.split("\n").length)}
@@ -1736,12 +1740,10 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
               }, 0);
             }}
           >
-            {renderDisplayTextWithHighlights(displayText)}
+            {renderedDisplayText}
           </pre>
           <div className="document-pin-layer" aria-label="Piny dokumentu">
-            {[...pins]
-              .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-              .map((pin, index) => (
+            {orderedPins.map((pin) => (
               <button
                 className="document-pin-marker"
                 key={pin.id}
@@ -1996,13 +1998,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
                 }
               }}
               onChange={(event) => {
-                const nextNote = event.target.value;
-                setPinNote(nextNote);
-                setPins((current) =>
-                  current.map((pin) =>
-                    pin.id === editingPinId ? { ...pin, note_text: nextNote } : pin
-                  )
-                );
+                setPinNote(event.target.value);
               }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
