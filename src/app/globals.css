@@ -5075,7 +5075,6 @@ body {
   .journal-linked-bookmark-marker[data-color="yellow"] {
     --bookmark-color: #eab308;
   }
-}
 
 .journal-linked-bookmark-icon {
   color: currentColor;
