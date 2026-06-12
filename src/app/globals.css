@@ -4902,3 +4902,94 @@ body {
   top: 7px !important;
 }
 
+
+/* === JOURNAL INLINE ITEMS MVP === */
+
+.journal-inline-list {
+  display: grid;
+  gap: 6px;
+}
+
+.journal-inline-item {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr auto;
+}
+
+.journal-inline-text {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: text;
+  font: inherit;
+  padding: 4px 0;
+  text-align: left;
+}
+
+.journal-inline-text:hover {
+  color: #0869d7;
+}
+
+.journal-inline-input {
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  font: inherit;
+  padding: 7px 9px;
+  width: 100%;
+}
+
+.journal-inline-item.editing {
+  grid-template-columns: 1fr auto;
+}
+
+.journal-inline-delete-button {
+  align-self: center;
+}
+
+/* === JOURNAL INLINE EDIT TOOLBAR === */
+
+.journal-inline-edit-shell {
+  display: grid;
+  gap: 6px;
+}
+
+.journal-inline-edit-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.journal-inline-toolbar-button {
+  height: 26px;
+  min-width: 26px;
+  position: relative;
+  width: 26px;
+}
+
+.journal-inline-toolbar-button.danger {
+  color: #b42318;
+}
+
+.journal-inline-toolbar-icon {
+  height: 15px;
+  width: 15px;
+}
+
+.journal-inline-toolbar-mini-icon {
+  bottom: 3px;
+  height: 10px;
+  position: absolute;
+  right: 3px;
+  width: 10px;
+}
+
+.journal-inline-toolbar-plus {
+  bottom: 1px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  position: absolute;
+  right: 3px;
+}

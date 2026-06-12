@@ -109,8 +109,9 @@ model DocumentPin {
   selected_text String
   start_offset  Int
   end_offset    Int
-  visual_offset Int?
-  color         String   @default("red")
+  visual_offset        Int?
+  case_bookmark_number Int?
+  color                String   @default("red")
   note_text     String?
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
@@ -119,6 +120,7 @@ model DocumentPin {
 
   @@index([document_id])
   @@index([document_id, start_offset])
+  @@index([case_bookmark_number])
 }
 
 model SituationDocument {

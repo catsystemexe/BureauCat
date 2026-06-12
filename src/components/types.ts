@@ -166,6 +166,7 @@ export type DocumentPin = {
   start_offset: number;
   end_offset: number;
   visual_offset: number | null;
+  case_bookmark_number: number | null;
   color: string;
   note_text: string | null;
   created_at: string;

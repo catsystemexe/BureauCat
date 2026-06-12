@@ -6,6 +6,8 @@ export const documentPinSelect = {
   selected_text: true,
   start_offset: true,
   end_offset: true,
+  visual_offset: true,
+  case_bookmark_number: true,
   color: true,
   note_text: true,
   created_at: true,
@@ -28,13 +30,30 @@ export function listDocumentPins(documentId: string) {
   });
 }
 
-export function createDocumentPin(documentId: string, input: CreateDocumentPinInput) {
+export async function createDocumentPin(documentId: string, input: CreateDocumentPinInput) {
+  const document = await prisma.document.findUniqueOrThrow({
+    where: { id: documentId },
+    select: { case_id: true }
+  });
+
+  const maxCaseBookmarkNumber = await prisma.documentPin.aggregate({
+    where: {
+      document: {
+        case_id: document.case_id
+      }
+    },
+    _max: {
+      case_bookmark_number: true
+    }
+  });
+
   return prisma.documentPin.create({
     data: {
       document_id: documentId,
       selected_text: input.selected_text,
       start_offset: input.start_offset,
       end_offset: input.end_offset,
+      case_bookmark_number: ((maxCaseBookmarkNumber._max?.case_bookmark_number ?? 0) + 1),
       color: input.color,
       note_text: input.note_text ?? null
     },

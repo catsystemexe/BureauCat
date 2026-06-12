@@ -443,12 +443,6 @@ export function RightContextPanel({
 
           {selectedDocument ? (
             <DocumentViewPanel document={selectedDocument} />
-          ) : mode === "evidence" && selectedJournalItem ? (
-            <EvidencePanel
-              journalItem={selectedJournalItem}
-              key={selectedJournalItem.id}
-              onOpenDocument={onOpenSourceDocument}
-            />
           ) : (
             <div className="right-panel-placeholder compact-right-placeholder">
               <h2>Dokument</h2>

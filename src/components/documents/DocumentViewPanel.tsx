@@ -697,7 +697,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
   }
 
   function getPinNumber(pin: DocumentPin) {
-    return pinNumberById.get(pin.id) ?? 0;
+    return pin.case_bookmark_number ?? pinNumberById.get(pin.id) ?? 0;
   }
 
   async function movePinToOffset(pinId: string, visualOffset: number) {
@@ -1894,16 +1894,14 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
                   setHoveredPin(null);
                   openPinEditor(pin, rect.right + 12, rect.top);
                 }}
-                onMouseEnter={(event) => {
-                  if (isPinEditorOpen) return;
-                  const rect = event.currentTarget.getBoundingClientRect();
-                  setHoveredPin({ pin, x: rect.right + 12, y: rect.top });
+                onMouseEnter={() => {
+                  // Bookmark hover notes are intentionally disabled.
                 }}
                 onMouseLeave={() => setHoveredPin(null)}
                 style={{
                   "--pin-color": getPinCssColor(pin.color),
-                  top: `${pinPositions[pin.id] ?? -9999}px`,
-                  visibility: pinPositions[pin.id] === undefined ? "hidden" : "visible"
+                  top: `${pinPositions[pin.id] ?? 0}px`,
+                  visibility: "visible"
                 } as React.CSSProperties}
                 title={pin.note_text?.trim() || "Pin dokumentu"}
                 type="button"
@@ -1995,19 +1993,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
         </div>
       ) : null}
 
-      {hoveredPin && !isPinEditorOpen ? (
-        <div
-          className="document-pin-hover-box"
-          style={{
-            left: hoveredPin.x,
-            top: hoveredPin.y,
-            "--pin-color": getPinCssColor(hoveredPin.pin.color)
-          } as React.CSSProperties}
-        >
-          <strong>Pin {getPinNumber(hoveredPin.pin)}</strong>
-          <p>{hoveredPin.pin.note_text?.trim() || "Bez popisu"}</p>
-        </div>
-      ) : null}
+      {/* Bookmark hover notes are intentionally hidden. Bookmark content is edited only in the floating editor. */}
 
       {hoveredNote ? (
         <div

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { evidenceStateRecheck } from "@/lib/services/evidenceStateService";
-import type { UpdateJournalItemInput } from "@/lib/validation/journal";
+import type { CreateJournalItemInput, UpdateJournalItemInput } from "@/lib/validation/journal";
 
 const journalItemSelect = {
   id: true,
@@ -29,6 +29,34 @@ export function listJournalItemsForCase(caseId: string) {
 export function getJournalItemById(id: string) {
   return prisma.journalItem.findUnique({
     where: { id },
+    select: journalItemSelect
+  });
+}
+
+export async function createJournalItemForCase(caseId: string, input: CreateJournalItemInput) {
+  const maxDisplayOrder = await prisma.journalItem.aggregate({
+    where: {
+      case_id: caseId,
+      section: input.section
+    },
+    _max: {
+      display_order: true
+    }
+  });
+
+  return prisma.journalItem.create({
+    data: {
+      case_id: caseId,
+      section: input.section,
+      item_type: input.item_type,
+      title: input.title,
+      value: input.value ?? null,
+      explanation: input.explanation ?? null,
+      evidence_state: input.evidence_state,
+      status: input.status,
+      display_order: input.display_order ?? ((maxDisplayOrder._max.display_order ?? 0) + 1),
+      source_links_json: input.source_links_json
+    },
     select: journalItemSelect
   });
 }

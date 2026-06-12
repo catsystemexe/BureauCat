@@ -41,6 +41,22 @@ export const sourceLinksJsonSchema = z.string().refine(
   { message: "Source links must be a JSON array string." }
 );
 
+export const createJournalItemSchema = z
+  .object({
+    section: journalSectionSchema,
+    item_type: journalItemTypeSchema,
+    title: z.string().trim().min(1, "Title cannot be empty."),
+    value: z.string().nullable().optional(),
+    explanation: z.string().nullable().optional(),
+    evidence_state: evidenceStateSchema.default("unverified"),
+    status: journalItemStatusSchema.default("active"),
+    display_order: z.number().int().optional(),
+    source_links_json: sourceLinksJsonSchema.default("[]")
+  })
+  .strict();
+
+export type CreateJournalItemInput = z.infer<typeof createJournalItemSchema>;
+
 export const updateJournalItemSchema = z
   .object({
     section: journalSectionSchema.optional(),
