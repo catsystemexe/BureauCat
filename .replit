@@ -1,13 +1,9 @@
-run = "npm run dev -- --hostname 0.0.0.0 --port 3000"
+run = "npm run dev -- --hostname 0.0.0.0 --port 3002"
 modules = ["nodejs-20", "python-3.11"]
 
 [[ports]]
-localPort = 3000
+localPort = 3002
 externalPort = 80
-
-[[ports]]
-localPort = 3001
-externalPort = 3001
 
 [nix]
 packages = ["sqlite", "tesseract4"]

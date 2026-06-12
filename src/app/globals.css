@@ -5060,44 +5060,60 @@ body {
   justify-content: flex-end;
 }
 
-  .journal-linked-bookmark-marker[data-color="red"] {
-    --bookmark-color: #ef4444;
-  }
+.journal-linked-bookmark-marker {
+  align-items: center !important;
+  color: var(--bookmark-color, #ef4444) !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  height: 28px !important;
+  justify-content: center !important;
+  position: relative !important;
+  width: 24px !important;
+}
 
-  .journal-linked-bookmark-marker[data-color="green"] {
-    --bookmark-color: #22c55e;
-  }
+.journal-linked-bookmark-marker[data-color="red"] {
+  --bookmark-color: #ef4444;
+}
 
-  .journal-linked-bookmark-marker[data-color="blue"] {
-    --bookmark-color: #3b82f6;
-  }
+.journal-linked-bookmark-marker[data-color="orange"] {
+  --bookmark-color: #f97316;
+}
 
-  .journal-linked-bookmark-marker[data-color="yellow"] {
-    --bookmark-color: #eab308;
-  }
+.journal-linked-bookmark-marker[data-color="green"] {
+  --bookmark-color: #22c55e;
+}
+
+.journal-linked-bookmark-marker[data-color="blue"] {
+  --bookmark-color: #3b82f6;
+}
+
+.journal-linked-bookmark-marker[data-color="yellow"] {
+  --bookmark-color: #eab308;
+}
 
 .journal-linked-bookmark-icon {
-  color: currentColor;
-  fill: currentColor;
-  height: 22px;
-  position: absolute;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  width: 22px;
+  color: var(--bookmark-color, #ef4444) !important;
+  fill: currentColor !important;
+  height: 24px !important;
+  position: absolute !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+  width: 24px !important;
 }
 
 .journal-linked-bookmark-index {
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 900;
-  line-height: 1;
-  position: relative;
-  top: -1px;
-  user-select: none;
-  z-index: 1;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  left: 50% !important;
+  line-height: 1 !important;
+  position: absolute !important;
+  top: 7px !important;
+  transform: translateX(-50%) !important;
+  user-select: none !important;
+  z-index: 2 !important;
 }
 
-/* Neutralize old pill style if it still exists earlier in the stylesheet. */
 .journal-linked-bookmark-pill {
   display: none !important;
 }
