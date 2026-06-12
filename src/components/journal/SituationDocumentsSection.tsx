@@ -150,33 +150,20 @@ export function SituationDocumentsSection({
                   >
                     {document.filename}
                   </button>
-                  <div className="notebook-row-actions">
-                    <button
-                      aria-label={`Otevřít dokument ${document.filename}`}
-                      className="notebook-icon-button"
-                      disabled={isUnlinking}
-                      onClick={() => onOpenDocument(document)}
-                      title="Otevřít dokument"
-                      type="button"
-                    >
-                      ✎
-                    </button>
-                    <button
-                      aria-label={`Odpojit dokument ${document.filename} od situace`}
-                      className="notebook-icon-button destructive-action"
-                      disabled={isUnlinking}
-                      onClick={() => handleUnlinkDocument(document)}
-                      title="Odpojit od situace"
-                      type="button"
-                    >
-                      ×
-                    </button>
-                  </div>
                 </li>
               );
             })}
           </ul>
         ) : null}
+        <button
+          aria-label="Přidat dokument"
+          className="journal-add-inline-row"
+          disabled
+          title="Napojení na výběr / upload dokumentu doplníme v dalším kroku"
+          type="button"
+        >
+          + dokument
+        </button>
       </div>
     </section>
   );

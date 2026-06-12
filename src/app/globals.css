@@ -5154,3 +5154,209 @@ body {
 .journal-linked-bookmark-index {
   color: #ffffff !important;
 }
+
+/* === JOURNAL ADD ROW CLEAN UX === */
+
+.notebook-ai-card .notebook-card-header .persistent-action {
+  display: none !important;
+}
+
+.journal-add-inline-row {
+  align-self: start;
+  background: transparent;
+  border: 0;
+  color: #8ec5ff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 6px 0 18px;
+  opacity: 0.72;
+  padding: 2px 0;
+  text-align: left;
+}
+
+.journal-add-inline-row:hover,
+.journal-add-inline-row:focus-visible {
+  color: #1d7ed8;
+  opacity: 1;
+  outline: none;
+}
+
+.journal-inline-delete-button,
+.journal-inline-toolbar-delete,
+.journal-inline-toolbar-remove,
+.journal-inline-toolbar-close {
+  display: none !important;
+}
+
+
+/* === JOURNAL ADD ROW TIGHTER SPACING === */
+.journal-add-inline-row {
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message + .journal-add-inline-row {
+  margin-top: -2px !important;
+}
+
+/* === JOURNAL ADD ROW TIGHTER SPACING === */
+.journal-add-inline-row {
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message + .journal-add-inline-row {
+  margin-top: -2px !important;
+}
+
+/* === JOURNAL GOALS CLEAN ACTIONS === */
+
+.goals-section-header .notebook-add-button {
+  display: none !important;
+}
+
+.clean-goals-list .notebook-row-actions {
+  display: none !important;
+}
+
+/* === JOURNAL ADD ROW FINAL SPACING === */
+
+.journal-inline-list {
+  gap: 0 !important;
+}
+
+.journal-inline-item {
+  margin: 0 !important;
+}
+
+.journal-inline-text {
+  padding-bottom: 0 !important;
+}
+
+.journal-add-inline-row {
+  margin: 0 0 10px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message {
+  margin-bottom: 0 !important;
+}
+
+
+/* === JOURNAL VISUAL UNIFICATION FINAL === */
+
+/* remove left vertical ownership labels */
+.notebook-layer-heading {
+  display: none !important;
+}
+
+/* remove empty placeholder messages */
+.notebook-ai-layer .journal-empty-message,
+.notebook-user-layer .journal-empty-message {
+  display: none !important;
+}
+
+/* unify section headings */
+.notebook-ai-layer h3,
+.notebook-ai-layer .notebook-card h3,
+.notebook-user-layer h3,
+.notebook-user-layer .notebook-card h3,
+.goals-section-header h3,
+.situation-documents-header h3 {
+  color: #1d1d1b !important;
+  font-weight: 650 !important;
+}
+
+/* unify icons to blue */
+.notebook-ai-layer .notebook-section-icon,
+.notebook-user-layer .notebook-section-icon,
+.ai-section-icon,
+.user-section-icon {
+  color: #0869d7 !important;
+  stroke: #0869d7 !important;
+}
+
+/* tighten vertical rhythm between sections */
+.notebook-layer {
+  gap: 2px !important;
+}
+
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  margin-bottom: 8px !important;
+}
+
+.situation-documents-section {
+  margin-bottom: 18px !important;
+}
+
+.notebook-card:has(.journal-add-inline-row:only-child),
+.notebook-card .journal-inline-list {
+  margin-top: 0 !important;
+}
+
+.journal-add-inline-row {
+  color: #8ec5ff !important;
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message + .journal-add-inline-row {
+  margin-top: 0 !important;
+}
+
+
+/* === JOURNAL USER/AI GAP REMOVAL === */
+
+/* old UX separated user notes and AI notes; now notebook is visually unified */
+.notebook-user-layer {
+  margin-bottom: 4px !important;
+  padding-bottom: 0 !important;
+}
+
+.notebook-ai-layer {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.notebook-page {
+  gap: 4px !important;
+}
+
+.situation-documents-section {
+  margin-bottom: 8px !important;
+}
+
+.notebook-ai-layer .notebook-card:first-of-type {
+  margin-top: 0 !important;
+}
+
+
+/* === NOTEBOOK FINAL SECTION RHYTHM OVERRIDE === */
+
+/* base: two visual blank lines between normal sections */
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  margin-bottom: 18px !important;
+}
+
+/* Situace -> Cíle: bylo těsné, přidat jeden řádek */
+.situation-card {
+  margin-bottom: 18px !important;
+}
+
+/* Dokumenty -> Analýza: bylo moc velké, ubrat jeden řádek */
+.situation-documents-section {
+  margin-bottom: 10px !important;
+}
+
+.notebook-user-layer,
+.notebook-ai-layer,
+.notebook-page {
+  gap: 0 !important;
+}
+

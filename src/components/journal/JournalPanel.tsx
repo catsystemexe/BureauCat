@@ -483,15 +483,6 @@ function AILayer({
             <div className="notebook-section-content">
               <div className="notebook-card-header">
                 <h3>{section.title}</h3>
-                <button
-                  aria-label={`Přidat položku: ${section.title}`}
-                  className="notebook-icon-button persistent-action"
-                  onClick={() => onCreateItem(section)}
-                  title="Přidat"
-                  type="button"
-                >
-                  ＋
-                </button>
               </div>
               {items.length > 0 || sectionDraftItems.length > 0 ? (
                 <div className="journal-inline-list">
@@ -530,9 +521,27 @@ function AILayer({
                       onUpdate={onUpdateItem}
                     />
                   ))}
+                  <button
+                    aria-label={`Přidat položku: ${section.title}`}
+                    className="journal-add-inline-row"
+                    onClick={() => onCreateItem(section)}
+                    type="button"
+                  >
+                    + {section.title.toLowerCase().replace("cíle", "cíl").replace("dokumenty", "dokument").replace("otázky", "otázka").replace("rizika", "riziko")}
+                  </button>
                 </div>
               ) : (
-                <p className="journal-empty-message">{section.message}</p>
+                <div className="journal-inline-list">
+                  <p className="journal-empty-message">{section.message}</p>
+                  <button
+                    aria-label={`Přidat položku: ${section.title}`}
+                    className="journal-add-inline-row"
+                    onClick={() => onCreateItem(section)}
+                    type="button"
+                  >
+                    + {section.title.toLowerCase().replace("cíle", "cíl").replace("dokumenty", "dokument").replace("otázky", "otázka").replace("rizika", "riziko")}
+                  </button>
+                </div>
               )}
             </div>
           </section>

@@ -214,14 +214,6 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
       <div className="notebook-section-content">
         <div className="goals-section-header">
           <h3 id="goals-title">Cíle</h3>
-          <button
-            className="notebook-add-button"
-            disabled={!selectedSituationId || isCreating || isLoading}
-            onClick={handleCreateGoal}
-            type="button"
-          >
-            <span aria-hidden="true">＋</span>
-          </button>
         </div>
         {isLoading ? <p className="journal-empty-message">Načítám cíle…</p> : null}
         {error ? <p className="notebook-inline-error">{error}</p> : null}
@@ -229,7 +221,7 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
           <p className="journal-empty-message">Zatím žádné cíle.</p>
         ) : null}
         {!isLoading && visibleGoals.length > 0 ? (
-          <div className="goals-list">
+          <div className="goals-list clean-goals-list">
             {visibleGoals.map((goal) => {
               const isEditing = editingGoalId === goal.id;
               const isUpdating = updatingGoalId === goal.id;
@@ -283,30 +275,6 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
                       >
                         {goal.title}
                       </span>
-                      <div className="notebook-row-actions">
-                        <button
-                          aria-label={`Upravit cíl ${goal.title}`}
-                          className="notebook-icon-button"
-                          disabled={isUpdating}
-                          onClick={() => beginEditingGoal(goal)}
-                          title="Upravit cíl"
-                          type="button"
-                        >
-                          ✎
-                        </button>
-                        <button
-                          aria-label={`Archivovat cíl ${goal.title}`}
-                          className="notebook-icon-button destructive-action"
-                          disabled={isUpdating}
-                          onClick={() => handleArchiveGoal(goal)}
-                          title="Archivovat cíl"
-                          type="button"
-                        >
-                          <svg aria-hidden="true" className="trash-icon" viewBox="0 0 24 24">
-                            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
-                          </svg>
-                        </button>
-                      </div>
                     </>
                   )}
                 </div>
@@ -314,6 +282,15 @@ export function GoalsSection({ selectedSituationId }: { selectedSituationId: str
             })}
           </div>
         ) : null}
+        <button
+          aria-label="Přidat cíl"
+          className="journal-add-inline-row"
+          disabled={!selectedSituationId || isCreating || isLoading}
+          onClick={handleCreateGoal}
+          type="button"
+        >
+          + cíl
+        </button>
       </div>
     </section>
   );
