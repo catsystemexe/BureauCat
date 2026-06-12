@@ -316,7 +316,8 @@ export function RightContextPanel({
   onOpenDocument,
   onOpenSourceDocument,
   onSituationDocumentLinked,
-  selectedSituationId
+  selectedSituationId,
+  targetPinId
 }: {
   caseId: string;
   mode: RightPanelMode;
@@ -330,6 +331,7 @@ export function RightContextPanel({
   onOpenSourceDocument: (documentId: string) => Promise<boolean>;
   onSituationDocumentLinked: () => void;
   selectedSituationId: string | null;
+  targetPinId: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<RightPanelTab>("documents");
   const [isCaseDocumentListVisible, setIsCaseDocumentListVisible] = useState(false);
@@ -450,6 +452,7 @@ export function RightContextPanel({
               document={selectedDocument}
               isBookmarkLinkMode={isBookmarkLinkMode}
               onBookmarkSelectedForLink={onBookmarkSelectedForLink}
+              targetPinId={targetPinId}
             />
           ) : (
             <div className="right-panel-placeholder compact-right-placeholder">
@@ -488,6 +491,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [situationDocumentListRefreshKey, setSituationDocumentListRefreshKey] = useState(0);
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null);
   const [pendingBookmarkTargetJournalItemId, setPendingBookmarkTargetJournalItemId] = useState<string | null>(null);
+  const [targetDocumentPinId, setTargetDocumentPinId] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedSituationId(null);
@@ -501,12 +505,13 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     setJournalRefreshKey((currentKey) => currentKey + 1);
   }
 
-  function openDocument(document: CaseDocument) {
+  function openDocument(document: CaseDocument, pinId: string | null = null) {
     setSelectedDocument(document);
+    setTargetDocumentPinId(pinId);
     setRightPanelMode("document");
   }
 
-  async function openSourceDocument(documentId: string) {
+  async function openSourceDocument(documentId: string, pinId: string | null = null) {
     try {
       const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`);
       const data = (await response.json()) as DocumentResponse;
@@ -515,7 +520,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         return false;
       }
 
-      openDocument(data.document);
+      openDocument(data.document, pinId);
       return true;
     } catch {
       return false;
@@ -529,6 +534,10 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   function handleDocumentUploaded(document: CaseDocument) {
     setDocumentListRefreshKey((currentKey) => currentKey + 1);
     openDocument(document);
+  }
+
+  async function handleOpenJournalBookmark(documentId: string, pinId: string) {
+    await openSourceDocument(documentId, pinId);
   }
 
   async function handleBookmarkSelectedForLink(pin: DocumentPin) {
@@ -567,15 +576,20 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
 
   return (
     <div className="workspace-shell">
-      <header className="workspace-header">
-        <div>
-          <p className="eyebrow">BureauCat · Případ</p>
+      <header className="workspace-header app-case-header">
+        <img
+          src="/bureaucat_logo.png"
+          alt="BureauCat"
+          className="app-logo-image"
+        />
+
+        <div className="app-case-title-block">
           <h1>{caseItem.title}</h1>
         </div>
-        <div className="case-meta">
-          <span>{caseItem.area ?? "Oblast není uvedena"}</span>
-          <span className="status-pill">{CASE_STATUS_LABELS[caseItem.status]}</span>
-        </div>
+
+        <span className="status-pill app-status-pill">
+          {CASE_STATUS_LABELS[caseItem.status]}
+        </span>
       </header>
       <div className="three-panel-layout" aria-label="Pracovní prostor případu: Zápisník, Konzultace a Dokumenty">
         <JournalPanel
@@ -583,6 +597,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           documentListRefreshKey={situationDocumentListRefreshKey}
           onOpenDocument={openDocument}
           onSelectSituation={selectSituation}
+          onOpenBookmark={handleOpenJournalBookmark}
           onStartBookmarkLink={setPendingBookmarkTargetJournalItemId}
           pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
           selectedSituationId={selectedSituationId}
@@ -604,6 +619,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           selectedDocument={selectedDocument}
           selectedJournalItem={selectedJournalItem}
           selectedSituationId={selectedSituationId}
+          targetPinId={targetDocumentPinId}
         />
       </div>
     </div>

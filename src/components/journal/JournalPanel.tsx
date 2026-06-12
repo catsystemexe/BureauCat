@@ -82,7 +82,13 @@ function parseBookmarkSourceLinks(sourceLinksJson: string): BookmarkSourceLink[]
   }
 }
 
-function JournalLinkedBookmarks({ item }: { item: JournalItem }) {
+function JournalLinkedBookmarks({
+  item,
+  onOpenBookmark
+}: {
+  item: JournalItem;
+  onOpenBookmark?: (documentId: string, pinId: string) => void;
+}) {
   const bookmarkLinks = parseBookmarkSourceLinks(item.source_links_json);
 
   if (bookmarkLinks.length === 0) {
@@ -92,17 +98,18 @@ function JournalLinkedBookmarks({ item }: { item: JournalItem }) {
   return (
     <div className="journal-linked-bookmarks" aria-label="Připojené bookmarky">
       {bookmarkLinks.map((link) => (
-        <span
+        <button
           className="journal-linked-bookmark-marker"
-
-            data-color={link.color}
+          data-color={link.color}
           key={`${link.documentId}-${link.pinId}`}
+          onClick={() => onOpenBookmark?.(link.documentId, link.pinId)}
           style={{ "--bookmark-color": link.color ?? "#ef4444" } as React.CSSProperties}
-          title={`Bookmark #${link.caseBookmarkNumber ?? "?"}`}
+          title={`Otevřít bookmark #${link.caseBookmarkNumber ?? "?"} v dokumentu`}
+          type="button"
         >
           <Bookmark aria-hidden="true" className="journal-linked-bookmark-icon" />
           <span className="journal-linked-bookmark-index">{link.caseBookmarkNumber ?? "?"}</span>
-        </span>
+        </button>
       ))}
     </div>
   );
@@ -293,6 +300,7 @@ function JournalInlineItem({
   onArchive,
   onCreateDraft,
   onDiscardDraft,
+  onOpenBookmark,
   onStartBookmarkLink,
   onUpdate
 }: {
@@ -302,6 +310,7 @@ function JournalInlineItem({
   onArchive: (itemId: string) => void;
   onCreateDraft?: (itemId: string, title: string) => void;
   onDiscardDraft?: (itemId: string) => void;
+  onOpenBookmark?: (documentId: string, pinId: string) => void;
   onStartBookmarkLink?: (itemId: string) => void;
   onUpdate: (itemId: string, title: string) => void;
 }) {
@@ -422,7 +431,7 @@ function JournalInlineItem({
           value={draft}
         />
         </div>
-        <JournalLinkedBookmarks item={item} />
+        <JournalLinkedBookmarks item={item} onOpenBookmark={onOpenBookmark} />
       </div>
     );
   }
@@ -439,7 +448,7 @@ function JournalInlineItem({
           >
             {item.title}
           </button>
-          <JournalLinkedBookmarks item={item} />
+          <JournalLinkedBookmarks item={item} onOpenBookmark={onOpenBookmark} />
         </div>
       </div>
       {/* Delete is intentionally hidden in read mode. It appears only while editing. */}
@@ -454,6 +463,7 @@ function AILayer({
   onCreateItem,
   onCreateDraftItem,
   onDiscardDraftItem,
+  onOpenBookmark,
   onStartBookmarkLink,
   onUpdateItem,
   pendingBookmarkTargetJournalItemId
@@ -464,6 +474,7 @@ function AILayer({
   onCreateItem: (section: typeof JOURNAL_SECTIONS[number]) => void;
   onCreateDraftItem: (draftId: string, title: string) => void;
   onDiscardDraftItem: (draftId: string) => void;
+  onOpenBookmark: (documentId: string, pinId: string) => void;
   onStartBookmarkLink: (itemId: string) => void;
   onUpdateItem: (itemId: string, title: string) => void;
   pendingBookmarkTargetJournalItemId: string | null;
@@ -492,6 +503,7 @@ function AILayer({
                       key={item.id}
                       isPendingBookmarkTarget={pendingBookmarkTargetJournalItemId === item.id}
                       onArchive={onArchiveItem}
+                      onOpenBookmark={onOpenBookmark}
                       onStartBookmarkLink={onStartBookmarkLink}
                       onUpdate={onUpdateItem}
                     />
@@ -555,6 +567,7 @@ export function JournalPanel({
   caseItem,
   documentListRefreshKey,
   onOpenDocument,
+  onOpenBookmark,
   onSelectSituation,
   onStartBookmarkLink,
   pendingBookmarkTargetJournalItemId,
@@ -563,6 +576,7 @@ export function JournalPanel({
   caseItem: CaseSummary;
   documentListRefreshKey: number;
   onOpenDocument: (document: CaseDocument) => void;
+  onOpenBookmark: (documentId: string, pinId: string) => void;
   onSelectSituation: (situationId: string | null) => void;
   onStartBookmarkLink: (journalItemId: string) => void;
   pendingBookmarkTargetJournalItemId: string | null;
@@ -846,6 +860,7 @@ export function JournalPanel({
           onCreateDraftItem={handleCreateDraftJournalItem}
           onCreateItem={handleCreateJournalItem}
           onDiscardDraftItem={handleDiscardDraftJournalItem}
+          onOpenBookmark={onOpenBookmark}
           onStartBookmarkLink={onStartBookmarkLink}
           onUpdateItem={handleUpdateJournalItem}
           pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}

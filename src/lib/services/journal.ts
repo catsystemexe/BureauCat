@@ -80,3 +80,53 @@ export function markJournalItemObsolete(id: string) {
     select: journalItemSelect
   });
 }
+
+
+export async function removeBookmarkLinksForPin(pinId: string) {
+  const journalItems = await prisma.journalItem.findMany({
+    select: {
+      id: true,
+      source_links_json: true
+    }
+  });
+
+  const updatedJournalItems = [];
+
+  for (const journalItem of journalItems) {
+    let parsedLinks: unknown;
+
+    try {
+      parsedLinks = JSON.parse(journalItem.source_links_json);
+    } catch {
+      continue;
+    }
+
+    if (!Array.isArray(parsedLinks)) {
+      continue;
+    }
+
+    const nextLinks = parsedLinks.filter((link) => {
+      if (!link || typeof link !== "object") {
+        return true;
+      }
+
+      const candidate = link as { pinId?: unknown };
+      return candidate.pinId !== pinId;
+    });
+
+    if (nextLinks.length === parsedLinks.length) {
+      continue;
+    }
+
+    const updatedJournalItem = await prisma.journalItem.update({
+      where: { id: journalItem.id },
+      data: {
+        source_links_json: JSON.stringify(nextLinks)
+      }
+    });
+
+    updatedJournalItems.push(updatedJournalItem);
+  }
+
+  return updatedJournalItems;
+}

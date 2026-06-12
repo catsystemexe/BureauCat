@@ -5360,3 +5360,466 @@ body {
   gap: 0 !important;
 }
 
+
+/* === JOURNAL BOOKMARK OPEN TARGET === */
+
+.journal-linked-bookmark-marker {
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.journal-linked-bookmark-marker:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.targeted-document-pin-marker {
+  outline: 3px solid rgba(8, 105, 215, 0.45) !important;
+  outline-offset: 3px !important;
+  z-index: 5 !important;
+}
+
+
+/* === RIGHT PANEL + BOOKMARK VISIBILITY FIX === */
+
+/* restore right panel vertical/right-side tab menu */
+.context-panel {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.right-panel-tabs {
+  align-items: center !important;
+  display: flex !important;
+  gap: 6px !important;
+  min-height: 42px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 300 !important;
+}
+
+.right-panel-tab,
+.right-panel-tab-actions,
+.right-panel-icon-action {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ensure document bookmarks are drawn above text/content */
+.document-text-pin-shell {
+  overflow: visible !important;
+  position: relative !important;
+}
+
+.document-text-pin-shell .document-pin-layer {
+  display: block !important;
+  left: 0 !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  top: 0 !important;
+  visibility: visible !important;
+  width: 34px !important;
+  z-index: 250 !important;
+}
+
+.document-text-pin-shell .document-pin-marker {
+  color: var(--pin-color, #ef4444) !important;
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: absolute !important;
+  visibility: visible !important;
+  z-index: 260 !important;
+}
+
+.document-pin-icon {
+  color: var(--pin-color, #ef4444) !important;
+  display: block !important;
+  fill: currentColor !important;
+  opacity: 1 !important;
+  stroke: currentColor !important;
+  visibility: visible !important;
+}
+
+.document-pin-index {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 261 !important;
+}
+
+
+/* === APP VIEWPORT LOCK + PANEL SCROLLING === */
+
+html,
+body {
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+body {
+  margin: 0 !important;
+}
+
+.workspace-shell {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+.three-panel-layout {
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.workspace-panel,
+.journal-panel,
+.chat-panel,
+.context-panel {
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* independent scrolling inside each main panel */
+.journal-panel {
+  overflow-y: auto !important;
+}
+
+.chat-panel {
+  overflow: hidden !important;
+}
+
+.message-list,
+.chat-messages,
+.chat-scroll-area {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+.context-panel {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.right-panel-tab-content {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  flex: 1 1 auto !important;
+}
+
+/* document text scrolls inside right panel, not the page */
+.document-view-panel {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.document-content-section {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.document-text-pin-shell {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.document-extracted-text {
+  max-height: none !important;
+  overflow-y: auto !important;
+}
+
+
+/* === RIGHT PANEL TABS CENTERING FIX === */
+.right-panel-tabs {
+  align-items: stretch !important;
+}
+
+.right-panel-tab {
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  min-height: 56px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  text-align: center !important;
+}
+
+/* === APP CASE HEADER POLISH === */
+
+.app-case-header {
+
+  align-items: center !important;
+
+  display: grid !important;
+
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+
+  gap: 22px !important;
+
+  max-width: 1440px !important;
+
+  width: 100% !important;
+
+  margin: 0 auto 18px !important;
+
+}
+
+.app-logo-lockup {
+
+  align-items: center !important;
+
+  display: inline-flex !important;
+
+  gap: 12px !important;
+
+  min-width: 240px !important;
+
+}
+
+.app-logo-mark {
+
+  border: 4px solid #0d1b2a !important;
+
+  border-radius: 9px !important;
+
+  height: 46px !important;
+
+  position: relative !important;
+
+  width: 40px !important;
+
+}
+
+.app-logo-ear {
+
+  background: #0d1b2a !important;
+
+  height: 16px !important;
+
+  position: absolute !important;
+
+  top: -11px !important;
+
+  width: 16px !important;
+
+}
+
+.app-logo-ear.left {
+
+  clip-path: polygon(0 100%, 0 0, 100% 100%) !important;
+
+  left: -4px !important;
+
+}
+
+.app-logo-ear.right {
+
+  clip-path: polygon(0 100%, 100% 0, 100% 100%) !important;
+
+  right: -4px !important;
+
+}
+
+.app-logo-eye {
+
+  background: #0d1b2a !important;
+
+  border-radius: 999px !important;
+
+  height: 5px !important;
+
+  position: absolute !important;
+
+  top: 14px !important;
+
+  width: 5px !important;
+
+}
+
+.app-logo-eye.left {
+
+  left: 10px !important;
+
+}
+
+.app-logo-eye.right {
+
+  right: 10px !important;
+
+}
+
+.app-logo-line {
+
+  background: #3b82f6 !important;
+
+  border-radius: 999px !important;
+
+  height: 4px !important;
+
+  left: 9px !important;
+
+  position: absolute !important;
+
+}
+
+.app-logo-line.one {
+
+  top: 27px !important;
+
+  width: 22px !important;
+
+}
+
+.app-logo-line.two {
+
+  top: 35px !important;
+
+  width: 22px !important;
+
+}
+
+.app-logo-line.three {
+
+  top: 43px !important;
+
+  width: 16px !important;
+
+}
+
+.app-logo-text {
+
+  display: grid !important;
+
+  gap: 2px !important;
+
+}
+
+.app-logo-name {
+
+  color: #0d1b2a !important;
+
+  font-size: 22px !important;
+
+  font-weight: 800 !important;
+
+  letter-spacing: -0.04em !important;
+
+  line-height: 1 !important;
+
+}
+
+.app-logo-name strong {
+
+  font-weight: 850 !important;
+
+}
+
+.app-logo-name em {
+
+  color: #3b82f6 !important;
+
+  font-style: normal !important;
+
+  font-weight: 850 !important;
+
+}
+
+.app-logo-subtitle {
+
+  color: #30343b !important;
+
+  font-size: 11px !important;
+
+  font-weight: 500 !important;
+
+  line-height: 1.15 !important;
+
+  white-space: nowrap !important;
+
+}
+
+.app-case-title-block {
+
+  min-width: 0 !important;
+
+}
+
+.app-case-title-block h1 {
+
+  color: #161616 !important;
+
+  font-size: clamp(28px, 3.2vw, 48px) !important;
+
+  font-weight: 760 !important;
+
+  letter-spacing: -0.06em !important;
+
+  line-height: 0.95 !important;
+
+  margin: 0 !important;
+
+  overflow: hidden !important;
+
+  text-overflow: ellipsis !important;
+
+  white-space: nowrap !important;
+
+}
+
+.app-status-pill {
+
+  align-self: center !important;
+
+  justify-self: end !important;
+
+}
+
+.workspace-header .case-meta,
+
+.workspace-header > div:not(.app-logo-lockup):not(.app-case-title-block) .eyebrow {
+
+  display: none !important;
+
+}
+
+/* === APP HEADER WITH REAL LOGO === */
+
+.app-case-header {
+  align-items: center !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: 20px !important;
+}
+
+.app-logo-image {
+  display: block !important;
+  height: 72px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  flex-shrink: 0 !important;
+}
+
+.app-case-title-block {
+  min-width: 0 !important;
+}
+
+.app-case-title-block h1 {
+  margin: 0 !important;
+  font-size: clamp(28px, 3vw, 48px) !important;
+  line-height: 0.95 !important;
+  font-weight: 760 !important;
+  letter-spacing: -0.05em !important;
+}
+
+.app-status-pill {
+  align-self: center !important;
+}
+

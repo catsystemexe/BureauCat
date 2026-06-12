@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { deleteDocumentPin, updateDocumentPin } from "@/lib/services/documentPins";
+import { removeBookmarkLinksForPin } from "@/lib/services/journal";
 
 export const runtime = "nodejs";
 
@@ -40,7 +41,8 @@ export async function DELETE(_request: Request, context: Context) {
 
   try {
     const pin = await deleteDocumentPin(pinId);
-    return NextResponse.json({ deleted: true, pin });
+    const updatedJournalItems = await removeBookmarkLinksForPin(pinId);
+    return NextResponse.json({ deleted: true, pin, updatedJournalItems });
   } catch {
     return NextResponse.json({ error: "Pin not found." }, { status: 404 });
   }

@@ -94,11 +94,13 @@ function getNoteCssColor(value: string | null | undefined) {
 export function DocumentViewPanel({
   document: initialDocument,
   isBookmarkLinkMode = false,
-  onBookmarkSelectedForLink
+  onBookmarkSelectedForLink,
+  targetPinId = null
 }: {
   document: CaseDocument;
   isBookmarkLinkMode?: boolean;
   onBookmarkSelectedForLink?: (pin: DocumentPin) => void;
+  targetPinId?: string | null;
 }) {
   const [currentDocument, setCurrentDocument] = useState(initialDocument);
   const [isOriginalVisible, setIsOriginalVisible] = useState(false);
@@ -112,6 +114,7 @@ export function DocumentViewPanel({
     zoom: 1
   });
 
+  const lastScrolledTargetPinRef = useRef<string | null>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
   const documentTextRef = useRef<HTMLPreElement | null>(null);
@@ -213,6 +216,22 @@ export function DocumentViewPanel({
   useEffect(() => {
     window.requestAnimationFrame(measurePinPositions);
   }, [pins, displayText, isEditing, isFullscreen]);
+
+  useEffect(() => {
+    if (!targetPinId || pins.length === 0) {
+      return;
+    }
+
+    if (lastScrolledTargetPinRef.current === `${currentDocument.id}:${targetPinId}`) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      scrollToPin(targetPinId);
+      lastScrolledTargetPinRef.current = `${currentDocument.id}:${targetPinId}`;
+    });
+  }, [currentDocument.id, displayText, pins, targetPinId]);
+
 
   useEffect(() => {
     async function loadPins() {
@@ -503,37 +522,92 @@ export function DocumentViewPanel({
       return null;
     }
 
+    function offsetFromNode(node: Node, offset: number) {
+      if (!root.contains(node)) {
+        return null;
+      }
+
+      const beforeRange = document.createRange();
+      beforeRange.selectNodeContents(root);
+
+      try {
+        beforeRange.setEnd(node, offset);
+      } catch {
+        return null;
+      }
+
+      return beforeRange.toString().length;
+    }
+
+    function nearestTextNodeOffsetFromElement(element: Element) {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      let best: { node: Node; rect: DOMRect; distance: number } | null = null;
+      let node = walker.nextNode();
+
+      while (node) {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+
+        for (const rect of Array.from(range.getClientRects())) {
+          const distance =
+            Math.abs(clientY - (rect.top + rect.height / 2)) +
+            Math.max(0, rect.left - clientX, clientX - rect.right);
+
+          if (!best || distance < best.distance) {
+            best = { node, rect, distance };
+          }
+        }
+
+        node = walker.nextNode();
+      }
+
+      if (!best) {
+        return null;
+      }
+
+      const textLength = best.node.textContent?.length ?? 0;
+      const ratio =
+        best.rect.width > 0
+          ? Math.min(1, Math.max(0, (clientX - best.rect.left) / best.rect.width))
+          : 0;
+
+      return offsetFromNode(best.node, Math.round(textLength * ratio));
+    }
+
     const documentWithCaret = document as Document & {
       caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
       caretRangeFromPoint?: (x: number, y: number) => Range | null;
     };
 
-    let node: Node | null = null;
-    let offset = 0;
-
     const caretPosition = documentWithCaret.caretPositionFromPoint?.(clientX, clientY);
 
     if (caretPosition) {
-      node = caretPosition.offsetNode;
-      offset = caretPosition.offset;
-    } else {
-      const caretRange = documentWithCaret.caretRangeFromPoint?.(clientX, clientY);
+      const directOffset = offsetFromNode(caretPosition.offsetNode, caretPosition.offset);
 
-      if (caretRange) {
-        node = caretRange.startContainer;
-        offset = caretRange.startOffset;
+      if (directOffset !== null) {
+        return directOffset;
       }
     }
 
-    if (!node || !root.contains(node)) {
-      return null;
+    const caretRange = documentWithCaret.caretRangeFromPoint?.(clientX, clientY);
+
+    if (caretRange) {
+      const directOffset = offsetFromNode(caretRange.startContainer, caretRange.startOffset);
+
+      if (directOffset !== null) {
+        return directOffset;
+      }
     }
 
-    const beforeRange = document.createRange();
-    beforeRange.selectNodeContents(root);
-    beforeRange.setEnd(node, offset);
+    const hoveredElement = document
+      .elementsFromPoint(clientX, clientY)
+      .find((element) => root.contains(element));
 
-    return beforeRange.toString().length;
+    if (hoveredElement) {
+      return nearestTextNodeOffsetFromElement(hoveredElement);
+    }
+
+    return null;
   }
 
   function getSentenceRangeAtOffset(text: string, offset: number) {
@@ -708,6 +782,37 @@ export function DocumentViewPanel({
     return pin.case_bookmark_number ?? pinNumberById.get(pin.id) ?? 0;
   }
 
+  function scrollToPin(pinId: string) {
+    const root = documentTextRef.current;
+    const pin = pins.find((currentPin) => currentPin.id === pinId);
+
+    if (!root || !pin) {
+      return;
+    }
+
+    const effectiveOffset = pin.visual_offset ?? pin.start_offset;
+    const target = getTextNodeAtOffset(root, effectiveOffset);
+
+    if (!target) {
+      return;
+    }
+
+    const range = document.createRange();
+    range.setStart(target.node, target.offset);
+    range.setEnd(target.node, target.offset);
+
+    const rect = range.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    const targetTopInScroll = root.scrollTop + rect.top - rootRect.top;
+
+    root.scrollTo({
+      top: Math.max(0, targetTopInScroll - root.clientHeight * 0.35),
+      behavior: "smooth"
+    });
+
+    window.requestAnimationFrame(measurePinPositions);
+  }
+
   async function movePinToOffset(pinId: string, visualOffset: number) {
     setPins((current) =>
       current.map((pin) =>
@@ -842,6 +947,7 @@ export function DocumentViewPanel({
       }
 
       setPins((current) => current.filter((pin) => pin.id !== pinId));
+      window.dispatchEvent(new CustomEvent("bureaucat:journal-refresh"));
       closePinEditor();
     } catch (pinError) {
       setError(pinError instanceof Error ? pinError.message : "Pin se nepodařilo smazat.");
@@ -1753,7 +1859,7 @@ export function DocumentViewPanel({
           <div className="document-pin-layer" aria-label="Piny dokumentu">
             {orderedPins.map((pin) => (
               <button
-                className="document-pin-marker"
+                className={`document-pin-marker${targetPinId === pin.id ? " targeted-document-pin-marker" : ""}`}
                 key={pin.id}
                 onPointerDown={(event) => {
                   event.stopPropagation();
