@@ -5,6 +5,7 @@ import type { CaseDocument, CaseSummary, JournalItem, JournalItemType, Situation
 import { GoalsSection } from "@/components/journal/GoalsSection";
 import { SituationDocumentsSection } from "@/components/journal/SituationDocumentsSection";
 import { SituationPager } from "@/components/journal/SituationPager";
+import { Bookmark } from "lucide-react";
 import {
   DocumentTextIcon,
   MagnifyingGlassIcon,
@@ -46,6 +47,66 @@ type JournalUpdateResponse = {
   journalItem?: JournalItem;
   error?: string;
 };
+
+type BookmarkSourceLink = {
+  type: "bookmark";
+  pinId: string;
+  documentId: string;
+  caseBookmarkNumber: number | null;
+  color?: string | null;
+};
+
+function parseBookmarkSourceLinks(sourceLinksJson: string): BookmarkSourceLink[] {
+  try {
+    const parsed = JSON.parse(sourceLinksJson) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((link): link is BookmarkSourceLink => {
+      if (!link || typeof link !== "object") return false;
+
+      const candidate = link as Partial<BookmarkSourceLink>;
+
+      return (
+        candidate.type === "bookmark" &&
+        typeof candidate.pinId === "string" &&
+        typeof candidate.documentId === "string" &&
+        (typeof candidate.caseBookmarkNumber === "number" || candidate.caseBookmarkNumber === null) &&
+        (candidate.color === undefined || typeof candidate.color === "string" || candidate.color === null)
+      );
+    });
+  } catch {
+    return [];
+  }
+}
+
+function JournalLinkedBookmarks({ item }: { item: JournalItem }) {
+  const bookmarkLinks = parseBookmarkSourceLinks(item.source_links_json);
+
+  if (bookmarkLinks.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="journal-linked-bookmarks" aria-label="Připojené bookmarky">
+      {bookmarkLinks.map((link) => (
+        <span
+          className="journal-linked-bookmark-marker"
+
+            data-color={link.color}
+          key={`${link.documentId}-${link.pinId}`}
+          style={{ "--bookmark-color": link.color ?? "#ef4444" } as React.CSSProperties}
+          title={`Bookmark #${link.caseBookmarkNumber ?? "?"}`}
+        >
+          <Bookmark aria-hidden="true" className="journal-linked-bookmark-icon" />
+          <span className="journal-linked-bookmark-index">{link.caseBookmarkNumber ?? "?"}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
 
 type DraftJournalItem = {
   id: string;
@@ -228,16 +289,20 @@ function UserLayer({
 function JournalInlineItem({
   item,
   forceEdit = false,
+  isPendingBookmarkTarget = false,
   onArchive,
   onCreateDraft,
   onDiscardDraft,
+  onStartBookmarkLink,
   onUpdate
 }: {
   item: JournalItem;
   forceEdit?: boolean;
+  isPendingBookmarkTarget?: boolean;
   onArchive: (itemId: string) => void;
   onCreateDraft?: (itemId: string, title: string) => void;
   onDiscardDraft?: (itemId: string) => void;
+  onStartBookmarkLink?: (itemId: string) => void;
   onUpdate: (itemId: string, title: string) => void;
 }) {
   const [isEditing, setIsEditing] = useState(forceEdit);
@@ -294,8 +359,9 @@ function JournalInlineItem({
             <button
               aria-label="Připojit bookmark"
               className="notebook-icon-button journal-inline-toolbar-button"
-              disabled
-              title="Připojit bookmark – bude doplněno v dalším kroku"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => onStartBookmarkLink?.(item.id)}
+              title="Připojit bookmark: potom klikni bookmark v otevřeném dokumentu"
               type="button"
             >
               <BookmarkIcon aria-hidden="true" className="journal-inline-toolbar-icon" />
@@ -304,7 +370,10 @@ function JournalInlineItem({
             <button
               aria-label="Odebrat bookmark"
               className="notebook-icon-button journal-inline-toolbar-button"
-              disabled
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                // Bookmark unlinking will be implemented in the next step.
+              }}
               title="Odebrat bookmark – bude doplněno v dalším kroku"
               type="button"
             >
@@ -321,6 +390,9 @@ function JournalInlineItem({
             >
               <TrashIcon aria-hidden="true" className="journal-inline-toolbar-icon" />
             </button>
+            {isPendingBookmarkTarget ? (
+              <span className="journal-bookmark-linking-state">Klikni bookmark v dokumentu</span>
+            ) : null}
           </div>
         ) : null}
         <div className="journal-inline-item editing">
@@ -350,20 +422,26 @@ function JournalInlineItem({
           value={draft}
         />
         </div>
+        <JournalLinkedBookmarks item={item} />
       </div>
     );
   }
 
   return (
     <div className="journal-inline-item">
-      <button
-        className="journal-inline-text"
-        onDoubleClick={() => setIsEditing(true)}
-        title="Dvojklikem upravit"
-        type="button"
-      >
-        {item.title}
-      </button>
+      <div className="journal-inline-read-content">
+        <div className="journal-inline-read-row">
+          <button
+            className="journal-inline-text"
+            onDoubleClick={() => setIsEditing(true)}
+            title="Dvojklikem upravit"
+            type="button"
+          >
+            {item.title}
+          </button>
+          <JournalLinkedBookmarks item={item} />
+        </div>
+      </div>
       {/* Delete is intentionally hidden in read mode. It appears only while editing. */}
     </div>
   );
@@ -376,7 +454,9 @@ function AILayer({
   onCreateItem,
   onCreateDraftItem,
   onDiscardDraftItem,
-  onUpdateItem
+  onStartBookmarkLink,
+  onUpdateItem,
+  pendingBookmarkTargetJournalItemId
 }: {
   draftItems: DraftJournalItem[];
   journalItems: JournalItem[];
@@ -384,7 +464,9 @@ function AILayer({
   onCreateItem: (section: typeof JOURNAL_SECTIONS[number]) => void;
   onCreateDraftItem: (draftId: string, title: string) => void;
   onDiscardDraftItem: (draftId: string) => void;
+  onStartBookmarkLink: (itemId: string) => void;
   onUpdateItem: (itemId: string, title: string) => void;
+  pendingBookmarkTargetJournalItemId: string | null;
 }) {
   return (
     <div className="notebook-layer notebook-ai-layer" aria-label="Zápisník situace">
@@ -417,7 +499,9 @@ function AILayer({
                     <JournalInlineItem
                       item={item}
                       key={item.id}
+                      isPendingBookmarkTarget={pendingBookmarkTargetJournalItemId === item.id}
                       onArchive={onArchiveItem}
+                      onStartBookmarkLink={onStartBookmarkLink}
                       onUpdate={onUpdateItem}
                     />
                   ))}
@@ -463,12 +547,16 @@ export function JournalPanel({
   documentListRefreshKey,
   onOpenDocument,
   onSelectSituation,
+  onStartBookmarkLink,
+  pendingBookmarkTargetJournalItemId,
   selectedSituationId
 }: {
   caseItem: CaseSummary;
   documentListRefreshKey: number;
   onOpenDocument: (document: CaseDocument) => void;
   onSelectSituation: (situationId: string | null) => void;
+  onStartBookmarkLink: (journalItemId: string) => void;
+  pendingBookmarkTargetJournalItemId: string | null;
   selectedSituationId: string | null;
 }) {
   const [situations, setSituations] = useState<Situation[]>([]);
@@ -507,8 +595,30 @@ export function JournalPanel({
 
     void loadJournalItems();
 
+    function handleExternalJournalRefresh() {
+      void loadJournalItems();
+    }
+
+    function handleExternalJournalItemUpdated(event: Event) {
+      const customEvent = event as CustomEvent<JournalItem | undefined>;
+      const updatedItem = customEvent.detail;
+
+      if (!updatedItem) {
+        return;
+      }
+
+      setJournalItems((current) =>
+        current.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+      );
+    }
+
+    window.addEventListener("bureaucat:journal-refresh", handleExternalJournalRefresh);
+    window.addEventListener("bureaucat:journal-item-updated", handleExternalJournalItemUpdated);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("bureaucat:journal-refresh", handleExternalJournalRefresh);
+      window.removeEventListener("bureaucat:journal-item-updated", handleExternalJournalItemUpdated);
     };
   }, [caseItem.id]);
 
@@ -727,7 +837,9 @@ export function JournalPanel({
           onCreateDraftItem={handleCreateDraftJournalItem}
           onCreateItem={handleCreateJournalItem}
           onDiscardDraftItem={handleDiscardDraftJournalItem}
+          onStartBookmarkLink={onStartBookmarkLink}
           onUpdateItem={handleUpdateJournalItem}
+          pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
         />
       </div>
     </aside>

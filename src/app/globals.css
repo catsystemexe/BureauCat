@@ -4993,3 +4993,112 @@ body {
   position: absolute;
   right: 3px;
 }
+
+/* === JOURNAL LINKED BOOKMARK PILLS === */
+
+.journal-inline-read-content {
+  display: grid;
+  gap: 3px;
+}
+
+.journal-linked-bookmarks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-left: 0;
+}
+
+.journal-linked-bookmark-pill {
+  align-items: center;
+  background: #edf5ff;
+  border: 1px solid #b9d7ff;
+  border-radius: 999px;
+  color: #0869d7;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 3px 7px;
+}
+
+/* === JOURNAL ↔ BOOKMARK LINK MODE === */
+
+.document-text-pin-shell.bookmark-link-mode .document-pin-marker {
+  cursor: copy !important;
+  outline: 2px solid rgba(8, 105, 215, 0.35) !important;
+  outline-offset: 2px !important;
+}
+
+.journal-bookmark-linking-state {
+  align-items: center;
+  color: #0869d7;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0 6px;
+}
+
+.journal-linked-bookmark-pill {
+  border-color: var(--bookmark-color, #0869d7);
+  color: var(--bookmark-color, #0869d7);
+}
+
+/* === JOURNAL LINKED BOOKMARK INLINE MARKER === */
+
+.journal-inline-read-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.journal-linked-bookmarks {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+  .journal-linked-bookmark-marker[data-color="red"] {
+    --bookmark-color: #ef4444;
+  }
+
+  .journal-linked-bookmark-marker[data-color="green"] {
+    --bookmark-color: #22c55e;
+  }
+
+  .journal-linked-bookmark-marker[data-color="blue"] {
+    --bookmark-color: #3b82f6;
+  }
+
+  .journal-linked-bookmark-marker[data-color="yellow"] {
+    --bookmark-color: #eab308;
+  }
+}
+
+.journal-linked-bookmark-icon {
+  color: currentColor;
+  fill: currentColor;
+  height: 22px;
+  position: absolute;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  width: 22px;
+}
+
+.journal-linked-bookmark-index {
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  position: relative;
+  top: -1px;
+  user-select: none;
+  z-index: 1;
+}
+
+/* Neutralize old pill style if it still exists earlier in the stylesheet. */
+.journal-linked-bookmark-pill {
+  display: none !important;
+}

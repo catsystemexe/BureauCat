@@ -91,7 +91,15 @@ function getNoteCssColor(value: string | null | undefined) {
   return getHighlightCssColor(value ?? "yellow");
 }
 
-export function DocumentViewPanel({ document: initialDocument }: { document: CaseDocument }) {
+export function DocumentViewPanel({
+  document: initialDocument,
+  isBookmarkLinkMode = false,
+  onBookmarkSelectedForLink
+}: {
+  document: CaseDocument;
+  isBookmarkLinkMode?: boolean;
+  onBookmarkSelectedForLink?: (pin: DocumentPin) => void;
+}) {
   const [currentDocument, setCurrentDocument] = useState(initialDocument);
   const [isOriginalVisible, setIsOriginalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -1726,7 +1734,7 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
             </div>
           </div>
         ) : displayText.trim().length > 0 ? (
-          <div className={`document-text-pin-shell${isPinDragging ? " pin-dragging" : ""}`} ref={documentTextShellRef}>
+          <div className={`document-text-pin-shell${isPinDragging ? " pin-dragging" : ""}${isBookmarkLinkMode ? " bookmark-link-mode" : ""}`} ref={documentTextShellRef}>
           <pre
             ref={documentTextRef}
             className={`document-extracted-text${activeAnnotationTool ? ` sentence-tool-mode sentence-tool-${activeAnnotationTool}` : ""}`}
@@ -1890,6 +1898,12 @@ export function DocumentViewPanel({ document: initialDocument }: { document: Cas
                   }
 
                   event.stopPropagation();
+
+                  if (isBookmarkLinkMode) {
+                    onBookmarkSelectedForLink?.(pin);
+                    return;
+                  }
+
                   const rect = event.currentTarget.getBoundingClientRect();
                   setHoveredPin(null);
                   openPinEditor(pin, rect.right + 12, rect.top);

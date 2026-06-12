@@ -17,7 +17,7 @@ import {
   ArrowUpTrayIcon,
   FolderIcon
 } from "@heroicons/react/24/outline";
-import type { CaseDocument, CaseSummary, JournalItem } from "./types";
+import type { CaseDocument, CaseSummary, DocumentPin, JournalItem } from "./types";
 
 type RightPanelMode = "help" | "evidence" | "document";
 type RightPanelTab = "documents" | "analysis" | "procedure";
@@ -310,6 +310,8 @@ export function RightContextPanel({
   selectedDocument,
   selectedJournalItem,
   documentListRefreshKey,
+  isBookmarkLinkMode,
+  onBookmarkSelectedForLink,
   onDocumentUploaded,
   onOpenDocument,
   onOpenSourceDocument,
@@ -321,6 +323,8 @@ export function RightContextPanel({
   selectedDocument: CaseDocument | null;
   selectedJournalItem: JournalItem | null;
   documentListRefreshKey: number;
+  isBookmarkLinkMode: boolean;
+  onBookmarkSelectedForLink: (pin: DocumentPin) => void;
   onDocumentUploaded: (document: CaseDocument) => void;
   onOpenDocument: (document: CaseDocument) => void;
   onOpenSourceDocument: (documentId: string) => Promise<boolean>;
@@ -442,7 +446,11 @@ export function RightContextPanel({
           ) : null}
 
           {selectedDocument ? (
-            <DocumentViewPanel document={selectedDocument} />
+            <DocumentViewPanel
+              document={selectedDocument}
+              isBookmarkLinkMode={isBookmarkLinkMode}
+              onBookmarkSelectedForLink={onBookmarkSelectedForLink}
+            />
           ) : (
             <div className="right-panel-placeholder compact-right-placeholder">
               <h2>Dokument</h2>
@@ -479,6 +487,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [documentListRefreshKey, setDocumentListRefreshKey] = useState(0);
   const [situationDocumentListRefreshKey, setSituationDocumentListRefreshKey] = useState(0);
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null);
+  const [pendingBookmarkTargetJournalItemId, setPendingBookmarkTargetJournalItemId] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedSituationId(null);
@@ -522,6 +531,40 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     openDocument(document);
   }
 
+  async function handleBookmarkSelectedForLink(pin: DocumentPin) {
+    if (!pendingBookmarkTargetJournalItemId || !selectedDocument) {
+      return;
+    }
+
+    const response = await fetch(`/api/journal/${pendingBookmarkTargetJournalItemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source_links_json: JSON.stringify([
+          {
+            type: "bookmark",
+            pinId: pin.id,
+            documentId: selectedDocument.id,
+            caseBookmarkNumber: pin.case_bookmark_number,
+            color: pin.color
+          }
+        ])
+      })
+    });
+
+    if (response.ok) {
+      const data = (await response.json()) as { journalItem?: JournalItem };
+      setPendingBookmarkTargetJournalItemId(null);
+      setJournalRefreshKey((currentKey) => currentKey + 1);
+      window.dispatchEvent(
+        new CustomEvent("bureaucat:journal-item-updated", {
+          detail: data.journalItem
+        })
+      );
+      window.dispatchEvent(new CustomEvent("bureaucat:journal-refresh"));
+    }
+  }
+
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
@@ -540,6 +583,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           documentListRefreshKey={situationDocumentListRefreshKey}
           onOpenDocument={openDocument}
           onSelectSituation={selectSituation}
+          onStartBookmarkLink={setPendingBookmarkTargetJournalItemId}
+          pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
           selectedSituationId={selectedSituationId}
         />
         <MiddleChatPanel
@@ -549,7 +594,9 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         <RightContextPanel
           caseId={caseItem.id}
           documentListRefreshKey={documentListRefreshKey}
+          isBookmarkLinkMode={pendingBookmarkTargetJournalItemId !== null}
           mode={rightPanelMode}
+          onBookmarkSelectedForLink={handleBookmarkSelectedForLink}
           onDocumentUploaded={handleDocumentUploaded}
           onOpenDocument={openDocument}
           onOpenSourceDocument={openSourceDocument}

@@ -11,3 +11,6 @@ externalPort = 3001
 
 [nix]
 packages = ["sqlite", "tesseract4"]
+
+[workflows]
+runButton = "Project"
