@@ -5117,3 +5117,40 @@ body {
 .journal-linked-bookmark-pill {
   display: none !important;
 }
+
+/* === JOURNAL BOOKMARK COLORS MATCH DOCUMENT PINS === */
+
+.journal-linked-bookmark-marker[data-color="red"] {
+  --bookmark-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.journal-linked-bookmark-marker[data-color="orange"] {
+  --bookmark-color: #f97316 !important;
+  color: #f97316 !important;
+}
+
+.journal-linked-bookmark-marker[data-color="green"] {
+  --bookmark-color: #22c55e !important;
+  color: #22c55e !important;
+}
+
+.journal-linked-bookmark-marker[data-color="yellow"] {
+  --bookmark-color: #eab308 !important;
+  color: #eab308 !important;
+}
+
+.journal-linked-bookmark-marker[data-color="blue"] {
+  --bookmark-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+.journal-linked-bookmark-icon {
+  color: var(--bookmark-color, #ef4444) !important;
+  fill: var(--bookmark-color, #ef4444) !important;
+  stroke: var(--bookmark-color, #ef4444) !important;
+}
+
+.journal-linked-bookmark-index {
+  color: #ffffff !important;
+}
