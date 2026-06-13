@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CASE_STATUS_LABELS } from "@/lib/constants/uiLabels";
 import type { CaseSummary } from "./types";
+import {
+  Car,
+  FileText,
+  Landmark,
+  UsersRound
+} from "lucide-react";
+
 
 type CasesResponse = {
   cases?: CaseSummary[];
@@ -85,47 +92,94 @@ export function CaseList() {
     }
   }
 
-  return (
-    <section className="case-list-card" aria-labelledby="cases-title">
-      <div className="case-list-header">
-        <div>
-          <p className="eyebrow">BureauCat</p>
-          <h1 id="cases-title">Případy</h1>
-        </div>
-        <button className="primary-action" type="button" onClick={createDraftCase} disabled={isCreating}>
+return (
+  <main className="title-screen">
+    <section className="title-hero" aria-labelledby="cases-title">
+      <img
+        src="/bureaucat_title_art.png"
+        alt=""
+        aria-hidden="true"
+        className="title-hero-art"
+      />
+
+      <div className="title-hero-overlay" />
+
+      <div className="title-brand-panel">
+        <img
+          src="/bureaucat_logo.png"
+          alt="BureauCat"
+          className="title-logo"
+        />
+
+        <p className="title-kicker">Asistent pro jednání s úřady</p>
+
+      <div className="title-action-stack">
+        <button
+          className="title-primary-action"
+          type="button"
+          onClick={createDraftCase}
+          disabled={isCreating}
+        >
           {isCreating ? "Vytvářím…" : "Nový případ"}
         </button>
+
+        <button
+          className="title-secondary-action"
+          type="button"
+        >
+          ⚡ Rychlá analýza
+        </button>
       </div>
+    </div>
 
-      {error ? <p className="status-message error-message">{error}</p> : null}
-      {isLoading ? <p className="status-message">Načítám případy…</p> : null}
-
-      {!isLoading && cases.length === 0 ? (
-        <div className="empty-state">
-          <h2>Zatím žádné případy</h2>
-          <p>Vytvořte nový případ a začněte zápisník/konzultaci.</p>
+      <aside className="title-cases-panel" aria-label="Nedávné případy">
+        <div className="title-cases-header">
+          <p className="title-cases-kicker">Nedávné</p>
+          <h1 id="cases-title">Případy</h1>
         </div>
-      ) : null}
 
-      {!isLoading && cases.length > 0 ? (
-        <div className="case-list" role="list">
-          {cases.map((caseItem) => (
-            <button
-              className="case-list-item"
-              key={caseItem.id}
-              type="button"
-              onClick={() => router.push(`/cases/${caseItem.id}`)}
-              role="listitem"
-            >
-              <span>
-                <strong>{caseItem.title}</strong>
-                <small>{caseItem.area ?? "Oblast není uvedena"}</small>
-              </span>
-              <span className="status-pill">{CASE_STATUS_LABELS[caseItem.status]}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </section>
+        {error ? <p className="title-error">{error}</p> : null}
+        {isLoading ? <p className="title-muted">Načítám případy…</p> : null}
+
+        {!isLoading && cases.length === 0 ? (
+          <p className="title-muted">Zatím žádné případy.</p>
+        ) : null}
+
+        {!isLoading && cases.length > 0 ? (
+          <div className="title-case-list" role="list">
+            {cases.map((caseItem, index) => {
+  const caseIcons = [UsersRound, Landmark, Car, FileText];
+  const CaseIcon = caseIcons[index % caseIcons.length];
+  const caseMeta = ["8 dokumentů • 3 otázky", "21 dokumentů • 6 poznatků", "2 dokumenty • 1 úkol", "Bez metadat"];
+
+  return (
+    <button
+      className="title-case-card"
+      key={caseItem.id}
+      type="button"
+      onClick={() => router.push(`/cases/${caseItem.id}`)}
+      role="listitem"
+    >
+      <span className="title-case-icon" aria-hidden="true">
+        <CaseIcon className="title-case-lucide-icon" />
+      </span>
+
+      <span className="title-case-main">
+        <strong>{caseItem.title}</strong>
+        <small>{caseMeta[index % caseMeta.length]}</small>
+      </span>
+
+      <span className="title-status-pill">
+        <span aria-hidden="true" className="title-status-dot" />
+        {CASE_STATUS_LABELS[caseItem.status]}
+      </span>
+    </button>
   );
+})}
+          </div>
+        ) : null}
+      </aside>
+    </section>
+  </main>
+);
 }

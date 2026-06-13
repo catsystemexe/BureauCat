@@ -515,20 +515,22 @@ export function DocumentViewPanel({
     return parts;
   }
 
-  function getTextOffsetFromPoint(clientX: number, clientY: number) {
-    const root = documentTextRef.current;
+      function getTextOffsetFromPoint(clientX: number, clientY: number) {
+        const root = documentTextRef.current;
 
-    if (!root) {
-      return null;
-    }
+        if (!root) {
+          return null;
+        }
 
-    function offsetFromNode(node: Node, offset: number) {
-      if (!root.contains(node)) {
-        return null;
-      }
+        const textRoot = root;
 
-      const beforeRange = document.createRange();
-      beforeRange.selectNodeContents(root);
+        function offsetFromNode(node: Node, offset: number) {
+          if (!textRoot.contains(node)) {
+            return null;
+          }
+
+          const beforeRange = document.createRange();
+          beforeRange.selectNodeContents(textRoot);
 
       try {
         beforeRange.setEnd(node, offset);
