@@ -1,0 +1,526 @@
+/* === DOCUMENT PINS V1 === */
+
+.document-content-section {
+  position: relative !important;
+}
+
+.document-pin-layer {
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 32px;
+  z-index: 80;
+}
+
+.document-pin-marker {
+  align-items: center;
+  background: var(--pin-color, #ef4444) !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 999px !important;
+  box-shadow: 0 2px 8px rgba(29, 29, 27, 0.22);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 900;
+  height: 22px;
+  justify-content: center;
+  left: 4px;
+  line-height: 1;
+  pointer-events: auto;
+  position: absolute;
+  transform: translateY(-50%);
+  width: 22px;
+}
+
+.document-pin-marker:hover,
+.document-pin-marker:focus-visible {
+  outline: 2px solid #0869d7;
+  outline-offset: 2px;
+}
+
+.document-extracted-text {
+  padding-left: 42px !important;
+}
+
+.document-pin-floating-editor {
+  background: #ffffff;
+  border: 2px solid var(--pin-color, #ef4444);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  display: grid;
+  gap: 8px;
+  max-width: 320px;
+  padding: 10px 12px;
+  position: fixed;
+  width: 320px;
+  z-index: 10003;
+}
+
+.document-pin-floating-editor strong {
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-pin-floating-editor textarea {
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  padding: 8px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-pin-editor-colors,
+.document-pin-editor-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* === PIN LAYOUT / TOOLBAR FLOW FIX === */
+
+/* The floating annotation toolbar must not reserve layout space. */
+.document-annotation-toolbar {
+  position: absolute !important;
+  right: 22px !important;
+  top: 12px !important;
+  float: none !important;
+  margin: 0 !important;
+  z-index: 200 !important;
+}
+
+/* Shared coordinate context for text and pins. */
+.document-text-pin-shell {
+  position: relative !important;
+  min-height: 0 !important;
+  width: 100% !important;
+}
+
+/* Text keeps its own scroll, pin layer follows the same visual area. */
+.document-text-pin-shell .document-extracted-text {
+  margin: 0 !important;
+  padding-left: 42px !important;
+}
+
+/* Pin layer is anchored to the text shell, not to the whole document section. */
+.document-text-pin-shell .document-pin-layer {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: auto !important;
+  width: 34px !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 90 !important;
+}
+
+/* Pin marker uses measured px top inside shell. */
+.document-text-pin-shell .document-pin-marker {
+  left: 6px !important;
+  position: absolute !important;
+  pointer-events: auto !important;
+}
+
+/* === DOCUMENT PIN EDITOR SAFE === */
+
+.document-pin-hover-box,
+.document-pin-floating-editor {
+  background: #ffffff;
+  border: 2px solid var(--pin-color, #ef4444);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  position: fixed;
+  width: 300px;
+  z-index: 10004;
+}
+
+.document-pin-hover-box {
+  padding: 10px 12px;
+  pointer-events: none;
+}
+
+.document-pin-hover-box strong {
+  color: #0869d7;
+  display: block;
+  font-size: 0.72rem;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.document-pin-hover-box p {
+  font-size: 0.84rem;
+  line-height: 1.4;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.document-pin-floating-editor {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.document-pin-floating-editor textarea {
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  padding: 8px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-pin-editor-colors {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.document-pin-delete-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: #b42318;
+  cursor: pointer;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  justify-self: end;
+  width: 30px;
+}
+
+.document-pin-delete-button:hover,
+.document-pin-delete-button:focus-visible {
+  background: #fff1ed;
+  outline: none;
+}
+
+/* === PIN EDITOR MATCH PREVIEW FINAL === */
+
+.document-pin-hover-box,
+.document-pin-floating-editor {
+  background: #ffffff !important;
+  border: 2px solid var(--pin-color, #ef4444) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18) !important;
+  color: #1f2937 !important;
+  max-width: min(360px, calc(100vw - 32px)) !important;
+  min-width: 240px !important;
+  width: max-content !important;
+  position: fixed !important;
+  z-index: 10004 !important;
+}
+
+.document-pin-hover-box {
+  padding: 10px 12px !important;
+  pointer-events: none !important;
+}
+
+.document-pin-floating-editor {
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-floating-content {
+  display: grid !important;
+  gap: 4px !important;
+  max-width: 360px !important;
+  min-width: 240px !important;
+  padding: 10px 12px !important;
+}
+
+.document-pin-hover-box strong,
+.document-pin-floating-content strong {
+  color: #0869d7 !important;
+  display: block !important;
+  font-size: 0.72rem !important;
+  margin-bottom: 4px !important;
+  text-transform: uppercase !important;
+}
+
+.document-pin-hover-box p,
+.document-pin-floating-content textarea {
+  font-size: 0.84rem !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  white-space: pre-wrap !important;
+}
+
+.document-pin-floating-content textarea {
+  background: transparent !important;
+  border: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  min-height: 1.4em !important;
+  outline: none !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  resize: none !important;
+  width: 100% !important;
+}
+
+.document-pin-editor-toolbar {
+  align-items: center !important;
+  background: #ffffff !important;
+  border: 1px solid #d7dce2 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16) !important;
+  display: flex !important;
+  gap: 6px !important;
+  height: 34px !important;
+  left: 0 !important;
+  padding: 2px 4px !important;
+  position: absolute !important;
+  top: -38px !important;
+  width: max-content !important;
+}
+
+.document-pin-editor-colors {
+  align-items: center !important;
+  display: flex !important;
+  gap: 5px !important;
+}
+
+.document-pin-delete-button {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: #b42318 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  height: 28px !important;
+  justify-content: center !important;
+  width: 28px !important;
+}
+
+.document-pin-delete-button:hover,
+.document-pin-delete-button:focus-visible {
+  background: #fff1ed !important;
+  outline: none !important;
+}
+
+/* === PIN Z-INDEX BELOW DOCUMENT HEADER === */
+
+.document-view-header {
+  position: relative !important;
+  z-index: 120 !important;
+}
+
+.document-text-pin-shell .document-pin-layer {
+  z-index: 20 !important;
+}
+
+.document-text-pin-shell .document-pin-marker {
+  z-index: 21 !important;
+}
+
+/* === PIN DRAG NO TEXT SELECTION === */
+
+.document-text-pin-shell.pin-dragging,
+.document-text-pin-shell.pin-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.document-text-pin-shell.pin-dragging .document-extracted-text {
+  cursor: grabbing !important;
+}
+
+/* === PIN MARKER MAP ICON === */
+
+.document-pin-marker {
+  gap: 1px !important;
+  height: 28px !important;
+  width: 28px !important;
+  flex-direction: column !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+}
+
+.document-pin-marker-icon {
+  height: 13px !important;
+  width: 13px !important;
+  stroke-width: 3 !important;
+}
+
+.document-pin-marker span {
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  margin-top: -2px !important;
+}
+
+/* === PIN MARKER PSEUDO SOLID MAP PIN FINAL === */
+
+.document-pin-marker {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--pin-color, #ef4444) !important;
+  height: 30px !important;
+  width: 30px !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-icon {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  fill: var(--pin-color, #ef4444) !important;
+  stroke: var(--pin-color, #ef4444) !important;
+  stroke-width: 1.7 !important;
+  filter: drop-shadow(0 1px 1px rgba(29, 29, 27, 0.25));
+  pointer-events: none !important;
+}
+
+.document-pin-index {
+  position: absolute !important;
+  left: -7px !important;
+  top: 4px !important;
+  min-width: 13px !important;
+  height: 13px !important;
+  align-items: center !important;
+  background: #ffffff !important;
+  border: 1px solid var(--pin-color, #ef4444) !important;
+  border-radius: 999px !important;
+  color: var(--pin-color, #ef4444) !important;
+  display: inline-flex !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  padding: 0 2px !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+.document-pin-marker:hover,
+.document-pin-marker:focus-visible {
+  outline: 2px solid rgba(8, 105, 215, 0.45) !important;
+  outline-offset: 2px !important;
+}
+
+/* === PIN MARKER OUTLINE + BOTTOM INDEX FINAL === */
+
+.document-pin-marker {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--pin-color, #ef4444) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  height: 34px !important;
+  width: 28px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-icon {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  fill: transparent !important;
+  stroke: var(--pin-color, #ef4444) !important;
+  stroke-width: 2.6 !important;
+  filter: drop-shadow(0 1px 1px rgba(29, 29, 27, 0.18));
+  pointer-events: none !important;
+}
+
+.document-pin-index {
+  position: static !important;
+  min-width: 0 !important;
+  height: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--pin-color, #ef4444) !important;
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+.document-pin-marker span {
+  margin-top: 0 !important;
+}
+
+/* === BOOKMARK SOLID PIN === */
+
+.document-pin-marker {
+  position: absolute !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 24px !important;
+  height: 28px !important;
+
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-icon {
+  position: absolute !important;
+
+  width: 24px !important;
+  height: 24px !important;
+
+  color: var(--pin-color, #ef4444) !important;
+
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+
+  filter: drop-shadow(0 1px 1px rgba(29,29,27,.18));
+}
+
+.document-pin-index {
+  position: absolute !important;
+
+  top: 5px !important;
+  left: 50% !important;
+
+  transform: translateX(-50%) !important;
+
+  color: white !important;
+
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+/* === BOOKMARK PIN POSITION POLISH === */
+
+.document-text-pin-shell .document-pin-marker {
+  left: 0px !important;
+}
+
+.document-pin-index {
+  top: 7px !important;
+}

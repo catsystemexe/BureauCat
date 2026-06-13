@@ -1,0 +1,542 @@
+/* === DOCUMENT NOTE MARKERS === */
+
+.document-note-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  min-width: 17px;
+  margin: 0 2px;
+  padding: 0;
+  border: 1px solid rgba(0,0,0,.18);
+  border-radius: 999px;
+  color: #1f2937;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: super;
+  box-shadow: 0 1px 2px rgba(0,0,0,.16);
+}
+
+.document-note-marker:hover,
+.document-note-marker:focus-visible {
+  outline: 2px solid #0869d7;
+  outline-offset: 1px;
+}
+
+/* === DOCUMENT NOTE V2 === */
+
+.document-note-hover-box {
+  position: fixed;
+  z-index: 10000;
+  max-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #d7dce2;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  pointer-events: none;
+}
+
+.document-note-hover-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-note-hover-box p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.secondary-action.danger {
+  color: #b42318 !important;
+}
+
+/* === DOCUMENT NOTE V2 FINISH === */
+
+.document-note-hover-box {
+  position: fixed;
+  z-index: 10000;
+  max-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #d7dce2;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  pointer-events: none;
+}
+
+.document-note-hover-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-note-hover-box p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.secondary-action.danger {
+  color: #b42318 !important;
+}
+
+/* === FLOATING NOTE EDITOR === */
+
+.document-annotation-note-editor-floating {
+  position: fixed !important;
+  z-index: 10001 !important;
+  width: min(360px, calc(100vw - 32px));
+  margin: 0 !important;
+  box-shadow: 0 14px 44px rgba(29, 29, 27, 0.22);
+}
+
+.document-note-hover-box {
+  transform: translateY(-100%);
+}
+
+/* === NOTE EDITOR COMPACT FLOATING === */
+
+.document-note-floating-editor {
+  position: fixed;
+  z-index: 10001;
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) 34px;
+  gap: 6px;
+  border: 2px solid #ffe766;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+}
+
+.document-note-floating-content {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.document-note-floating-content strong {
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+
+.document-note-floating-actions {
+  display: grid;
+  grid-template-rows: 30px 30px 30px 1fr 30px;
+  gap: 4px;
+  padding: 6px 5px 6px 0;
+}
+
+.document-note-floating-actions button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  height: 30px;
+  width: 30px;
+}
+
+.document-note-floating-actions button:hover,
+.document-note-floating-actions button:focus-visible {
+  background: #edf5ff;
+  outline: none;
+}
+
+.document-note-floating-actions button.danger {
+  color: #b42318;
+}
+
+.document-note-floating-spacer {
+  min-height: 12px;
+}
+
+.document-note-floating-color-panel {
+  position: absolute;
+  right: 40px;
+  top: 6px;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #d7dce2;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16);
+}
+
+.document-annotation-note-editor-floating {
+  display: none !important;
+}
+
+/* === NOTE PREVIEW / EDITOR UNIFIED BOX === */
+
+.document-note-hover-box,
+.document-note-floating-editor {
+  width: 340px !important;
+  min-height: 126px !important;
+  max-width: min(340px, calc(100vw - 32px)) !important;
+  border: 2px solid #ffe766 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18) !important;
+  color: #1f2937 !important;
+}
+
+.document-note-hover-box {
+  padding: 10px 12px !important;
+}
+
+.document-note-floating-editor {
+  grid-template-columns: minmax(240px, 1fr) 34px !important;
+  gap: 6px !important;
+  padding: 0 !important;
+}
+
+.document-note-hover-box strong,
+.document-note-floating-content strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-note-hover-box p,
+.document-note-floating-content textarea {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.document-note-floating-content {
+  padding: 10px 12px !important;
+}
+
+
+.document-note-floating-actions {
+  border-left: 1px solid #edf0f3;
+  padding: 6px 5px 6px 0 !important;
+}
+
+/* === NOTE EDITOR POLISH === */
+
+.document-note-hover-box,
+.document-note-floating-editor {
+  width: max-content !important;
+  min-width: 220px !important;
+  max-width: min(420px, calc(100vw - 32px)) !important;
+  min-height: unset !important;
+}
+
+.document-note-hover-box {
+  padding: 10px 12px !important;
+}
+
+.document-note-floating-editor {
+  grid-template-columns: minmax(220px, max-content) 34px !important;
+  align-items: start !important;
+}
+
+.document-note-hover-box p {
+  max-width: 380px;
+}
+
+.document-note-floating-content {
+  min-width: 220px;
+  max-width: 380px;
+}
+
+.document-note-title-spacer {
+  height: 8px;
+}
+
+.document-note-floating-content textarea {
+  width: 100%;
+  min-width: 220px;
+  max-width: 380px;
+
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
+
+  border: 0 !important;
+  outline: none !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  resize: none !important;
+  overflow: hidden !important;
+
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  background: transparent;
+}
+
+.document-note-floating-actions {
+  align-self: stretch !important;
+  grid-template-rows: 30px 30px 30px 1fr 30px !important;
+  min-height: 150px;
+  border-left: 1px solid #edf0f3;
+}
+
+.document-note-floating-editor:has(textarea:placeholder-shown) .document-note-floating-actions {
+  min-height: 150px;
+}
+
+/* === NOTE EDITOR MENU ADJUST === */
+
+.document-note-title-spacer {
+  display: none !important;
+}
+
+.document-note-floating-editor {
+  align-items: start !important;
+}
+
+.document-note-floating-actions {
+  align-self: start !important;
+  min-height: 150px !important;
+}
+
+.document-note-floating-content {
+  padding-bottom: 10px !important;
+}
+
+/* === NOTE MENU ATTACHED OUTSIDE BOX === */
+
+.document-note-floating-editor {
+  display: block !important;
+  position: fixed !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-note-floating-content {
+  display: block !important;
+  min-width: 260px !important;
+  max-width: 380px !important;
+  padding: 10px 12px !important;
+}
+
+.document-note-floating-actions {
+  position: absolute !important;
+  left: calc(100% + 4px) !important;
+  top: 0 !important;
+  display: grid !important;
+  grid-template-rows: 30px 30px 30px 1fr 30px !important;
+  gap: 4px !important;
+  min-height: 150px !important;
+  width: 34px !important;
+  padding: 6px 4px !important;
+  border: 2px solid inherit !important;
+  border-left: 2px solid inherit !important;
+  border-radius: 0 10px 10px 0 !important;
+  background: #ffffff !important;
+  box-shadow: 8px 10px 24px rgba(29, 29, 27, 0.12) !important;
+}
+
+.document-note-floating-color-panel {
+  right: 40px !important;
+  top: 0 !important;
+}
+
+/* === NOTE TEXTAREA FINAL COMPACT FIX === */
+
+.document-note-title-spacer {
+  display: none !important;
+  height: 0 !important;
+}
+
+.document-note-floating-content {
+  gap: 0 !important;
+}
+
+.document-note-floating-content strong {
+  margin-bottom: 4px !important;
+}
+
+.document-note-floating-content textarea {
+  display: block !important;
+  min-height: 1.4em !important;
+  height: 1.4em !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+  overflow: hidden !important;
+}
+
+/* === NOTE EDITOR HORIZONTAL TOP MENU === */
+
+.document-note-floating-editor {
+  overflow: visible !important;
+}
+
+.document-note-floating-actions {
+  position: absolute !important;
+  left: 0 !important;
+  right: auto !important;
+  top: -38px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 4px !important;
+  width: max-content !important;
+  min-height: 0 !important;
+  height: 34px !important;
+  padding: 2px 4px !important;
+  border: 1px solid #d7dce2 !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16) !important;
+}
+
+.document-note-floating-actions button {
+  height: 30px !important;
+  width: 30px !important;
+  min-width: 30px !important;
+}
+
+.document-note-floating-spacer {
+  width: 10px !important;
+  min-width: 10px !important;
+  height: 1px !important;
+}
+
+.document-note-floating-color-panel {
+  left: 0 !important;
+  right: auto !important;
+  top: -84px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  border-radius: 999px !important;
+}
+
+/* === NOTE COLOR / REVERT FINAL FIX === */
+
+.document-note-floating-editor,
+.document-note-hover-box {
+  border-color: var(--note-color, #ffe766) !important;
+}
+
+/* === NOTE TEXTAREA AUTOSIZE === */
+
+.document-note-floating-content textarea {
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+}
+
+/* === NOTE BOX FINAL ALIGN === */
+
+.document-note-hover-box,
+.document-note-floating-editor {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+  box-sizing: border-box !important;
+}
+
+.document-note-hover-box {
+  z-index: 10000 !important;
+}
+
+.document-note-floating-editor {
+  z-index: 10002 !important;
+}
+
+.document-note-floating-content {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+.document-note-floating-content textarea {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+  resize: none !important;
+  white-space: pre-wrap !important;
+}
+
+.document-note-hover-box p {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+/* === NOTE TEXTAREA REMOVE 2-LINE LIMIT === */
+
+.document-note-floating-content textarea {
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  resize: none !important;
+}
+
+.document-note-floating-content {
+  overflow: visible !important;
+}
+
+.document-note-floating-editor {
+  height: auto !important;
+  min-height: unset !important;
+}
+
+/* === NOTE TEXTAREA ROW SYNC WITH PREVIEW === */
+
+.document-note-floating-content textarea {
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  resize: none !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.document-note-hover-box p,
+.document-note-floating-content textarea {
+  font-size: 0.84rem !important;
+  line-height: 1.4 !important;
+}
+
+/* === NOTE TEXTAREA CARET / EXTRA ROW FINAL === */
+
+.document-note-floating-content textarea {
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: content-box !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+

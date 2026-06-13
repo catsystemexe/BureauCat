@@ -2,7 +2,7 @@ run = "npm run dev -- --hostname 0.0.0.0 --port 3002"
 modules = ["nodejs-20", "python-3.11"]
 
 [nix]
-packages = ["sqlite", "tesseract4", "iproute2"]
+packages = ["iproute2", "sqlite", "tesseract4"]
 
 [workflows]
 runButton = "Project"

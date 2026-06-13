@@ -1,0 +1,83 @@
+/* === APP VIEWPORT LOCK + PANEL SCROLLING === */
+
+html,
+body {
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+body {
+  margin: 0 !important;
+}
+
+.workspace-shell {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+.three-panel-layout {
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.workspace-panel,
+.journal-panel,
+.chat-panel,
+.context-panel {
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* independent scrolling inside each main panel */
+.journal-panel {
+  overflow-y: auto !important;
+}
+
+.chat-panel {
+  overflow: hidden !important;
+}
+
+.message-list,
+.chat-messages,
+.chat-scroll-area {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+.context-panel {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.right-panel-tab-content {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  flex: 1 1 auto !important;
+}
+
+/* document text scrolls inside right panel, not the page */
+.document-view-panel {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.document-content-section {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.document-text-pin-shell {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.document-extracted-text {
+  max-height: none !important;
+  overflow-y: auto !important;
+}
+

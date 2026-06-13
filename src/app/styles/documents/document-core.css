@@ -1,0 +1,297 @@
+/* === RIGHT DOCUMENTS LIST OVERLAY START === */
+
+/* Let the document area fill the remaining right-panel height */
+.context-panel {
+  min-height: 720px;
+}
+
+.right-panel-tab-content {
+  min-height: calc(720px - 44px);
+  position: relative;
+}
+
+.document-view-panel {
+  min-height: calc(720px - 72px);
+}
+
+.document-content-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.document-extracted-text {
+  height: calc(100vh - 340px);
+  min-height: 500px;
+  max-height: calc(100vh - 340px);
+  overflow-y: auto;
+}
+
+/* Date badge should be plain, not a heavy pill */
+.document-upload-date {
+  background: transparent !important;
+  border-radius: 0 !important;
+  color: #6f655c;
+  font-weight: 500;
+  padding: 0 !important;
+}
+
+/* Case document list should behave like a light overlay above document content */
+.document-list-card {
+  background: #ffffff;
+  border: 1px solid #ded4c6;
+  border-radius: 12px;
+  box-shadow: 0 14px 32px rgba(48, 40, 28, 0.12);
+  left: 14px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 0;
+  position: absolute;
+  right: 14px;
+  top: 58px;
+  z-index: 10;
+}
+
+.document-list-header {
+  background: #f2f2f0;
+  border-bottom: 1px solid #e2ddd6;
+  padding: 10px 12px;
+}
+
+.document-list-header h3 {
+  color: #746d66;
+  font-size: 0.82rem;
+  font-weight: 650;
+  margin: 0;
+}
+
+.document-list {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+
+.document-list li + li {
+  border-top: 1px solid #eee8e1;
+}
+
+.document-list-item {
+  background: #ffffff;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  gap: 2px;
+  padding: 9px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.document-list-item:hover,
+.document-list-item:focus-visible {
+  background: #f8f8f6;
+  outline: none;
+}
+
+.document-list-filename {
+  color: #1d1d1b;
+  font-size: 0.86rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-list-meta {
+  color: #817970;
+  display: inline-flex;
+  font-size: 0.72rem;
+  gap: 8px;
+}
+
+.document-list-open-label {
+  display: none;
+}
+
+/* === RIGHT DOCUMENTS LIST OVERLAY END === */
+
+/* === DOCUMENT REVIEW WORKFLOW V03 START === */
+
+.document-review-title-row {
+  align-items: flex-start !important;
+  gap: 14px !important;
+}
+
+.document-title-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.document-title-meta h2 {
+  margin: 0 !important;
+}
+
+.document-main-actions {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.document-icon-action,
+.document-validation-toggle {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 8px;
+  color: #5f5850;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 650;
+  gap: 6px;
+  height: 32px;
+  justify-content: center;
+  padding: 0 9px;
+}
+
+.document-icon-action {
+  width: 32px;
+}
+
+.document-icon-action:hover,
+.document-icon-action:focus-visible,
+.document-validation-toggle:hover,
+.document-validation-toggle:focus-visible,
+.document-icon-action.active {
+  background: #f6f6f4;
+  outline: none;
+}
+
+.document-icon-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.document-icon-action.danger {
+  color: #a23a2a;
+}
+
+.document-icon-action.danger:hover,
+.document-icon-action.danger:focus-visible {
+  background: #fff1ed;
+  border-color: #efc7bd;
+}
+
+.document-action-icon {
+  display: block;
+  height: 18px;
+  width: 18px;
+}
+
+.document-validation-toggle.pending {
+  color: #9b6632;
+}
+
+.document-validation-toggle.validated {
+  background: #e9f7ef;
+  border-color: #c8e8d3;
+  color: #1f7a45;
+}
+
+.document-review-error {
+  margin: 10px 16px 0 !important;
+}
+
+.document-original-placeholder {
+  background: #f6f6f4;
+  border-bottom: 1px solid #e5e2dc;
+  color: #6f655c;
+  font-size: 0.78rem;
+  padding: 10px 16px;
+}
+
+.document-annotation-toolbar {
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 999px;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.10);
+  display: grid;
+  gap: 4px;
+  padding: 5px;
+  position: absolute;
+  right: 14px;
+  top: 72px;
+  z-index: 3;
+}
+
+.document-annotation-toolbar button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.95rem;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.document-annotation-toolbar button:hover,
+.document-annotation-toolbar button:focus-visible {
+  background: #f6f6f4;
+  outline: none;
+}
+
+.document-edit-shell {
+  display: grid;
+  gap: 10px;
+  padding: 8px 16px 14px;
+}
+
+.document-text-editor {
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 10px;
+  color: #1d1d1b;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  min-height: 500px;
+  padding: 14px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.document-view-panel-fullscreen {
+  background: #ffffff;
+  bottom: 16px;
+  left: 16px;
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: 1000;
+}
+
+.document-view-panel-fullscreen .document-extracted-text,
+.document-view-panel-fullscreen .document-text-editor {
+  height: calc(100vh - 190px) !important;
+  max-height: calc(100vh - 190px) !important;
+}
+
+/* hide old floating fullscreen button if any legacy CSS remains */
+.document-fullscreen-button {
+  display: none !important;
+}
+
+/* === DOCUMENT REVIEW WORKFLOW V03 END === */
