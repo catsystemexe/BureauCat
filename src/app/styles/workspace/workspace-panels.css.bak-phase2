@@ -1,0 +1,229 @@
+/* === BUREAUCAT FINAL HEADER SYSTEM START === */
+
+/* Main panel spacing */
+.three-panel-layout {
+  gap: 4px !important;
+}
+
+/* Left and middle panel headers: plain white, no pseudo-tabs */
+.journal-panel-title-row,
+.chat-panel-header {
+  align-items: center !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e7e5e0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  margin: 0 0 16px !important;
+  padding: 0 18px !important;
+}
+
+.journal-panel-title,
+.chat-panel-header h2 {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: #1d1d1b !important;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 1.05rem !important;
+  font-weight: 740 !important;
+  letter-spacing: -0.018em !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  min-width: auto !important;
+  padding: 0 !important;
+}
+
+.journal-panel-title-row {
+  gap: 20px !important;
+}
+
+.journal-panel-title-row .situation-pager,
+.journal-panel-title-row .situation-pager-row {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Right panel keeps the only real tab system */
+.right-panel-tabs {
+  align-items: stretch !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e7e5e0 !important;
+  display: grid !important;
+  grid-template-columns: 0.7fr 0.7fr 0.7fr 1fr auto !important;
+  height: 56px !important;
+  min-height: 56px !important;
+}
+
+.right-panel-tab {
+  background: #f6f6f4 !important;
+  border: 0 !important;
+  border-right: 1px solid #e7e5e0 !important;
+  border-radius: 0 !important;
+  color: #6f6a63 !important;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  min-height: 56px !important;
+  padding: 0 18px !important;
+  text-align: left !important;
+}
+
+.selected-right-panel-tab {
+  background: #ffffff !important;
+  box-shadow: inset 0 -3px 0 #0869d7 !important;
+  color: #1d1d1b !important;
+  font-weight: 740 !important;
+}
+
+.right-panel-tab-actions {
+  align-items: center !important;
+  background: #ffffff !important;
+  border-left: 1px solid #e7e5e0 !important;
+  display: flex !important;
+  gap: 6px !important;
+  min-height: 56px !important;
+  padding: 0 12px !important;
+}
+
+.right-panel-tabs::after {
+  content: "";
+  background: #ffffff;
+  grid-column: 4;
+  grid-row: 1;
+}
+
+/* Global typography fallback */
+body {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* === BUREAUCAT FINAL HEADER SYSTEM END === */
+/* === FULL WIDTH PANEL HEADER LINES START === */
+
+/* Make left/middle header separators span full panel width like the right panel */
+.journal-panel-title-row,
+.chat-panel-header {
+  margin-left: -18px !important;
+  margin-right: -18px !important;
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+  width: calc(100% + 36px) !important;
+}
+
+/* Keep content after header aligned with panel padding */
+.notebook-page,
+.chat-panel-body {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* === FULL WIDTH PANEL HEADER LINES END === */
+
+/* === PANEL HEADER TOP ALIGN FINAL START === */
+
+.journal-panel,
+.chat-panel {
+  padding-top: 0 !important;
+}
+
+.journal-panel-title-row,
+.chat-panel-header {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+
+  height: 56px !important;
+  min-height: 56px !important;
+
+  display: flex !important;
+  align-items: center !important;
+}
+
+.notebook-page,
+.chat-panel-body {
+  padding-top: 16px !important;
+}
+
+/* === PANEL HEADER TOP ALIGN FINAL END === */
+/* === BUREAUCAT TYPOGRAPHY V1 START === */
+
+/* Case title */
+.workspace-header h1 {
+  color: #161616;
+  font-weight: 650 !important;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+/* Panel headers */
+.journal-panel-title,
+.chat-panel-header h2,
+.right-panel-tab {
+  color: #1d1d1b !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em;
+}
+
+/* Notebook section titles */
+.notebook-card h3,
+.goals-section-header h3,
+.situation-documents-header h3 {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #1d1d1b !important;
+}
+
+/* Notebook content */
+.notebook-card,
+.goal-item,
+.situation-documents-list,
+.journal-empty-message {
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+/* Metadata */
+.document-upload-date,
+.document-list-meta,
+.message-meta,
+.case-status {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #6f6a63 !important;
+}
+
+/* Document viewer readability */
+.document-extracted-text {
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+/* User messages */
+.message-card.user-message,
+.message-card.user {
+  background: #f3f8ff !important;
+}
+
+/* Assistant messages */
+.message-card.assistant-message,
+.message-card.assistant {
+  background: #ffffff !important;
+}
+
+/* Vertical labels */
+.notebook-user-label,
+.notebook-ai-label {
+  opacity: 0.65;
+  font-size: 11px !important;
+}
+
+/* Softer BureauCat blue */
+:root {
+  --bc-blue: #1f5fbf;
+}
+
+/* === BUREAUCAT TYPOGRAPHY V1 END === */

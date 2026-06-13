@@ -1,30 +1,6 @@
-/* === UI POLISH FOUR FIXES START === */
+/* === BUREAUCAT WORKSPACE JOURNAL FINAL === */
 
-/* Zápisník title and situation buttons in one row */
-.journal-panel-title-row {
-  align-items: center;
-  display: flex;
-  gap: 10px;
-  margin: 0 0 14px;
-  min-width: 0;
-}
-
-.journal-panel-title-row .journal-panel-title {
-  flex: 0 0 auto;
-  margin: 0;
-}
-
-.journal-panel-title-row .situation-pager {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0;
-}
-
-.journal-panel-title-row .situation-pager-row {
-  padding: 1px 1px 2px;
-}
-
-/* Pull notebook content still further left */
+/* Notebook layer spacing */
 .notebook-layer {
   padding-left: 16px;
   padding-right: 10px;
@@ -34,69 +10,28 @@
   left: -13px;
 }
 
+/* Notebook card structure */
 .notebook-card,
 .goals-section,
 .situation-documents-section {
-  grid-template-columns: 20px minmax(0, 1fr);
   column-gap: 5px;
+  grid-template-columns: 20px minmax(0, 1fr);
 }
 
+/* Notebook section icons */
 .notebook-section-icon {
-  width: 19px;
   height: 19px;
   font-size: 0.96rem;
-}
-
-
-.journal-panel-title-row,
-.chat-panel-header {
-  margin-left: -18px !important;
-  margin-right: -18px !important;
-  padding-left: 18px !important;
-  padding-right: 18px !important;
-  width: calc(100% + 36px) !important;
-}
-
-/* Keep content after header aligned with panel padding */
-.notebook-page,
-.chat-panel-body {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-/* === FULL WIDTH PANEL HEADER LINES END === */
-
-/* === PANEL HEADER TOP ALIGN FINAL START === */
-
-.journal-panel,
-.chat-panel {
-  padding-top: 0 !important;
-}
-
-.journal-panel-title-row,
-.chat-panel-header {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-
-  height: 56px !important;
-  min-height: 56px !important;
-
-  display: flex !important;
-  align-items: center !important;
-}
-
-.notebook-page,
-.chat-panel-body {
-  padding-top: 16px !important;
+  width: 19px;
 }
 
 /* Notebook section titles */
 .notebook-card h3,
 .goals-section-header h3,
 .situation-documents-header h3 {
+  color: #1d1d1b !important;
   font-size: 15px !important;
   font-weight: 600 !important;
-  color: #1d1d1b !important;
 }
 
 /* Notebook content */
@@ -113,9 +48,9 @@
 .document-list-meta,
 .message-meta,
 .case-status {
+  color: #6f6a63 !important;
   font-size: 12px !important;
   font-weight: 500 !important;
-  color: #6f6a63 !important;
 }
 
 /* Document viewer readability */
@@ -124,26 +59,14 @@
   line-height: 1.55 !important;
 }
 
-/* User messages */
-.message-card.user-message,
-.message-card.user {
-  background: #f3f8ff !important;
-}
-
-/* Assistant messages */
-.message-card.assistant-message,
-.message-card.assistant {
-  background: #ffffff !important;
-}
-
 /* Vertical labels */
 .notebook-user-label,
 .notebook-ai-label {
-  opacity: 0.65;
   font-size: 11px !important;
+  opacity: 0.65;
 }
 
-/* 4) Notebook hierarchy: user section stronger, AI layer softer */
+/* Notebook hierarchy: user section stronger, AI layer softer */
 .notebook-user-layer h3,
 .notebook-user-layer .notebook-card h3,
 .notebook-user-layer .goals-section-header h3,
