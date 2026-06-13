@@ -1,63 +1,66 @@
-/* User messages */
-.message-card.user-message,
-.message-card.user {
-  background: #f3f8ff !important;
+/* === BUREAUCAT WORKSPACE CHAT FINAL === */
+
+.message-list {
+  display: grid;
+  gap: 12px;
 }
 
-/* Assistant messages */
-.message-card.assistant-message,
-.message-card.assistant {
-  background: #ffffff !important;
-}
-
-/* Vertical labels */
-.notebook-user-label,
-.notebook-ai-label {
-  opacity: 0.65;
-  font-size: 11px !important;
-}
-
-/* Softer BureauCat blue */
-:root {
-  --bc-blue: #1f5fbf;
-}
-
-/* === BUREAUCAT TYPOGRAPHY V1 END === */
-
-/* === BUREAUCAT UX POLISH PASS START === */
-
-/* 1) User chat messages: subtle blue distinction */
-.user-message,
-.message-card.user,
-.message-card.user-message,
-.message-bubble.user,
-.message-bubble.user-message {
-  background: #f2f8ff !important;
-  border-color: #d9e8ff !important;
-}
-
-/* Assistant messages stay neutral */
-.assistant-message,
-.message-card.assistant,
-.message-card.assistant-message,
-.message-bubble.assistant,
-.message-bubble.assistant-message {
-  background: #ffffff !important;
-  border-color: #e5e2dc !important;
-}
-
-/* 2) Wider chat bubbles */
-.message-card,
-.message-bubble,
-.chat-message {
+/* Chat cards */
+.message-card {
   max-width: 88% !important;
 }
 
-/* 3) Empty document state: centered, calmer */
+.message-card.user,
+.message-card.user-message,
+.message-user {
+  background: #eef5ff !important;
+  border-color: #d6e5ff !important;
+  justify-self: end;
+}
+
+.message-card.assistant,
+.message-card.assistant-message,
+.message-assistant,
+.message-system {
+  background: #ffffff !important;
+  border-color: #e5e2dc !important;
+  justify-self: start;
+}
+
+.message-card-header {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.78rem;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.message-card p {
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* Empty chat state */
+.chat-empty-state {
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+
+.chat-empty-state strong {
+  color: var(--foreground);
+}
+
+/* Right panel empty document state */
 .compact-right-placeholder,
 .right-panel-placeholder {
   display: flex !important;
   flex-direction: column !important;
+  min-height: 100% !important;
 }
 
 .compact-right-placeholder .document-empty-state,
@@ -78,6 +81,7 @@
   font-weight: 700 !important;
   letter-spacing: -0.025em !important;
   margin: 0 0 10px !important;
+  max-width: 440px !important;
 }
 
 .compact-right-placeholder .panel-note,
@@ -85,54 +89,6 @@
   color: #6f6a63 !important;
   font-size: 0.92rem !important;
   line-height: 1.5 !important;
-  max-width: 420px !important;
-}
-
-/* 4) Notebook hierarchy: user section stronger, AI layer softer */
-.notebook-user-layer h3,
-.notebook-user-layer .notebook-card h3,
-.notebook-user-layer .goals-section-header h3,
-.notebook-user-layer .situation-documents-header h3 {
-  color: #1d1d1b !important;
-  font-weight: 650 !important;
-}
-
-.notebook-ai-layer h3,
-.notebook-ai-layer .notebook-card h3 {
-  color: #7a6a56 !important;
-  font-weight: 600 !important;
-}
-
-.notebook-ai-layer .journal-empty-message {
-  color: #7f766c !important;
-}
-
-/* === BUREAUCAT UX POLISH PASS END === */
-
-/* === FINAL POLISH USER BUBBLE EMPTY DOC START === */
-
-/* 1) User chat bubble: clearer but still subtle blue */
-.user-message,
-.message-card.user,
-.message-card.user-message,
-.message-bubble.user,
-.message-bubble.user-message {
-  background: #eef5ff !important;
-  border-color: #d6e5ff !important;
-}
-
-/* 4) Empty document state: centered inside right panel */
-.compact-right-placeholder,
-.right-panel-placeholder {
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 100% !important;
-}
-
-.compact-right-placeholder h2,
-.compact-right-placeholder .panel-note,
-.right-panel-placeholder h2,
-.right-panel-placeholder .panel-note {
   max-width: 440px !important;
 }
 
@@ -145,5 +101,3 @@
 .right-panel-placeholder > .panel-note {
   margin-bottom: auto !important;
 }
-
-/* === FINAL POLISH USER BUBBLE EMPTY DOC END === */
