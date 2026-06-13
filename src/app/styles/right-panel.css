@@ -1,0 +1,289 @@
+/* === RIGHT PANEL TABS UI START === */
+
+.context-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.right-panel-tabs {
+  align-items: stretch;
+  border-bottom: 1px solid var(--panel-border);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  min-height: 44px;
+}
+
+.right-panel-tab {
+  background: #ffffff;
+  border: 0;
+  border-right: 1px solid var(--panel-border);
+  color: #726a61;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 760;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.right-panel-tab:hover,
+.right-panel-tab:focus-visible {
+  background: #fffaf4;
+  outline: none;
+}
+
+.selected-right-panel-tab {
+  color: #1d1d1b;
+  background: #ffffff;
+  box-shadow: inset 0 -3px 0 #0869d7;
+}
+
+.right-panel-tab-actions {
+  align-items: center;
+  background: #ffffff;
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px;
+}
+
+.right-panel-icon-action {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: #128141;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1.5rem;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
+.right-panel-icon-action:hover,
+.right-panel-icon-action:focus-visible,
+.right-panel-icon-action[aria-pressed="true"] {
+  background: #edf8f0;
+  outline: none;
+}
+
+.right-panel-tab-content {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.document-view-panel {
+  background: #ffffff;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.document-view-header h2 {
+  font-size: 1.05rem;
+  margin: 0 0 8px;
+}
+
+.document-meta-list {
+  gap: 6px;
+}
+
+.document-meta-list span {
+  font-size: 0.72rem;
+  padding: 4px 7px;
+}
+
+.document-view-section {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.document-view-section h3 {
+  color: #8a5527;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.document-extracted-text {
+  background: #fffaf4;
+  border: 1px solid #eadbca;
+  border-radius: 9px;
+  font-size: 0.8rem;
+  max-height: 420px;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.document-file-path {
+  background: #fffaf4;
+  border: 1px solid #eadbca;
+  border-radius: 8px;
+  color: #7a7067;
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+  padding: 10px;
+}
+
+.compact-right-placeholder {
+  min-height: 0;
+}
+
+/* === RIGHT PANEL TABS UI END === */
+
+/* === RIGHT PANEL HEADER DIVIDER FINAL START === */
+
+/* Ensure the right panel tab header is clearly separated from content */
+.right-panel-tabs {
+  border-bottom: 1px solid #e5e2dc !important;
+  box-shadow: inset 0 -1px 0 #e5e2dc !important;
+}
+
+.right-panel-tab-content {
+  border-top: 0 !important;
+}
+
+/* === RIGHT PANEL HEADER DIVIDER FINAL END === */
+
+/* === RIGHT CONTENT TOP DIVIDER FINAL START === */
+
+/* Visible separator between right tabs header and right content */
+.context-panel > .right-panel-tab-content {
+  border-top: 1px solid #e5e2dc !important;
+  margin-top: -1px !important;
+}
+
+/* Prevent first placeholder/card from visually eating the separator */
+.context-panel > .right-panel-tab-content > :first-child {
+  margin-top: 0 !important;
+}
+
+/* === RIGHT CONTENT TOP DIVIDER FINAL END === */
+
+/* === RIGHT PANEL HEROICON VISIBILITY FIX START === */
+
+.right-panel-action-icon {
+  display: block !important;
+  height: 22px !important;
+  width: 22px !important;
+  color: #128141 !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+}
+
+.right-panel-icon-action {
+  color: #128141 !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+}
+
+/* === RIGHT PANEL HEROICON VISIBILITY FIX END === */
+
+/* === DIRECT DOCUMENT UPLOAD FINAL START === */
+
+.direct-document-upload-input {
+  display: none !important;
+}
+
+.document-upload-inline-error {
+  margin: 0 0 8px !important;
+}
+
+/* Legacy visual upload box should never appear in right panel */
+.document-upload {
+  display: none !important;
+}
+
+/* === DIRECT DOCUMENT UPLOAD FINAL END === */
+
+/* === RIGHT PANEL + BOOKMARK VISIBILITY FIX === */
+
+/* restore right panel vertical/right-side tab menu */
+.context-panel {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.right-panel-tabs {
+  align-items: center !important;
+  display: flex !important;
+  gap: 6px !important;
+  min-height: 42px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 300 !important;
+}
+
+.right-panel-tab,
+.right-panel-tab-actions,
+.right-panel-icon-action {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ensure document bookmarks are drawn above text/content */
+.document-text-pin-shell {
+  overflow: visible !important;
+  position: relative !important;
+}
+
+.document-text-pin-shell .document-pin-layer {
+  display: block !important;
+  left: 0 !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  top: 0 !important;
+  visibility: visible !important;
+  width: 34px !important;
+  z-index: 250 !important;
+}
+
+.document-text-pin-shell .document-pin-marker {
+  color: var(--pin-color, #ef4444) !important;
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: absolute !important;
+  visibility: visible !important;
+  z-index: 260 !important;
+}
+
+.document-pin-icon {
+  color: var(--pin-color, #ef4444) !important;
+  display: block !important;
+  fill: currentColor !important;
+  opacity: 1 !important;
+  stroke: currentColor !important;
+  visibility: visible !important;
+}
+
+.document-pin-index {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 261 !important;
+}
+
+/* === RIGHT PANEL TABS CENTERING FIX === */
+.right-panel-tabs {
+  align-items: stretch !important;
+}
+
+.right-panel-tab {
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  min-height: 56px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  text-align: center !important;
+}

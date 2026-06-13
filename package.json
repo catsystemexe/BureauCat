@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "db:deploy": "DATABASE_URL=file:../data/bureaucat.sqlite prisma migrate deploy",
-    "dev": "npm run db:deploy && DATABASE_URL=file:../data/bureaucat.sqlite next dev",
+    "dev": "npm run db:deploy && DATABASE_URL=file:../data/bureaucat.sqlite next dev --hostname 0.0.0.0 --port 3002",
     "build": "DATABASE_URL=file:../data/bureaucat.sqlite next build",
     "start": "npm run db:deploy && DATABASE_URL=file:../data/bureaucat.sqlite next start",
     "typecheck": "tsc --noEmit",

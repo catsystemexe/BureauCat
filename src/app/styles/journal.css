@@ -1,0 +1,608 @@
+/* === LEFT NOTEBOOK ALIGNMENT FIX START === */
+
+/* Move content left inside colored ownership blocks */
+.notebook-layer {
+  padding-left: 32px;
+  padding-right: 12px;
+}
+
+/* Put vertical labels outside colored blocks, onto white notebook background */
+.notebook-layer-heading {
+  left: -8px;
+  opacity: 0.9;
+  z-index: 2;
+}
+
+/* Pull section icon/content grid slightly left and tighten icon column */
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  grid-template-columns: 26px minmax(0, 1fr);
+  column-gap: 7px;
+}
+
+/* Keep icons readable after left shift */
+.notebook-section-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 1.1rem;
+}
+
+/* Prevent long document titles from visually leaking outside panel */
+.situation-document-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* === LEFT NOTEBOOK ALIGNMENT FIX END === */
+
+/* === LEFT NOTEBOOK MORE LEFT START === */
+
+/* Pull section items further left inside user / AI colored areas */
+.notebook-layer {
+  padding-left: 24px;
+  padding-right: 12px;
+}
+
+/* Keep vertical labels outside colored areas */
+.notebook-layer-heading {
+  left: -10px;
+}
+
+/* Narrow icon column so text starts earlier */
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  grid-template-columns: 22px minmax(0, 1fr);
+  column-gap: 6px;
+}
+
+/* Slightly smaller icon box after narrowing the column */
+.notebook-section-icon {
+  width: 21px;
+  height: 21px;
+  font-size: 1rem;
+}
+
+/* === LEFT NOTEBOOK MORE LEFT END === */
+
+/* === NOTEBOOK ROW MENU FINAL START === */
+
+.notebook-row-actions {
+  position: relative !important;
+}
+
+.notebook-row-menu {
+  background: #ffffff !important;
+  border: 1px solid #e5e2dc !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(29, 29, 27, 0.12) !important;
+  display: grid !important;
+  min-width: 132px !important;
+  padding: 4px !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: 24px !important;
+  z-index: 100 !important;
+}
+
+.notebook-row-menu button {
+  background: transparent !important;
+  border: 0 !important;
+  color: #1d1d1b !important;
+  cursor: pointer !important;
+  font-size: 0.78rem !important;
+  padding: 7px 9px !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+.notebook-row-menu button:hover,
+.notebook-row-menu button:focus-visible {
+  background: #f6f6f4 !important;
+  outline: none !important;
+}
+
+.notebook-row-menu .destructive-menu-item {
+  color: #b42318 !important;
+}
+
+/* === NOTEBOOK ROW MENU FINAL END === */
+
+/* === JOURNAL INLINE ITEMS MVP === */
+
+.journal-inline-list {
+  display: grid;
+  gap: 6px;
+}
+
+.journal-inline-item {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr auto;
+}
+
+.journal-inline-text {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: text;
+  font: inherit;
+  padding: 4px 0;
+  text-align: left;
+}
+
+.journal-inline-text:hover {
+  color: #0869d7;
+}
+
+.journal-inline-input {
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  font: inherit;
+  padding: 7px 9px;
+  width: 100%;
+}
+
+.journal-inline-item.editing {
+  grid-template-columns: 1fr auto;
+}
+
+.journal-inline-delete-button {
+  align-self: center;
+}
+
+/* === JOURNAL INLINE EDIT TOOLBAR === */
+
+.journal-inline-edit-shell {
+  display: grid;
+  gap: 6px;
+}
+
+.journal-inline-edit-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.journal-inline-toolbar-button {
+  height: 26px;
+  min-width: 26px;
+  position: relative;
+  width: 26px;
+}
+
+.journal-inline-toolbar-button.danger {
+  color: #b42318;
+}
+
+.journal-inline-toolbar-icon {
+  height: 15px;
+  width: 15px;
+}
+
+.journal-inline-toolbar-mini-icon {
+  bottom: 3px;
+  height: 10px;
+  position: absolute;
+  right: 3px;
+  width: 10px;
+}
+
+.journal-inline-toolbar-plus {
+  bottom: 1px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  position: absolute;
+  right: 3px;
+}
+
+/* === JOURNAL LINKED BOOKMARK PILLS === */
+
+.journal-inline-read-content {
+  display: grid;
+  gap: 3px;
+}
+
+.journal-linked-bookmarks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-left: 0;
+}
+
+.journal-linked-bookmark-pill {
+  align-items: center;
+  background: #edf5ff;
+  border: 1px solid #b9d7ff;
+  border-radius: 999px;
+  color: #0869d7;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 3px 7px;
+}
+
+/* === JOURNAL ↔ BOOKMARK LINK MODE === */
+
+.document-text-pin-shell.bookmark-link-mode .document-pin-marker {
+  cursor: copy !important;
+  outline: 2px solid rgba(8, 105, 215, 0.35) !important;
+  outline-offset: 2px !important;
+}
+
+.journal-bookmark-linking-state {
+  align-items: center;
+  color: #0869d7;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0 6px;
+}
+
+.journal-linked-bookmark-pill {
+  border-color: var(--bookmark-color, #0869d7);
+  color: var(--bookmark-color, #0869d7);
+}
+
+/* === JOURNAL LINKED BOOKMARK INLINE MARKER === */
+
+.journal-inline-read-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.journal-linked-bookmarks {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.journal-linked-bookmark-marker {
+  align-items: center !important;
+  color: var(--bookmark-color, #ef4444) !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  height: 28px !important;
+  justify-content: center !important;
+  position: relative !important;
+  width: 24px !important;
+}
+
+.journal-linked-bookmark-marker[data-color="red"] {
+  --bookmark-color: #ef4444;
+}
+
+.journal-linked-bookmark-marker[data-color="orange"] {
+  --bookmark-color: #f97316;
+}
+
+.journal-linked-bookmark-marker[data-color="green"] {
+  --bookmark-color: #22c55e;
+}
+
+.journal-linked-bookmark-marker[data-color="blue"] {
+  --bookmark-color: #3b82f6;
+}
+
+.journal-linked-bookmark-marker[data-color="yellow"] {
+  --bookmark-color: #eab308;
+}
+
+.journal-linked-bookmark-icon {
+  color: var(--bookmark-color, #ef4444) !important;
+  fill: currentColor !important;
+  height: 24px !important;
+  position: absolute !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+  width: 24px !important;
+}
+
+.journal-linked-bookmark-index {
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  left: 50% !important;
+  line-height: 1 !important;
+  position: absolute !important;
+  top: 7px !important;
+  transform: translateX(-50%) !important;
+  user-select: none !important;
+  z-index: 2 !important;
+}
+
+.journal-linked-bookmark-pill {
+  display: none !important;
+}
+
+/* === JOURNAL BOOKMARK COLORS MATCH DOCUMENT PINS === */
+
+.journal-linked-bookmark-marker[data-color="red"] {
+  --bookmark-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.journal-linked-bookmark-marker[data-color="orange"] {
+  --bookmark-color: #f97316 !important;
+  color: #f97316 !important;
+}
+
+.journal-linked-bookmark-marker[data-color="green"] {
+  --bookmark-color: #22c55e !important;
+  color: #22c55e !important;
+}
+
+.journal-linked-bookmark-marker[data-color="yellow"] {
+  --bookmark-color: #eab308 !important;
+  color: #eab308 !important;
+}
+
+.journal-linked-bookmark-marker[data-color="blue"] {
+  --bookmark-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+.journal-linked-bookmark-icon {
+  color: var(--bookmark-color, #ef4444) !important;
+  fill: var(--bookmark-color, #ef4444) !important;
+  stroke: var(--bookmark-color, #ef4444) !important;
+}
+
+.journal-linked-bookmark-index {
+  color: #ffffff !important;
+}
+
+/* === JOURNAL ADD ROW CLEAN UX === */
+
+.notebook-ai-card .notebook-card-header .persistent-action {
+  display: none !important;
+}
+
+.journal-add-inline-row {
+  align-self: start;
+  background: transparent;
+  border: 0;
+  color: #8ec5ff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 6px 0 18px;
+  opacity: 0.72;
+  padding: 2px 0;
+  text-align: left;
+}
+
+.journal-add-inline-row:hover,
+.journal-add-inline-row:focus-visible {
+  color: #1d7ed8;
+  opacity: 1;
+  outline: none;
+}
+
+.journal-inline-delete-button,
+.journal-inline-toolbar-delete,
+.journal-inline-toolbar-remove,
+.journal-inline-toolbar-close {
+  display: none !important;
+}
+
+/* === JOURNAL ADD ROW TIGHTER SPACING === */
+.journal-add-inline-row {
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message + .journal-add-inline-row {
+  margin-top: -2px !important;
+}
+
+/* === JOURNAL ADD ROW TIGHTER SPACING === */
+.journal-add-inline-row {
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message + .journal-add-inline-row {
+  margin-top: -2px !important;
+}
+
+/* === JOURNAL GOALS CLEAN ACTIONS === */
+
+.goals-section-header .notebook-add-button {
+  display: none !important;
+}
+
+.clean-goals-list .notebook-row-actions {
+  display: none !important;
+}
+
+/* === JOURNAL ADD ROW FINAL SPACING === */
+
+.journal-inline-list {
+  gap: 0 !important;
+}
+
+.journal-inline-item {
+  margin: 0 !important;
+}
+
+.journal-inline-text {
+  padding-bottom: 0 !important;
+}
+
+.journal-add-inline-row {
+  margin: 0 0 10px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message {
+  margin-bottom: 0 !important;
+}
+
+/* === JOURNAL VISUAL UNIFICATION FINAL === */
+
+/* remove left vertical ownership labels */
+.notebook-layer-heading {
+  display: none !important;
+}
+
+/* remove empty placeholder messages */
+.notebook-ai-layer .journal-empty-message,
+.notebook-user-layer .journal-empty-message {
+  display: none !important;
+}
+
+/* unify section headings */
+.notebook-ai-layer h3,
+.notebook-ai-layer .notebook-card h3,
+.notebook-user-layer h3,
+.notebook-user-layer .notebook-card h3,
+.goals-section-header h3,
+.situation-documents-header h3 {
+  color: #1d1d1b !important;
+  font-weight: 650 !important;
+}
+
+/* unify icons to blue */
+.notebook-ai-layer .notebook-section-icon,
+.notebook-user-layer .notebook-section-icon,
+.ai-section-icon,
+.user-section-icon {
+  color: #0869d7 !important;
+  stroke: #0869d7 !important;
+}
+
+/* tighten vertical rhythm between sections */
+.notebook-layer {
+  gap: 2px !important;
+}
+
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  margin-bottom: 8px !important;
+}
+
+.situation-documents-section {
+  margin-bottom: 18px !important;
+}
+
+.notebook-card:has(.journal-add-inline-row:only-child),
+.notebook-card .journal-inline-list {
+  margin-top: 0 !important;
+}
+
+.journal-add-inline-row {
+  color: #8ec5ff !important;
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message + .journal-add-inline-row {
+  margin-top: 0 !important;
+}
+
+/* === JOURNAL USER/AI GAP REMOVAL === */
+
+/* old UX separated user notes and AI notes; now notebook is visually unified */
+.notebook-user-layer {
+  margin-bottom: 4px !important;
+  padding-bottom: 0 !important;
+}
+
+.notebook-ai-layer {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.notebook-page {
+  gap: 4px !important;
+}
+
+.situation-documents-section {
+  margin-bottom: 8px !important;
+}
+
+.notebook-ai-layer .notebook-card:first-of-type {
+  margin-top: 0 !important;
+}
+
+/* === NOTEBOOK FINAL SECTION RHYTHM OVERRIDE === */
+
+/* base: two visual blank lines between normal sections */
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  margin-bottom: 18px !important;
+}
+
+/* Situace -> Cíle: bylo těsné, přidat jeden řádek */
+.situation-card {
+  margin-bottom: 18px !important;
+}
+
+/* Dokumenty -> Analýza: bylo moc velké, ubrat jeden řádek */
+.situation-documents-section {
+  margin-bottom: 10px !important;
+}
+
+.notebook-user-layer,
+.notebook-ai-layer,
+.notebook-page {
+  gap: 0 !important;
+}
+
+/* === JOURNAL BOOKMARK OPEN TARGET === */
+
+.journal-linked-bookmark-marker {
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.journal-linked-bookmark-marker:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.targeted-document-pin-marker {
+  outline: 3px solid rgba(8, 105, 215, 0.45) !important;
+  outline-offset: 3px !important;
+  z-index: 5 !important;
+}
+
+/* === LEFT PANEL CATEGORY TITLES BLUE START === */
+
+.notebook-card h3,
+.goals-section-header h3,
+.situation-documents-header h3,
+.notebook-layer-heading,
+.notebook-section-title,
+.notebook-section-label {
+  color: #0869d7 !important;
+}
+
+/* Situation / Cíle / Dokumenty / Analýza / Poznatky / Otázky / Rizika / Postup */
+
+/* === LEFT PANEL CATEGORY TITLE COLOR FINAL START === */
+
+.journal-panel .notebook-card-header h3,
+.journal-panel .goals-section-header h3,
+.journal-panel .situation-documents-header h3,
+.journal-panel .notebook-ai-card h3 {
+  color: #0869d7 !important;
+}
+
+/* === LEFT PANEL CATEGORY TITLE COLOR FINAL END === */

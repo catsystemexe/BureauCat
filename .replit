@@ -1,16 +1,16 @@
 run = "npm run dev -- --hostname 0.0.0.0 --port 3002"
 modules = ["nodejs-20", "python-3.11"]
 
-[[ports]]
-localPort = 3000
-externalPort = 3000
-
-[[ports]]
-localPort = 3002
-externalPort = 80
-
 [nix]
-packages = ["sqlite", "tesseract4"]
+packages = ["sqlite", "tesseract4", "iproute2"]
 
 [workflows]
 runButton = "Project"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
+
+[[ports]]
+localPort = 3002
+externalPort = 3002

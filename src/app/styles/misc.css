@@ -1,0 +1,65 @@
+/* === PANEL CORNER CLIP FINAL START === */
+
+.workspace-panel {
+  overflow: hidden !important;
+  border-radius: 12px !important;
+}
+
+/* Inner content can still scroll where explicitly needed */
+.chat-panel-body,
+.right-panel-tab-content,
+.document-extracted-text {
+  overflow: auto;
+}
+
+/* === PANEL CORNER CLIP FINAL END === */
+
+/* === REAL CHAT BUBBLE COLORS START === */
+
+/* Actual MessageList classes:
+   <article className={`message-card message-${message.role}`}>
+*/
+
+.message-card.message-user,
+.message-user {
+  background: #eef5ff !important;
+  border-color: #d6e5ff !important;
+}
+
+.message-card.message-assistant,
+.message-assistant {
+  background: #ffffff !important;
+  border-color: #e5e2dc !important;
+}
+
+/* === REAL CHAT BUBBLE COLORS END === */
+
+/* === CHAT ROLE COLOR FINAL START === */
+
+.message-user .message-role {
+  color: #1f5fbf !important;
+}
+
+.message-assistant .message-role {
+  color: #9b6632 !important;
+}
+
+/* === CHAT ROLE COLOR FINAL END === */
+
+/* === HEROICONS MVP START === */
+
+.notebook-section-icon {
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0;
+}
+
+.user-section-icon {
+  color: #0869d7;
+}
+
+.ai-section-icon {
+  color: #b7791f;
+}
+
+/* === HEROICONS MVP END === */

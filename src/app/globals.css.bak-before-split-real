@@ -1,0 +1,6592 @@
+:root {
+  color-scheme: light;
+  --background: #f4f1eb;
+  --foreground: #1d1a16;
+  --muted: #6d6258;
+  --panel: #fffaf2;
+  --panel-border: #ded4c6;
+  --accent: #7c4d25;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.shell {
+  width: min(1180px, calc(100vw - 64px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 64px 0;
+}
+
+.hero {
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: 32px;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: clamp(2.25rem, 5vw, 4.5rem);
+  line-height: 0.95;
+  max-width: 900px;
+}
+
+.lede {
+  color: var(--muted);
+  font-size: 1.15rem;
+  line-height: 1.6;
+  max-width: 720px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  margin-top: 32px;
+  padding: 28px;
+}
+
+.panel ul {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.cases-page,
+.workspace-loading {
+  min-height: 100vh;
+  padding: 40px;
+}
+
+.case-list-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
+  box-shadow: 0 18px 48px rgba(58, 43, 30, 0.08);
+  margin: 0 auto;
+  max-width: 980px;
+  padding: 32px;
+}
+
+.case-list-header,
+.workspace-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+}
+
+.primary-action {
+  background: var(--accent);
+  border: 0;
+  border-radius: 999px;
+  color: #fffaf2;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 12px 18px;
+}
+
+.primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.status-message {
+  color: var(--muted);
+  margin: 24px 0 0;
+}
+
+.error-message {
+  color: #8b2d1c;
+}
+
+.empty-state {
+  background: #f8efe3;
+  border: 1px dashed var(--panel-border);
+  border-radius: 18px;
+  margin-top: 24px;
+  padding: 28px;
+}
+
+.case-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.case-list-item {
+  align-items: center;
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  padding: 18px;
+  text-align: left;
+}
+
+.case-list-item:hover {
+  border-color: var(--accent);
+}
+
+.case-list-item strong,
+.case-list-item small {
+  display: block;
+}
+
+.case-list-item small {
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.status-pill {
+  background: #ead9c4;
+  border-radius: 999px;
+  color: #5b3519;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.workspace-shell {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.workspace-header {
+  margin: 0 auto 18px;
+  max-width: 1440px;
+}
+
+.workspace-header h1 {
+  font-size: clamp(1.75rem, 3vw, 3rem);
+  margin-bottom: 0;
+}
+
+.case-meta {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.three-panel-layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(300px, 0.85fr) minmax(340px, 0.9fr) minmax(480px, 1.45fr);
+  align-items: stretch;
+}
+
+.workspace-panel {
+  background: #ffffff;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 20px;
+  min-height: 720px;
+}
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.panel-kicker {
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.panel-note {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.journal-section-list,
+.context-state-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.journal-section-placeholder,
+.context-state,
+.chat-placeholder {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.chat-placeholder {
+  align-items: center;
+  color: var(--muted);
+  display: grid;
+  justify-items: center;
+  min-height: 220px;
+  text-align: center;
+}
+
+.chat-placeholder p {
+  color: var(--foreground);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.context-state strong,
+.context-state span {
+  display: block;
+}
+
+.context-state span {
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.active-state {
+  border-color: var(--accent);
+}
+
+.journal-section {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.journal-section h3 {
+  font-size: 0.95rem;
+  margin: 0 0 12px;
+}
+
+.journal-items-list {
+  display: grid;
+  gap: 10px;
+}
+
+.journal-item-card {
+  background: #fffaf2;
+  border: 1px solid #eadfce;
+  border-radius: 14px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 14px;
+  text-align: left;
+  width: 100%;
+}
+
+.journal-item-card:hover,
+.journal-item-card:focus-visible {
+  border-color: var(--accent);
+}
+
+.selected-journal-item {
+  background: #fff3df;
+  border-color: var(--accent);
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+.journal-item-card-header {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.journal-item-card h4 {
+  font-size: 0.95rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.journal-item-type,
+.evidence-badge,
+.journal-status-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 6px 8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.journal-item-type {
+  background: #efe5d7;
+  color: #5b3519;
+}
+
+.evidence-badge {
+  border: 1px solid transparent;
+}
+
+.evidence-verified {
+  background: #e3f4e6;
+  border-color: #badfc0;
+  color: #246331;
+}
+
+.evidence-inferred {
+  background: #e8f0ff;
+  border-color: #c8d8fa;
+  color: #254f94;
+}
+
+.evidence-unverified {
+  background: #fff4cf;
+  border-color: #ead184;
+  color: #70530b;
+}
+
+.evidence-conflict {
+  background: #fae2de;
+  border-color: #ebb7ae;
+  color: #8b2d1c;
+}
+
+.journal-item-value {
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 8px 0 0;
+}
+
+.journal-status-badge {
+  background: #eee7dd;
+  color: #6d6258;
+  margin-top: 10px;
+}
+
+.journal-empty-message {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.sr-only {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: flex-start;
+}
+
+.chat-panel-header {
+  align-items: flex-start;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.meeting-prep-button {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.chat-panel-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.message-list {
+  display: grid;
+  gap: 12px;
+}
+
+.message-card,
+.chat-empty-state,
+.suggestion-preview-card,
+.meeting-prep-card {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.message-card {
+  max-width: 88%;
+}
+
+.message-user {
+  justify-self: end;
+}
+
+.message-assistant,
+.message-system {
+  justify-self: start;
+}
+
+.message-card-header {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.78rem;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.message-role {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.message-card p,
+.suggestion-preview-card p,
+.meeting-prep-card p {
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.chat-empty-state {
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+
+.chat-empty-state strong {
+  color: var(--foreground);
+}
+
+.message-composer {
+  align-items: flex-end;
+  border-top: 0px solid var(--panel-border);
+  display: grid;
+  flex: 0 0 auto;
+  gap: 10px;
+  grid-template-columns: 1fr auto;
+  padding-top: 16px;
+}
+
+.message-composer textarea {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  color: var(--foreground);
+  min-height: 76px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.message-composer textarea:focus {
+  border-color: var(--accent);
+  outline: 2px solid rgba(124, 77, 37, 0.16);
+}
+
+.suggestion-preview-section {
+  background: #f8efe3;
+  border: 1px dashed var(--panel-border);
+  border-radius: 18px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.suggestion-preview-section h3 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.suggestion-preview-list {
+  display: grid;
+  gap: 12px;
+}
+
+.suggestion-preview-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.suggestion-preview-meta > span:not(.evidence-badge):not(.journal-status-badge) {
+  background: #efe5d7;
+  border-radius: 999px;
+  color: #5b3519;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+  text-transform: uppercase;
+}
+
+.suggestion-preview-card h4 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}
+
+.message-composer textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.suggestion-preview-details {
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 12px 0 0;
+}
+
+.suggestion-preview-details div {
+  background: #fbf5ed;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.suggestion-preview-details dt {
+  color: #7c4d25;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.suggestion-preview-details dd {
+  color: var(--foreground);
+  margin: 4px 0 0;
+}
+
+.suggestion-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.suggestion-action {
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 9px 12px;
+}
+
+.suggestion-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.approve-action {
+  background: var(--accent);
+  color: #fffaf2;
+}
+
+.reject-action {
+  background: #ead9c4;
+  color: #5b3519;
+}
+
+.suggestion-action-state {
+  color: var(--muted);
+  font-weight: 700;
+  margin-top: 14px !important;
+}
+
+.suggestion-action-error {
+  margin-top: 12px;
+}
+
+.document-upload,
+.last-document-card,
+.right-panel-placeholder,
+.document-view-panel,
+.evidence-panel {
+  background: #fffdf8;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.document-upload {
+  margin-bottom: 16px;
+}
+
+.document-upload label {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.document-upload input[type="file"] {
+  background: #fbf5ed;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  color: var(--muted);
+  padding: 10px;
+  width: 100%;
+}
+
+.document-upload-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.secondary-action {
+  background: #ead9c4;
+  border: 0;
+  border-radius: 999px;
+  color: #5b3519;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 10px 14px;
+}
+
+.secondary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.last-document-card {
+  margin-bottom: 16px;
+}
+
+.last-document-card h3 {
+  font-size: 1rem;
+  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+
+.evidence-panel {
+  gap: 16px;
+}
+
+.evidence-panel h2 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.evidence-detail-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.evidence-detail-row {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.evidence-detail-row dt,
+.source-links-panel h3 {
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.evidence-detail-row dd {
+  line-height: 1.45;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.source-links-panel {
+  border-top: 0px solid var(--panel-border);
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+}
+
+.source-links-panel h3 {
+  margin: 0;
+}
+
+.source-link-list {
+  display: grid;
+  gap: 10px;
+}
+
+.source-link-row,
+.source-link-raw,
+.source-link-document-button {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  color: var(--foreground);
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.source-link-document-button {
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.source-link-document-button:not(:disabled) {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.source-link-document-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.source-link-error {
+  margin: 0;
+}
+
+.source-link-empty {
+  color: var(--muted);
+  margin: 0;
+}
+
+.document-view-panel {
+  gap: 16px;
+}
+
+.document-view-header h2 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+
+.document-meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.document-meta-list span {
+  background: #efe5d7;
+  border-radius: 999px;
+  color: #5b3519;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+}
+
+.document-view-section {
+  border-top: 0px solid var(--panel-border);
+  padding-top: 14px;
+}
+
+.document-view-section h3 {
+  color: var(--accent);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.document-view-section p {
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.document-extracted-text,
+.document-file-path {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  color: var(--foreground);
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.document-extracted-text {
+  max-height: 280px;
+}
+
+.document-file-path {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.document-list-card {
+  border-top: 0px solid var(--panel-border);
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 16px;
+}
+
+.document-list-header h3 {
+  font-size: 1rem;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.document-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.document-list-item {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+  color: var(--foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.document-list-item:hover,
+.document-list-item:focus-visible {
+  border-color: var(--accent);
+}
+
+.document-list-filename {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.document-list-meta {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  gap: 8px;
+}
+
+.meeting-prep-card {
+  background: #fff7eb;
+  display: grid;
+  gap: 14px;
+}
+
+.meeting-prep-card-header h3 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.meeting-prep-card-section {
+  display: grid;
+  gap: 8px;
+}
+
+.meeting-prep-card-section h4 {
+  color: #5b3519;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.meeting-prep-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.meeting-prep-list li {
+  line-height: 1.45;
+}
+
+.meeting-prep-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.meeting-prep-error {
+  margin-top: 0;
+}
+
+.workflow-card {
+  background: #fbf5ed;
+  border: 1px solid #eadfce;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.workflow-card h3 {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin: 0 0 8px;
+}
+
+.workflow-card ol {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.84rem;
+  gap: 4px;
+  line-height: 1.4;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.evidence-item-title {
+  font-size: 1rem;
+  line-height: 1.35;
+  margin: -6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.document-list-open-label {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.journal-panel {
+  --user-accent: #0869d7;
+  --user-accent-dark: #075cb8;
+  --user-border: #d9e8f8;
+  --ai-accent: #e97812;
+  --ai-border: #f4dfca;
+  --notebook-text: #17202d;
+  --notebook-muted: #657184;
+  background: #ffffff;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 16px 14px;
+}
+
+.journal-panel-title {
+  color: var(--notebook-text);
+  font-size: 1.08rem;
+  font-weight: 760;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  margin: 0 0 10px;
+}
+
+.situation-pager {
+  display: grid;
+  gap: 6px;
+  padding: 0 0 14px;
+}
+
+.situation-pager-row {
+  min-width: 0;
+  overflow-x: auto;
+  padding: 1px 1px 4px;
+  scrollbar-width: thin;
+}
+
+.situation-page-buttons {
+  align-items: center;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  min-width: max-content;
+}
+
+.situation-page-button {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #c9d2de;
+  border-radius: 6px;
+  color: #425067;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.73rem;
+  font-weight: 700;
+  height: 25px;
+  justify-content: center;
+  min-width: 25px;
+  padding: 0 6px;
+}
+
+.situation-page-button:hover,
+.situation-page-button:focus-visible {
+  border-color: var(--user-accent);
+  outline: 2px solid rgba(8, 105, 215, 0.12);
+  outline-offset: 1px;
+}
+
+.selected-situation-page,
+.selected-situation-page:hover,
+.selected-situation-page:focus-visible {
+  background: var(--user-accent);
+  border-color: var(--user-accent);
+  box-shadow: 0 2px 5px rgba(8, 105, 215, 0.18);
+  color: #ffffff;
+}
+
+.situation-page-add-button {
+  border-color: #cdd6e1;
+  border-style: dashed;
+  color: var(--user-accent-dark);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.situation-page-add-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.situation-pager .status-message,
+.situation-pager .journal-empty-message {
+  margin: 0;
+}
+
+.notebook-page {
+  display: grid;
+  gap: 14px;
+}
+
+.notebook-layer {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 12px 12px 12px 42px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.notebook-layer-heading {
+  font-size: 0.66rem;
+  font-weight: 750;
+  left: 12px;
+  letter-spacing: 0.025em;
+  line-height: 1;
+  opacity: 0.82;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  white-space: nowrap;
+}
+
+.user-layer-heading {
+  color: var(--user-accent-dark);
+}
+
+.ai-layer-heading {
+  color: var(--ai-accent);
+}
+
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 8px;
+}
+
+.notebook-layer > .notebook-card:first-of-type,
+.notebook-layer > .situation-card:first-of-type {
+  border-top-color: var(--user-border);
+}
+
+.notebook-ai-layer > .notebook-card:first-of-type {
+  border-top-color: var(--ai-border);
+}
+
+.notebook-section-icon {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 1.05rem;
+  font-weight: 700;
+  height: 24px;
+  justify-content: center;
+  line-height: 1;
+  margin-top: 1px;
+  width: 24px;
+}
+
+.user-section-icon {
+  color: #0b68c7;
+}
+
+.ai-section-icon {
+  color: #de7a16;
+}
+
+.notebook-section-content {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.notebook-card-header,
+.goals-section-header,
+.situation-documents-header {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  min-height: 22px;
+}
+
+.notebook-card h3,
+.goals-section-header h3,
+.situation-documents-header h3 {
+  color: var(--notebook-text);
+  font-size: 0.85rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.25;
+  margin: 0;
+  text-transform: none;
+}
+
+.notebook-placeholder-action {
+  color: #657184;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.notebook-ai-card .notebook-placeholder-action {
+  color: var(--ai-accent);
+  opacity: 0.7;
+}
+
+.situation-title-display {
+  color: var(--notebook-text);
+  cursor: text;
+  font-size: 0.84rem;
+  font-weight: 550;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.situation-edit-form {
+  display: grid;
+  gap: 6px;
+}
+
+.situation-edit-form input,
+.goal-edit-form input {
+  background: #ffffff;
+  border: 1px solid #bfd4ea;
+  border-radius: 5px;
+  color: var(--notebook-text);
+  font-size: 0.8rem;
+  min-width: 0;
+  padding: 6px 7px;
+  width: 100%;
+}
+
+.situation-edit-form input:focus,
+.goal-edit-form input:focus {
+  border-color: var(--user-accent);
+  outline: 2px solid rgba(8, 105, 215, 0.13);
+}
+
+.situation-edit-form .situation-title-input {
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.notebook-form-actions,
+.notebook-row-actions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 1px;
+}
+
+.notebook-form-actions {
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.notebook-text-button,
+.notebook-add-button {
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: var(--user-accent-dark);
+  cursor: pointer;
+  font-size: 0.73rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px;
+}
+
+.notebook-add-button {
+  align-items: center;
+  display: inline-flex;
+  font-size: 1rem;
+  justify-content: center;
+  min-height: 22px;
+  min-width: 22px;
+}
+
+.notebook-text-button:hover,
+.notebook-text-button:focus-visible,
+.notebook-add-button:hover,
+.notebook-add-button:focus-visible {
+  background: #edf6ff;
+  outline: none;
+}
+
+.primary-notebook-action {
+  background: var(--user-accent);
+  color: #ffffff;
+  padding-inline: 8px;
+}
+
+.primary-notebook-action:hover,
+.primary-notebook-action:focus-visible {
+  background: var(--user-accent-dark);
+}
+
+.notebook-text-button:disabled,
+.notebook-add-button:disabled,
+.notebook-icon-button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.notebook-icon-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #687587;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.75rem;
+  height: 20px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 20px;
+}
+
+.notebook-icon-button:hover,
+.notebook-icon-button:focus-visible {
+  background: #edf6ff;
+  color: var(--user-accent-dark);
+  outline: none;
+}
+
+.notebook-icon-button.confirm-action {
+  color: #28724d;
+}
+
+.notebook-icon-button.destructive-action {
+  color: var(--user-accent);
+}
+
+.notebook-icon-button.destructive-action:hover,
+.notebook-icon-button.destructive-action:focus-visible {
+  background: #fff0ef;
+  color: #c9382e;
+}
+
+.trash-icon {
+  fill: currentColor;
+  height: 13px;
+  width: 13px;
+}
+
+.goals-list,
+.situation-document-list {
+  display: grid;
+  gap: 1px;
+}
+
+.goal-row,
+.situation-document-row {
+  align-items: center;
+  border-radius: 4px;
+  display: flex;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 1px;
+}
+
+.goal-row:hover,
+.situation-document-row:hover {
+  background: #f8fbfe;
+}
+
+.goal-row > input[type="checkbox"] {
+  accent-color: var(--user-accent);
+  flex: 0 0 auto;
+  height: 13px;
+  margin: 0;
+  width: 13px;
+}
+
+.goal-title,
+.situation-document-title {
+  color: var(--notebook-text);
+  flex: 1 1 auto;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goal-title {
+  cursor: text;
+}
+
+.completed-goal-title {
+  color: #748092;
+  text-decoration: line-through;
+}
+
+.goal-row:not(:hover):not(:focus-within) .notebook-row-actions,
+.situation-document-row:not(:hover):not(:focus-within) .notebook-row-actions {
+  opacity: 0.3;
+}
+
+.goal-edit-form {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 3px;
+  min-width: 0;
+}
+
+.goal-edit-form input {
+  flex: 1 1 auto;
+  padding: 4px 6px;
+}
+
+.situation-document-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.document-file-icon {
+  align-items: center;
+  border-radius: 2px;
+  color: #ffffff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.4rem;
+  font-weight: 800;
+  height: 16px;
+  justify-content: center;
+  letter-spacing: -0.02em;
+  width: 16px;
+}
+
+.document-file-icon-pdf {
+  background: #d93025;
+}
+
+.document-file-icon-doc {
+  background: #1769c2;
+}
+
+.document-file-icon-text {
+  background: #657080;
+}
+
+.document-file-icon-image {
+  background: #25855a;
+}
+
+.situation-document-title {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.situation-document-title:hover,
+.situation-document-title:focus-visible {
+  color: var(--user-accent-dark);
+  outline: none;
+  text-decoration: underline;
+}
+
+.notebook-ai-card .journal-empty-message,
+.journal-panel .journal-empty-message {
+  color: var(--notebook-muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.notebook-inline-error {
+  color: #983b32;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  margin: 0;
+}
+
+
+
+/* === LEFT NOTEBOOK ALIGNMENT FIX START === */
+
+/* Move content left inside colored ownership blocks */
+.notebook-layer {
+  padding-left: 32px;
+  padding-right: 12px;
+}
+
+/* Put vertical labels outside colored blocks, onto white notebook background */
+.notebook-layer-heading {
+  left: -8px;
+  opacity: 0.9;
+  z-index: 2;
+}
+
+/* Pull section icon/content grid slightly left and tighten icon column */
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  grid-template-columns: 26px minmax(0, 1fr);
+  column-gap: 7px;
+}
+
+/* Keep icons readable after left shift */
+.notebook-section-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 1.1rem;
+}
+
+/* Prevent long document titles from visually leaking outside panel */
+.situation-document-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* === LEFT NOTEBOOK ALIGNMENT FIX END === */
+
+
+/* === LEFT NOTEBOOK MORE LEFT START === */
+
+/* Pull section items further left inside user / AI colored areas */
+.notebook-layer {
+  padding-left: 24px;
+  padding-right: 12px;
+}
+
+/* Keep vertical labels outside colored areas */
+.notebook-layer-heading {
+  left: -10px;
+}
+
+/* Narrow icon column so text starts earlier */
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  grid-template-columns: 22px minmax(0, 1fr);
+  column-gap: 6px;
+}
+
+/* Slightly smaller icon box after narrowing the column */
+.notebook-section-icon {
+  width: 21px;
+  height: 21px;
+  font-size: 1rem;
+}
+
+/* === LEFT NOTEBOOK MORE LEFT END === */
+
+
+/* === RIGHT PANEL TABS UI START === */
+
+.context-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.right-panel-tabs {
+  align-items: stretch;
+  border-bottom: 1px solid var(--panel-border);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  min-height: 44px;
+}
+
+.right-panel-tab {
+  background: #ffffff;
+  border: 0;
+  border-right: 1px solid var(--panel-border);
+  color: #726a61;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 760;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.right-panel-tab:hover,
+.right-panel-tab:focus-visible {
+  background: #fffaf4;
+  outline: none;
+}
+
+.selected-right-panel-tab {
+  color: #1d1d1b;
+  background: #ffffff;
+  box-shadow: inset 0 -3px 0 #0869d7;
+}
+
+.right-panel-tab-actions {
+  align-items: center;
+  background: #ffffff;
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px;
+}
+
+.right-panel-icon-action {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: #128141;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1.5rem;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
+.right-panel-icon-action:hover,
+.right-panel-icon-action:focus-visible,
+.right-panel-icon-action[aria-pressed="true"] {
+  background: #edf8f0;
+  outline: none;
+}
+
+.right-panel-tab-content {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.document-view-panel {
+  background: #ffffff;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.document-view-header h2 {
+  font-size: 1.05rem;
+  margin: 0 0 8px;
+}
+
+.document-meta-list {
+  gap: 6px;
+}
+
+.document-meta-list span {
+  font-size: 0.72rem;
+  padding: 4px 7px;
+}
+
+.document-view-section {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.document-view-section h3 {
+  color: #8a5527;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.document-extracted-text {
+  background: #fffaf4;
+  border: 1px solid #eadbca;
+  border-radius: 9px;
+  font-size: 0.8rem;
+  max-height: 420px;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.document-file-path {
+  background: #fffaf4;
+  border: 1px solid #eadbca;
+  border-radius: 8px;
+  color: #7a7067;
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+  padding: 10px;
+}
+
+.compact-right-placeholder {
+  min-height: 0;
+}
+
+/* === RIGHT PANEL TABS UI END === */
+
+
+/* === UI POLISH FOUR FIXES START === */
+
+/* Zápisník title and situation buttons in one row */
+.journal-panel-title-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin: 0 0 14px;
+  min-width: 0;
+}
+
+.journal-panel-title-row .journal-panel-title {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.journal-panel-title-row .situation-pager {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+}
+
+.journal-panel-title-row .situation-pager-row {
+  padding: 1px 1px 2px;
+}
+
+/* Pull notebook content still further left */
+.notebook-layer {
+  padding-left: 16px;
+  padding-right: 10px;
+}
+
+.notebook-layer-heading {
+  left: -13px;
+}
+
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  grid-template-columns: 20px minmax(0, 1fr);
+  column-gap: 5px;
+}
+
+.notebook-section-icon {
+  width: 19px;
+  height: 19px;
+  font-size: 0.96rem;
+}
+
+/* Middle panel title without kicker */
+.chat-panel-header {
+  gap: 4px;
+}
+
+.chat-panel-header .panel-kicker {
+  display: none;
+}
+
+/* Right panel upload is now controlled only by the upload icon */
+.right-panel-tab-content > .document-upload {
+  margin-top: 0;
+}
+
+/* === UI POLISH FOUR FIXES END === */
+
+
+/* === DOCUMENT VIEW POLISH START === */
+
+/* Simpler document view */
+.document-view-panel {
+  padding: 16px;
+}
+
+.document-title-row {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.document-title-row h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.document-upload-date {
+  background: #eadfce;
+  border-radius: 999px;
+  color: #6b4728;
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+
+.document-content-section {
+  margin-left: -16px;
+  margin-right: -16px;
+}
+
+.document-section-title-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.document-fullscreen-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: #8a5527;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1.15rem;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.document-fullscreen-button:hover,
+.document-fullscreen-button:focus-visible {
+  background: #fff4e8;
+  outline: none;
+}
+
+.document-extracted-text {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  max-height: 520px;
+  overflow: auto;
+  padding: 10px 16px 14px;
+  scrollbar-width: thin;
+}
+
+.document-extracted-text::-webkit-scrollbar {
+  width: 10px;
+}
+
+.document-extracted-text::-webkit-scrollbar-thumb {
+  background: #d1c3b5;
+  border-radius: 999px;
+}
+
+.document-extracted-text::-webkit-scrollbar-track {
+  background: #f7f1ea;
+}
+
+/* === DOCUMENT VIEW POLISH END === */
+
+
+/* === DOCUMENT VIEW POLISH 2 START === */
+
+/* Inactive right tabs use the same light ochre as the surrounding app background */
+.right-panel-tab {
+  background: #f3f0e8;
+}
+
+.selected-right-panel-tab {
+  background: #ffffff;
+}
+
+/* Document title/date block has subtle light gray surface */
+.document-view-header {
+  background: #f6f6f3;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.document-title-row {
+  align-items: center;
+}
+
+/* Content is now visually part of the document panel, not a separate boxed area */
+.document-content-section {
+  margin-left: 0;
+  margin-right: 0;
+  position: relative;
+}
+
+.document-section-title-row {
+  display: none;
+}
+
+.document-fullscreen-button {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  z-index: 1;
+}
+
+.document-extracted-text {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 8px 0 14px;
+}
+
+/* Remove any remaining file path box if old markup/CSS survives */
+.document-file-path {
+  display: none;
+}
+
+/* === DOCUMENT VIEW POLISH 2 END === */
+
+
+/* === DOCUMENT CONTENT WIDE SCROLL START === */
+
+/* Let document content use the full inner width of the document panel */
+.document-content-section {
+  margin-left: -16px;
+  margin-right: -16px;
+  position: relative;
+}
+
+.document-extracted-text {
+  box-sizing: border-box;
+  display: block;
+  margin: 0;
+  max-height: 560px;
+  overflow: auto;
+  padding: 10px 18px 18px;
+  scrollbar-gutter: stable;
+  width: 100%;
+}
+
+/* Visible scrollbar / scrolling element */
+.document-extracted-text::-webkit-scrollbar {
+  width: 12px;
+}
+
+.document-extracted-text::-webkit-scrollbar-thumb {
+  background: #bda990;
+  border: 3px solid #f7f1ea;
+  border-radius: 999px;
+}
+
+.document-extracted-text::-webkit-scrollbar-track {
+  background: #f7f1ea;
+  border-radius: 999px;
+}
+
+.document-extracted-text {
+  scrollbar-color: #bda990 #f7f1ea;
+  scrollbar-width: thin;
+}
+
+/* Keep fullscreen icon inside the text area corner */
+.document-fullscreen-button {
+  right: 14px;
+  top: 8px;
+}
+
+/* === DOCUMENT CONTENT WIDE SCROLL END === */
+
+
+/* === DOCUMENT FULL WIDTH START === */
+
+/* Remove inner document card feeling; content reaches right panel edges */
+.document-view-panel {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 14px 0 0 !important;
+}
+
+.document-view-header {
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 14px 16px !important;
+}
+
+.document-content-section {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.document-extracted-text {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  width: 100% !important;
+}
+
+.document-fullscreen-button {
+  right: 16px !important;
+}
+
+/* === DOCUMENT FULL WIDTH END === */
+
+
+/* === RIGHT DOCUMENTS LIST OVERLAY START === */
+
+/* Let the document area fill the remaining right-panel height */
+.context-panel {
+  min-height: 720px;
+}
+
+.right-panel-tab-content {
+  min-height: calc(720px - 44px);
+  position: relative;
+}
+
+.document-view-panel {
+  min-height: calc(720px - 72px);
+}
+
+.document-content-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.document-extracted-text {
+  height: calc(100vh - 340px);
+  min-height: 500px;
+  max-height: calc(100vh - 340px);
+  overflow-y: auto;
+}
+
+/* Date badge should be plain, not a heavy pill */
+.document-upload-date {
+  background: transparent !important;
+  border-radius: 0 !important;
+  color: #6f655c;
+  font-weight: 500;
+  padding: 0 !important;
+}
+
+/* Case document list should behave like a light overlay above document content */
+.document-list-card {
+  background: #ffffff;
+  border: 1px solid #ded4c6;
+  border-radius: 12px;
+  box-shadow: 0 14px 32px rgba(48, 40, 28, 0.12);
+  left: 14px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 0;
+  position: absolute;
+  right: 14px;
+  top: 58px;
+  z-index: 10;
+}
+
+.document-list-header {
+  background: #f2f2f0;
+  border-bottom: 1px solid #e2ddd6;
+  padding: 10px 12px;
+}
+
+.document-list-header h3 {
+  color: #746d66;
+  font-size: 0.82rem;
+  font-weight: 650;
+  margin: 0;
+}
+
+.document-list {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+
+.document-list li + li {
+  border-top: 1px solid #eee8e1;
+}
+
+.document-list-item {
+  background: #ffffff;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  gap: 2px;
+  padding: 9px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.document-list-item:hover,
+.document-list-item:focus-visible {
+  background: #f8f8f6;
+  outline: none;
+}
+
+.document-list-filename {
+  color: #1d1d1b;
+  font-size: 0.86rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-list-meta {
+  color: #817970;
+  display: inline-flex;
+  font-size: 0.72rem;
+  gap: 8px;
+}
+
+.document-list-open-label {
+  display: none;
+}
+
+/* === RIGHT DOCUMENTS LIST OVERLAY END === */
+
+
+/* === BUREAUCAT FINAL HEADER SYSTEM START === */
+
+/* Main panel spacing */
+.three-panel-layout {
+  gap: 4px !important;
+}
+
+/* Left and middle panel headers: plain white, no pseudo-tabs */
+.journal-panel-title-row,
+.chat-panel-header {
+  align-items: center !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e7e5e0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  margin: 0 0 16px !important;
+  padding: 0 18px !important;
+}
+
+.journal-panel-title,
+.chat-panel-header h2 {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: #1d1d1b !important;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 1.05rem !important;
+  font-weight: 740 !important;
+  letter-spacing: -0.018em !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  min-width: auto !important;
+  padding: 0 !important;
+}
+
+.journal-panel-title-row {
+  gap: 20px !important;
+}
+
+.journal-panel-title-row .situation-pager,
+.journal-panel-title-row .situation-pager-row {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Right panel keeps the only real tab system */
+.right-panel-tabs {
+  align-items: stretch !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e7e5e0 !important;
+  display: grid !important;
+  grid-template-columns: 0.7fr 0.7fr 0.7fr 1fr auto !important;
+  height: 56px !important;
+  min-height: 56px !important;
+}
+
+.right-panel-tab {
+  background: #f6f6f4 !important;
+  border: 0 !important;
+  border-right: 1px solid #e7e5e0 !important;
+  border-radius: 0 !important;
+  color: #6f6a63 !important;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  min-height: 56px !important;
+  padding: 0 18px !important;
+  text-align: left !important;
+}
+
+.selected-right-panel-tab {
+  background: #ffffff !important;
+  box-shadow: inset 0 -3px 0 #0869d7 !important;
+  color: #1d1d1b !important;
+  font-weight: 740 !important;
+}
+
+.right-panel-tab-actions {
+  align-items: center !important;
+  background: #ffffff !important;
+  border-left: 1px solid #e7e5e0 !important;
+  display: flex !important;
+  gap: 6px !important;
+  min-height: 56px !important;
+  padding: 0 12px !important;
+}
+
+.right-panel-tabs::after {
+  content: "";
+  background: #ffffff;
+  grid-column: 4;
+  grid-row: 1;
+}
+
+/* Global typography fallback */
+body {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* === BUREAUCAT FINAL HEADER SYSTEM END === */
+
+
+/* === FULL WIDTH PANEL HEADER LINES START === */
+
+/* Make left/middle header separators span full panel width like the right panel */
+.journal-panel-title-row,
+.chat-panel-header {
+  margin-left: -18px !important;
+  margin-right: -18px !important;
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+  width: calc(100% + 36px) !important;
+}
+
+/* Keep content after header aligned with panel padding */
+.notebook-page,
+.chat-panel-body {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* === FULL WIDTH PANEL HEADER LINES END === */
+
+
+/* === PANEL HEADER TOP ALIGN FINAL START === */
+
+.journal-panel,
+.chat-panel {
+  padding-top: 0 !important;
+}
+
+.journal-panel-title-row,
+.chat-panel-header {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+
+  height: 56px !important;
+  min-height: 56px !important;
+
+  display: flex !important;
+  align-items: center !important;
+}
+
+.notebook-page,
+.chat-panel-body {
+  padding-top: 16px !important;
+}
+
+/* === PANEL HEADER TOP ALIGN FINAL END === */
+
+
+/* === PANEL CORNER CLIP FINAL START === */
+
+.workspace-panel {
+  overflow: hidden !important;
+  border-radius: 12px !important;
+}
+
+/* Inner content can still scroll where explicitly needed */
+.chat-panel-body,
+.right-panel-tab-content,
+.document-extracted-text {
+  overflow: auto;
+}
+
+/* === PANEL CORNER CLIP FINAL END === */
+
+
+/* === BUREAUCAT TYPOGRAPHY V1 START === */
+
+/* Case title */
+.workspace-header h1 {
+  color: #161616;
+  font-weight: 650 !important;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+/* Panel headers */
+.journal-panel-title,
+.chat-panel-header h2,
+.right-panel-tab {
+  color: #1d1d1b !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em;
+}
+
+/* Notebook section titles */
+.notebook-card h3,
+.goals-section-header h3,
+.situation-documents-header h3 {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #1d1d1b !important;
+}
+
+/* Notebook content */
+.notebook-card,
+.goal-item,
+.situation-documents-list,
+.journal-empty-message {
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+/* Metadata */
+.document-upload-date,
+.document-list-meta,
+.message-meta,
+.case-status {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #6f6a63 !important;
+}
+
+/* Document viewer readability */
+.document-extracted-text {
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+/* User messages */
+.message-card.user-message,
+.message-card.user {
+  background: #f3f8ff !important;
+}
+
+/* Assistant messages */
+.message-card.assistant-message,
+.message-card.assistant {
+  background: #ffffff !important;
+}
+
+/* Vertical labels */
+.notebook-user-label,
+.notebook-ai-label {
+  opacity: 0.65;
+  font-size: 11px !important;
+}
+
+/* Softer BureauCat blue */
+:root {
+  --bc-blue: #1f5fbf;
+}
+
+/* === BUREAUCAT TYPOGRAPHY V1 END === */
+
+
+/* === BUREAUCAT UX POLISH PASS START === */
+
+/* 1) User chat messages: subtle blue distinction */
+.user-message,
+.message-card.user,
+.message-card.user-message,
+.message-bubble.user,
+.message-bubble.user-message {
+  background: #f2f8ff !important;
+  border-color: #d9e8ff !important;
+}
+
+/* Assistant messages stay neutral */
+.assistant-message,
+.message-card.assistant,
+.message-card.assistant-message,
+.message-bubble.assistant,
+.message-bubble.assistant-message {
+  background: #ffffff !important;
+  border-color: #e5e2dc !important;
+}
+
+/* 2) Wider chat bubbles */
+.message-card,
+.message-bubble,
+.chat-message {
+  max-width: 88% !important;
+}
+
+/* 3) Empty document state: centered, calmer */
+.compact-right-placeholder,
+.right-panel-placeholder {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.compact-right-placeholder .document-empty-state,
+.right-panel-placeholder .document-empty-state {
+  align-items: center !important;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-height: 420px !important;
+  text-align: center !important;
+}
+
+.compact-right-placeholder h2,
+.right-panel-placeholder h2 {
+  color: #1d1d1b !important;
+  font-size: 1.45rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  margin: 0 0 10px !important;
+}
+
+.compact-right-placeholder .panel-note,
+.right-panel-placeholder .panel-note {
+  color: #6f6a63 !important;
+  font-size: 0.92rem !important;
+  line-height: 1.5 !important;
+  max-width: 420px !important;
+}
+
+/* 4) Notebook hierarchy: user section stronger, AI layer softer */
+.notebook-user-layer h3,
+.notebook-user-layer .notebook-card h3,
+.notebook-user-layer .goals-section-header h3,
+.notebook-user-layer .situation-documents-header h3 {
+  color: #1d1d1b !important;
+  font-weight: 650 !important;
+}
+
+.notebook-ai-layer h3,
+.notebook-ai-layer .notebook-card h3 {
+  color: #7a6a56 !important;
+  font-weight: 600 !important;
+}
+
+.notebook-ai-layer .journal-empty-message {
+  color: #7f766c !important;
+}
+
+/* === BUREAUCAT UX POLISH PASS END === */
+
+
+/* === FINAL POLISH USER BUBBLE EMPTY DOC START === */
+
+/* 1) User chat bubble: clearer but still subtle blue */
+.user-message,
+.message-card.user,
+.message-card.user-message,
+.message-bubble.user,
+.message-bubble.user-message {
+  background: #eef5ff !important;
+  border-color: #d6e5ff !important;
+}
+
+/* 4) Empty document state: centered inside right panel */
+.compact-right-placeholder,
+.right-panel-placeholder {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100% !important;
+}
+
+.compact-right-placeholder h2,
+.compact-right-placeholder .panel-note,
+.right-panel-placeholder h2,
+.right-panel-placeholder .panel-note {
+  max-width: 440px !important;
+}
+
+.compact-right-placeholder > h2:first-child,
+.right-panel-placeholder > h2:first-child {
+  margin-top: auto !important;
+}
+
+.compact-right-placeholder > .panel-note,
+.right-panel-placeholder > .panel-note {
+  margin-bottom: auto !important;
+}
+
+/* === FINAL POLISH USER BUBBLE EMPTY DOC END === */
+
+
+/* === REAL CHAT BUBBLE COLORS START === */
+
+/* Actual MessageList classes:
+   <article className={`message-card message-${message.role}`}>
+*/
+
+.message-card.message-user,
+.message-user {
+  background: #eef5ff !important;
+  border-color: #d6e5ff !important;
+}
+
+.message-card.message-assistant,
+.message-assistant {
+  background: #ffffff !important;
+  border-color: #e5e2dc !important;
+}
+
+/* === REAL CHAT BUBBLE COLORS END === */
+
+
+/* === CHAT ROLE COLOR FINAL START === */
+
+.message-user .message-role {
+  color: #1f5fbf !important;
+}
+
+.message-assistant .message-role {
+  color: #9b6632 !important;
+}
+
+/* === CHAT ROLE COLOR FINAL END === */
+
+
+/* === RIGHT PANEL HEADER DIVIDER FINAL START === */
+
+/* Ensure the right panel tab header is clearly separated from content */
+.right-panel-tabs {
+  border-bottom: 1px solid #e5e2dc !important;
+  box-shadow: inset 0 -1px 0 #e5e2dc !important;
+}
+
+.right-panel-tab-content {
+  border-top: 0 !important;
+}
+
+/* === RIGHT PANEL HEADER DIVIDER FINAL END === */
+
+
+/* === RIGHT CONTENT TOP DIVIDER FINAL START === */
+
+/* Visible separator between right tabs header and right content */
+.context-panel > .right-panel-tab-content {
+  border-top: 1px solid #e5e2dc !important;
+  margin-top: -1px !important;
+}
+
+/* Prevent first placeholder/card from visually eating the separator */
+.context-panel > .right-panel-tab-content > :first-child {
+  margin-top: 0 !important;
+}
+
+/* === RIGHT CONTENT TOP DIVIDER FINAL END === */
+
+
+/* === HEROICONS MVP START === */
+
+.notebook-section-icon {
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0;
+}
+
+.user-section-icon {
+  color: #0869d7;
+}
+
+.ai-section-icon {
+  color: #b7791f;
+}
+
+/* === HEROICONS MVP END === */
+
+
+/* === RIGHT PANEL HEROICON VISIBILITY FIX START === */
+
+.right-panel-action-icon {
+  display: block !important;
+  height: 22px !important;
+  width: 22px !important;
+  color: #128141 !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+}
+
+.right-panel-icon-action {
+  color: #128141 !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+}
+
+/* === RIGHT PANEL HEROICON VISIBILITY FIX END === */
+
+
+/* === NOTEBOOK ROW MENU FINAL START === */
+
+.notebook-row-actions {
+  position: relative !important;
+}
+
+.notebook-row-menu {
+  background: #ffffff !important;
+  border: 1px solid #e5e2dc !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(29, 29, 27, 0.12) !important;
+  display: grid !important;
+  min-width: 132px !important;
+  padding: 4px !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: 24px !important;
+  z-index: 100 !important;
+}
+
+.notebook-row-menu button {
+  background: transparent !important;
+  border: 0 !important;
+  color: #1d1d1b !important;
+  cursor: pointer !important;
+  font-size: 0.78rem !important;
+  padding: 7px 9px !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+.notebook-row-menu button:hover,
+.notebook-row-menu button:focus-visible {
+  background: #f6f6f4 !important;
+  outline: none !important;
+}
+
+.notebook-row-menu .destructive-menu-item {
+  color: #b42318 !important;
+}
+
+/* === NOTEBOOK ROW MENU FINAL END === */
+
+
+
+/* === DIRECT DOCUMENT UPLOAD FINAL START === */
+
+.direct-document-upload-input {
+  display: none !important;
+}
+
+.document-upload-inline-error {
+  margin: 0 0 8px !important;
+}
+
+/* Legacy visual upload box should never appear in right panel */
+.document-upload {
+  display: none !important;
+}
+
+/* === DIRECT DOCUMENT UPLOAD FINAL END === */
+
+
+/* === DOCUMENT REVIEW WORKFLOW V03 START === */
+
+.document-review-title-row {
+  align-items: flex-start !important;
+  gap: 14px !important;
+}
+
+.document-title-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.document-title-meta h2 {
+  margin: 0 !important;
+}
+
+.document-main-actions {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.document-icon-action,
+.document-validation-toggle {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 8px;
+  color: #5f5850;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 650;
+  gap: 6px;
+  height: 32px;
+  justify-content: center;
+  padding: 0 9px;
+}
+
+.document-icon-action {
+  width: 32px;
+}
+
+.document-icon-action:hover,
+.document-icon-action:focus-visible,
+.document-validation-toggle:hover,
+.document-validation-toggle:focus-visible,
+.document-icon-action.active {
+  background: #f6f6f4;
+  outline: none;
+}
+
+.document-icon-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.document-icon-action.danger {
+  color: #a23a2a;
+}
+
+.document-icon-action.danger:hover,
+.document-icon-action.danger:focus-visible {
+  background: #fff1ed;
+  border-color: #efc7bd;
+}
+
+.document-action-icon {
+  display: block;
+  height: 18px;
+  width: 18px;
+}
+
+.document-validation-toggle.pending {
+  color: #9b6632;
+}
+
+.document-validation-toggle.validated {
+  background: #e9f7ef;
+  border-color: #c8e8d3;
+  color: #1f7a45;
+}
+
+.document-review-error {
+  margin: 10px 16px 0 !important;
+}
+
+.document-original-placeholder {
+  background: #f6f6f4;
+  border-bottom: 1px solid #e5e2dc;
+  color: #6f655c;
+  font-size: 0.78rem;
+  padding: 10px 16px;
+}
+
+.document-annotation-toolbar {
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 999px;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.10);
+  display: grid;
+  gap: 4px;
+  padding: 5px;
+  position: absolute;
+  right: 14px;
+  top: 72px;
+  z-index: 3;
+}
+
+.document-annotation-toolbar button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.95rem;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.document-annotation-toolbar button:hover,
+.document-annotation-toolbar button:focus-visible {
+  background: #f6f6f4;
+  outline: none;
+}
+
+.document-edit-shell {
+  display: grid;
+  gap: 10px;
+  padding: 8px 16px 14px;
+}
+
+.document-text-editor {
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 10px;
+  color: #1d1d1b;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  min-height: 500px;
+  padding: 14px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.document-view-panel-fullscreen {
+  background: #ffffff;
+  bottom: 16px;
+  left: 16px;
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: 1000;
+}
+
+.document-view-panel-fullscreen .document-extracted-text,
+.document-view-panel-fullscreen .document-text-editor {
+  height: calc(100vh - 190px) !important;
+  max-height: calc(100vh - 190px) !important;
+}
+
+/* hide old floating fullscreen button if any legacy CSS remains */
+.document-fullscreen-button {
+  display: none !important;
+}
+
+/* === DOCUMENT REVIEW WORKFLOW V03 END === */
+
+
+/* === DOCUMENT TOOLBAR POLISH START === */
+
+.document-view-header {
+  background: transparent !important;
+}
+
+.document-title-meta h2 {
+  color: #0869d7 !important;
+  font-weight: 760 !important;
+}
+
+.document-icon-action,
+.document-validation-toggle {
+  color: #0869d7 !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  height: 38px !important;
+  min-width: 38px !important;
+}
+
+.document-action-icon {
+  height: 23px !important;
+  width: 23px !important;
+}
+
+.document-icon-action:hover,
+.document-icon-action:focus-visible,
+.document-icon-action.active {
+  background: #edf5ff !important;
+  border-color: #d7e9ff !important;
+}
+
+.document-icon-action:disabled {
+  color: #a8b5c4 !important;
+  opacity: 0.55 !important;
+}
+
+.document-validation-toggle {
+  padding: 0 10px !important;
+}
+
+.document-validation-toggle.pending {
+  color: #d18b38 !important;
+}
+
+.document-validation-toggle.validated {
+  background: #e9f7ef !important;
+  border-color: #c8e8d3 !important;
+  color: #1f7a45 !important;
+}
+
+.document-icon-action.danger {
+  color: #b42318 !important;
+}
+
+.document-icon-action.danger:hover,
+.document-icon-action.danger:focus-visible {
+  background: #fff1ed !important;
+  border-color: #efc7bd !important;
+}
+
+.document-view-panel-fullscreen .document-main-actions,
+.document-view-panel-fullscreen .document-annotation-toolbar {
+  display: inline-flex;
+  visibility: visible;
+}
+
+.document-view-panel-fullscreen .document-annotation-toolbar {
+  display: grid;
+  position: fixed;
+  right: 34px;
+  top: 150px;
+  z-index: 1002;
+}
+
+/* === DOCUMENT TOOLBAR POLISH END === */
+
+
+/* === DOCUMENT TOOLBAR LAYOUT V04 START === */
+
+.document-main-actions {
+  margin-left: auto !important;
+  padding-right: 10 px !important;
+}
+
+.document-icon-action,
+.document-validation-toggle {
+  color: #0869d7 !important;
+}
+
+.document-icon-action {
+  height: 44px !important;
+  width: 44px !important;
+}
+
+.document-action-icon {
+  height: 30px !important;
+  width: 30px !important;
+}
+
+.document-validation-toggle {
+  min-height: 44px !important;
+  padding: 0 14px !important;
+}
+
+.document-validation-toggle.validated {
+  background: #edf5ff !important;
+  border-color: #cfe3ff !important;
+  color: #0869d7 !important;
+}
+
+.document-validation-toggle.pending {
+  background: #fff8ef !important;
+  border-color: #efd6b5 !important;
+  color: #d18b38 !important;
+}
+
+.document-validation-toggle span {
+  font-size: 0.88rem !important;
+  font-weight: 760 !important;
+}
+
+.document-annotation-toolbar {
+  right: 28px !important;
+}
+
+.document-view-panel-fullscreen .document-main-actions {
+  padding-right: 42px !important;
+}
+
+.document-view-panel-fullscreen .document-annotation-toolbar {
+  right: 34px !important;
+}
+
+/* === DOCUMENT TOOLBAR LAYOUT V04 END === */
+
+
+/* === DOCUMENT VALIDATION ICON ONLY START === */
+
+.document-validation-control {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  position: relative;
+}
+
+.document-validation-icon-button {
+  align-items: center;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  padding: 0;
+  width: 44px;
+}
+
+.document-validation-icon-button.pending {
+  color: #d18b38 !important;
+}
+
+.document-validation-icon-button.validated {
+  color: #0869d7 !important;
+}
+
+.document-validation-icon-button:hover,
+.document-validation-icon-button:focus-visible {
+  background: #edf5ff !important;
+  outline: none;
+}
+
+.document-validation-icon-button.pending:hover,
+.document-validation-icon-button.pending:focus-visible {
+  background: #fff8ef !important;
+}
+
+.document-validation-floating-label {
+  background: #fff8ef;
+  border: 1px solid #efd6b5;
+  border-radius: 999px;
+  color: #d18b38;
+  font-size: 0.72rem;
+  font-weight: 760;
+  left: 50%;
+  padding: 3px 8px;
+  position: absolute;
+  top: 42px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 4;
+}
+
+.document-validation-toggle {
+  display: none !important;
+}
+
+/* === DOCUMENT VALIDATION ICON ONLY END === */
+
+
+/* === LUCIDE DOCUMENT ICONS START === */
+
+.document-action-icon {
+  stroke-width: 2.15 !important;
+}
+
+.document-icon-action.active .document-action-icon,
+.document-validation-icon-button.validated .document-action-icon {
+  stroke-width: 2.85 !important;
+}
+
+.document-mini-icon {
+  color: #0869d7;
+  height: 18px;
+  stroke-width: 2.15;
+  width: 18px;
+}
+
+/* === LUCIDE DOCUMENT ICONS END === */
+
+/* === DOCUMENT LUCIDE ALIGNMENT V06 START === */
+
+/* Top-right right-panel icons: upload + document list */
+.right-panel-action-icon {
+  color: #0869d7 !important;
+  stroke-width: 2.2 !important;
+}
+
+.right-panel-icon-action {
+  color: #0869d7 !important;
+}
+
+.right-panel-icon-action:hover,
+.right-panel-icon-action:focus-visible,
+.right-panel-icon-action[aria-pressed="true"] {
+  background: #edf5ff !important;
+}
+
+/* Move document header up and remove excess vertical air */
+.document-view-header {
+  padding-top: 4px !important;
+  padding-bottom: 10px !important;
+}
+
+/* Title/actions sit on one clean horizontal axis */
+.document-review-title-row {
+  align-items: flex-start !important;
+  grid-template-columns: minmax(300px, 0.64fr) auto !important;
+}
+
+/* Title slightly higher and tighter */
+.document-title-meta {
+  gap: 3px !important;
+  padding-top: -12px !important;
+}
+
+.document-title-meta h2 {
+  font-size: 1.05rem !important;
+  line-height: 1.08 !important;
+}
+
+.document-upload-date {
+  font-size: 0.78rem !important;
+}
+
+/* Main toolbar: move right and up */
+.document-main-actions {
+  align-self: start !important;
+  gap: 18px !important;
+  justify-content: flex-end !important;
+  padding-right: 10px !important;
+  padding-top: 0 !important;
+  transform: translateY(-2px);
+}
+
+/* Normalize all main document icons */
+.document-icon-action,
+.document-validation-icon-button {
+  height: 38px !important;
+  min-width: 38px !important;
+  width: 38px !important;
+}
+
+.document-action-icon {
+  height: 24px !important;
+  width: 24px !important;
+}
+
+/* Validation icon was visually too dominant */
+.document-validation-icon-button .document-action-icon {
+  height: 24px !important;
+  width: 24px !important;
+}
+
+.document-validation-floating-label {
+  top: 38px !important;
+}
+
+/* Move vertical annotation toolbar right and up */
+.document-annotation-toolbar {
+  right: 1px !important;
+  top: 4px !important;
+}
+
+.document-annotation-toolbar button {
+  height: 28px !important;
+  width: 28px !important;
+}
+
+.document-mini-icon {
+  height: 17px !important;
+  width: 17px !important;
+}
+
+/* Fullscreen keeps same visible controls */
+.document-view-panel-fullscreen .document-view-header {
+  padding-top: 18px !important;
+}
+
+.document-view-panel-fullscreen .document-main-actions {
+  padding-right: 16px !important;
+  transform: translateY(0);
+}
+
+.document-view-panel-fullscreen .document-annotation-toolbar {
+  right: 24px !important;
+  top: 118px !important;
+}
+
+/* === DOCUMENT LUCIDE ALIGNMENT V06 END === */
+
+/* === DOCUMENT TITLE BLUE HIGHLIGHT === */
+
+.document-title-meta h2 {
+  background: #edf5ff;
+  border-radius: 6px;
+  color: #0869d7 !important;
+  display: inline-block;
+  padding: 4px 10px;
+}
+
+/* === DOCUMENT TITLE BLUE HIGHLIGHT END === */
+
+
+/* === DOCUMENT HEADER BLUE STRIP V07 START === */
+
+.document-view-header {
+  background: #edf5ff !important;
+  margin: 0 !important;
+  padding: 8px 18px 8px 18px !important;
+}
+
+.document-title-meta h2 {
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+.document-review-title-row {
+  align-items: center !important;
+}
+
+.document-main-actions {
+  transform: translate(0, 0) !important;
+}
+
+.document-upload-date {
+  color: #6f7780 !important;
+}
+
+/* === DOCUMENT HEADER BLUE STRIP V07 END === */
+
+
+/* === DOCUMENT TOOLBAR ALIGNMENT HOTFIX === */
+
+.document-main-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 28px !important;
+  margin-left: auto !important;
+  padding-right: 16px !important;
+}
+
+.document-validation-icon-button .document-action-icon {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* === DOCUMENT TOOLBAR ALIGNMENT HOTFIX END === */
+
+
+/* === DOCUMENT TOOLBAR FINAL ALIGN FIX === */
+
+/* Make the title block narrow and give the actions the rest of the row */
+.document-review-title-row {
+  display: grid !important;
+  grid-template-columns: minmax(300px, 1fr) minmax(420px, 0.95fr) !important;
+  align-items: center !important;
+  gap: 24px !important;
+}
+
+/* Now this flexbox has real width, so icons can align to the right */
+.document-main-actions {
+  width: 100% !important;
+  justify-self: end !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 28px !important;
+  padding-right: 22px !important;
+  transform: none !important;
+}
+
+/* Keep validation same optical size as other icons */
+.document-validation-icon-button,
+.document-icon-action {
+  height: 38px !important;
+  min-width: 38px !important;
+  width: 38px !important;
+}
+
+.document-validation-icon-button .document-action-icon,
+.document-icon-action .document-action-icon {
+  height: 24px !important;
+  width: 24px !important;
+}
+
+/* Slightly reduce visual dominance of circled check */
+.document-validation-icon-button.validated .document-action-icon {
+  height: 23px !important;
+  width: 23px !important;
+}
+
+/* === DOCUMENT TOOLBAR FINAL ALIGN FIX END === */
+
+
+/* === DOCUMENT TOOLBAR PUSH RIGHT === */
+
+.document-review-title-row {
+  grid-template-columns: minmax(300px, 1fr) minmax(480px, 0.95fr) !important;
+}
+
+.document-main-actions {
+  padding-right: 8px !important;
+}
+
+/* === DOCUMENT TOOLBAR PUSH RIGHT END === */
+
+
+.document-original-overlay {
+  position: fixed;
+  top: 96px;
+  left: 24px;
+  bottom: 24px;
+  width: calc(66vw - 36px);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 32%);
+}
+
+.document-original-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.document-original-frame {
+  width: 100%;
+  flex: 1;
+  border: 0;
+  background: white;
+}
+
+.document-original-download {
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  min-height: 320px;
+  padding: 32px;
+  text-align: center;
+}
+
+.document-original-overlay {
+  resize: both;
+  min-width: 420px;
+  min-height: 320px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+}
+
+.document-original-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.document-original-window-controls button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.document-original-window-controls span {
+  min-width: 44px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+
+.document-original-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+  z-index: 5;
+}
+
+.document-original-resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+}
+
+.document-original-overlay {
+  position: fixed;
+}
+
+
+.document-original-docx-preview {
+  flex: 1;
+  overflow: auto;
+  background: white;
+  color: #111827;
+}
+
+.document-original-docx-preview-note {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff8dc;
+  color: #3f3f46;
+  font-size: 0.86rem;
+}
+
+.document-original-docx-preview-note a {
+  white-space: nowrap;
+  color: #111827;
+  font-weight: 700;
+}
+
+.document-original-docx-preview-text {
+  margin: 0;
+  padding: 24px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+
+.document-original-docx-preview-empty {
+  padding: 32px;
+  color: #374151;
+  background: white;
+  font-size: 0.95rem;
+}
+
+
+/* === DOCUMENT LONG CONTENT HOTFIX === */
+
+.document-view-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.document-view-header {
+  flex: 0 0 auto;
+}
+
+.document-content-section {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.document-extracted-text {
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* RTF/very long filenames must not push toolbar away */
+.document-title-meta {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.document-title-meta h2 {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-main-actions {
+  flex-shrink: 0 !important;
+  min-width: 260px !important;
+}
+
+
+.document-annotation-note-editor {
+  display: grid;
+  gap: 10px;
+  margin: 12px 16px;
+  padding: 12px;
+  border: 1px solid #d7e9ff;
+  border-radius: 12px;
+  background: #f7fbff;
+}
+
+.document-annotation-note-editor blockquote,
+.document-annotation-card blockquote {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid #0869d7;
+  background: #ffffff;
+  color: #1f2937;
+  white-space: pre-wrap;
+}
+
+.document-annotation-note-editor textarea {
+  min-height: 90px;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid #d7dce2;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.document-annotations-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 16px 24px;
+}
+
+.document-annotations-list h3 {
+  margin: 0;
+  color: #0869d7;
+}
+
+.document-annotation-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e5e2dc;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.document-annotation-card.highlight {
+  border-color: #ffe08a;
+  background: #fff9db;
+}
+
+.document-annotation-card.note {
+  border-color: #d7e9ff;
+  background: #f7fbff;
+}
+
+.document-annotation-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.document-annotation-card-header strong {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: #0869d7;
+}
+
+.document-annotation-card-header button {
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+
+/* === DOCUMENT HIGHLIGHT UI PATCH === */
+
+.document-annotation-toolbar {
+  right: 48px !important;
+  top: 56px !important;
+  z-index: 30 !important;
+}
+
+.document-highlight-tool {
+  position: relative;
+  display: inline-flex;
+}
+
+.document-highlight-palette {
+  position: absolute;
+  right: 42px;
+  top: 0;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #d7dce2;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16);
+  z-index: 40;
+}
+
+.document-highlight-color-button {
+  width: 24px !important;
+  height: 24px !important;
+  border: 1px solid #cfd6df !important;
+  border-radius: 999px !important;
+  cursor: pointer;
+}
+
+.document-highlight-color-button[title="Transparent"] {
+  background:
+    linear-gradient(45deg, transparent 46%, #c2410c 48%, #c2410c 52%, transparent 54%),
+    #ffffff !important;
+}
+
+.document-inline-highlight {
+  background: #ffe766;
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+
+.document-highlight-tool {
+  gap: 4px;
+}
+
+.document-highlight-active-color {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  border: 1px solid #9ca3af !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+}
+
+
+.document-inline-highlight {
+  padding: 0 !important;
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+
+/* === SENTENCE HIGHLIGHT MODE === */
+
+.document-extracted-text.sentence-highlight-mode {
+  cursor: crosshair;
+}
+
+.document-extracted-text.sentence-highlight-mode:hover {
+  background:
+    linear-gradient(rgba(255, 231, 102, 0.08), rgba(255, 231, 102, 0.08));
+}
+
+.document-highlight-tool > button.active {
+  background: #edf5ff !important;
+  color: #0869d7 !important;
+}
+
+
+/* === DOCUMENT VERTICAL TOOLBAR VISIBILITY HOTFIX === */
+
+.document-content-section {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.document-annotation-toolbar {
+  position: sticky !important;
+  float: right;
+  top: 72px !important;
+  right: auto !important;
+  margin-right: 54px !important;
+  margin-left: auto !important;
+  z-index: 200 !important;
+  width: max-content !important;
+}
+
+.document-extracted-text {
+  clear: both;
+}
+
+
+/* === DOCUMENT TOOL MODES === */
+
+.document-annotation-toolbar button.active {
+  background: #edf5ff !important;
+  color: #0869d7 !important;
+  outline: 2px solid #b9d7ff !important;
+}
+
+.document-extracted-text.sentence-tool-mode {
+  cursor: crosshair;
+}
+
+.document-extracted-text.sentence-tool-highlight:hover {
+  background: rgba(255, 231, 102, 0.08);
+}
+
+.document-extracted-text.sentence-tool-note:hover {
+  background: rgba(191, 227, 255, 0.10);
+}
+
+.document-extracted-text.sentence-tool-erase:hover {
+  background: rgba(255, 100, 100, 0.08);
+}
+
+
+/* === DOCUMENT TOOLBAR V2 COLOR RAIL === */
+
+.document-annotation-toolbar {
+  position: sticky !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 6px !important;
+  overflow: visible !important;
+}
+
+.document-tool-color-rail {
+  position: absolute;
+  right: 44px;
+  top: 0;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #d7dce2;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16);
+  z-index: 220;
+}
+
+.document-tool-color-button {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  border: 1px solid #cfd6df !important;
+  border-radius: 999px !important;
+  cursor: pointer;
+  padding: 0 !important;
+}
+
+.document-tool-color-button.active {
+  outline: 2px solid #0869d7 !important;
+  outline-offset: 2px;
+}
+
+.document-tool-color-button[title="Transparent"] {
+  background:
+    linear-gradient(45deg, transparent 46%, #c2410c 48%, #c2410c 52%, transparent 54%),
+    #ffffff !important;
+}
+
+.document-highlight-active-color,
+.document-highlight-palette {
+  display: none !important;
+}
+
+
+/* === DOCUMENT TOOLBAR V2 BUGFIX === */
+
+.document-tool-color-button.active {
+  outline: 2px solid #0869d7 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px #ffffff !important;
+}
+
+.document-tool-color-button.active:hover,
+.document-tool-color-button.active:focus-visible {
+  filter: brightness(0.98);
+}
+
+
+/* === COLOR BUTTON ACTIVE BACKGROUND FIX === */
+
+.document-tool-color-rail .document-tool-color-button.active[title="Žlutá"] {
+  background-color: #ffe766 !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Zelená"] {
+  background-color: #b7f7c2 !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Modrá"] {
+  background-color: #bfe3ff !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Růžová"] {
+  background-color: #ffc6df !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Oranžová"] {
+  background-color: #ffd49a !important;
+}
+
+.document-tool-color-rail .document-tool-color-button.active[title="Červená"] {
+  background-color: #ef4444 !important;
+}
+
+
+/* === DOCUMENT NOTE MARKERS === */
+
+.document-note-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  min-width: 17px;
+  margin: 0 2px;
+  padding: 0;
+  border: 1px solid rgba(0,0,0,.18);
+  border-radius: 999px;
+  color: #1f2937;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: super;
+  box-shadow: 0 1px 2px rgba(0,0,0,.16);
+}
+
+.document-note-marker:hover,
+.document-note-marker:focus-visible {
+  outline: 2px solid #0869d7;
+  outline-offset: 1px;
+}
+
+
+/* === DOCUMENT NOTE V2 === */
+
+.document-note-hover-box {
+  position: fixed;
+  z-index: 10000;
+  max-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #d7dce2;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  pointer-events: none;
+}
+
+.document-note-hover-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-note-hover-box p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.secondary-action.danger {
+  color: #b42318 !important;
+}
+
+
+/* === DOCUMENT NOTE V2 FINISH === */
+
+.document-note-hover-box {
+  position: fixed;
+  z-index: 10000;
+  max-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #d7dce2;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  pointer-events: none;
+}
+
+.document-note-hover-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-note-hover-box p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.secondary-action.danger {
+  color: #b42318 !important;
+}
+
+
+/* === FLOATING NOTE EDITOR === */
+
+.document-annotation-note-editor-floating {
+  position: fixed !important;
+  z-index: 10001 !important;
+  width: min(360px, calc(100vw - 32px));
+  margin: 0 !important;
+  box-shadow: 0 14px 44px rgba(29, 29, 27, 0.22);
+}
+
+.document-note-hover-box {
+  transform: translateY(-100%);
+}
+
+
+/* === NOTE EDITOR COMPACT FLOATING === */
+
+.document-note-floating-editor {
+  position: fixed;
+  z-index: 10001;
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) 34px;
+  gap: 6px;
+  border: 2px solid #ffe766;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+}
+
+.document-note-floating-content {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.document-note-floating-content strong {
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+
+.document-note-floating-actions {
+  display: grid;
+  grid-template-rows: 30px 30px 30px 1fr 30px;
+  gap: 4px;
+  padding: 6px 5px 6px 0;
+}
+
+.document-note-floating-actions button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  height: 30px;
+  width: 30px;
+}
+
+.document-note-floating-actions button:hover,
+.document-note-floating-actions button:focus-visible {
+  background: #edf5ff;
+  outline: none;
+}
+
+.document-note-floating-actions button.danger {
+  color: #b42318;
+}
+
+.document-note-floating-spacer {
+  min-height: 12px;
+}
+
+.document-note-floating-color-panel {
+  position: absolute;
+  right: 40px;
+  top: 6px;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #d7dce2;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16);
+}
+
+.document-annotation-note-editor-floating {
+  display: none !important;
+}
+
+
+/* === NOTE PREVIEW / EDITOR UNIFIED BOX === */
+
+.document-note-hover-box,
+.document-note-floating-editor {
+  width: 340px !important;
+  min-height: 126px !important;
+  max-width: min(340px, calc(100vw - 32px)) !important;
+  border: 2px solid #ffe766 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18) !important;
+  color: #1f2937 !important;
+}
+
+.document-note-hover-box {
+  padding: 10px 12px !important;
+}
+
+.document-note-floating-editor {
+  grid-template-columns: minmax(240px, 1fr) 34px !important;
+  gap: 6px !important;
+  padding: 0 !important;
+}
+
+.document-note-hover-box strong,
+.document-note-floating-content strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-note-hover-box p,
+.document-note-floating-content textarea {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.document-note-floating-content {
+  padding: 10px 12px !important;
+}
+
+
+.document-note-floating-actions {
+  border-left: 1px solid #edf0f3;
+  padding: 6px 5px 6px 0 !important;
+}
+
+
+/* === NOTE EDITOR POLISH === */
+
+.document-note-hover-box,
+.document-note-floating-editor {
+  width: max-content !important;
+  min-width: 220px !important;
+  max-width: min(420px, calc(100vw - 32px)) !important;
+  min-height: unset !important;
+}
+
+.document-note-hover-box {
+  padding: 10px 12px !important;
+}
+
+.document-note-floating-editor {
+  grid-template-columns: minmax(220px, max-content) 34px !important;
+  align-items: start !important;
+}
+
+.document-note-hover-box p {
+  max-width: 380px;
+}
+
+.document-note-floating-content {
+  min-width: 220px;
+  max-width: 380px;
+}
+
+.document-note-title-spacer {
+  height: 8px;
+}
+
+.document-note-floating-content textarea {
+  width: 100%;
+  min-width: 220px;
+  max-width: 380px;
+
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
+
+  border: 0 !important;
+  outline: none !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  resize: none !important;
+  overflow: hidden !important;
+
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  background: transparent;
+}
+
+.document-note-floating-actions {
+  align-self: stretch !important;
+  grid-template-rows: 30px 30px 30px 1fr 30px !important;
+  min-height: 150px;
+  border-left: 1px solid #edf0f3;
+}
+
+.document-note-floating-editor:has(textarea:placeholder-shown) .document-note-floating-actions {
+  min-height: 150px;
+}
+
+
+/* === NOTE EDITOR MENU ADJUST === */
+
+.document-note-title-spacer {
+  display: none !important;
+}
+
+.document-note-floating-editor {
+  align-items: start !important;
+}
+
+.document-note-floating-actions {
+  align-self: start !important;
+  min-height: 150px !important;
+}
+
+.document-note-floating-content {
+  padding-bottom: 10px !important;
+}
+
+
+/* === NOTE MENU ATTACHED OUTSIDE BOX === */
+
+.document-note-floating-editor {
+  display: block !important;
+  position: fixed !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-note-floating-content {
+  display: block !important;
+  min-width: 260px !important;
+  max-width: 380px !important;
+  padding: 10px 12px !important;
+}
+
+.document-note-floating-actions {
+  position: absolute !important;
+  left: calc(100% + 4px) !important;
+  top: 0 !important;
+  display: grid !important;
+  grid-template-rows: 30px 30px 30px 1fr 30px !important;
+  gap: 4px !important;
+  min-height: 150px !important;
+  width: 34px !important;
+  padding: 6px 4px !important;
+  border: 2px solid inherit !important;
+  border-left: 2px solid inherit !important;
+  border-radius: 0 10px 10px 0 !important;
+  background: #ffffff !important;
+  box-shadow: 8px 10px 24px rgba(29, 29, 27, 0.12) !important;
+}
+
+.document-note-floating-color-panel {
+  right: 40px !important;
+  top: 0 !important;
+}
+
+
+/* === NOTE TEXTAREA FINAL COMPACT FIX === */
+
+.document-note-title-spacer {
+  display: none !important;
+  height: 0 !important;
+}
+
+.document-note-floating-content {
+  gap: 0 !important;
+}
+
+.document-note-floating-content strong {
+  margin-bottom: 4px !important;
+}
+
+.document-note-floating-content textarea {
+  display: block !important;
+  min-height: 1.4em !important;
+  height: 1.4em !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+  overflow: hidden !important;
+}
+
+
+/* === NOTE EDITOR HORIZONTAL TOP MENU === */
+
+.document-note-floating-editor {
+  overflow: visible !important;
+}
+
+.document-note-floating-actions {
+  position: absolute !important;
+  left: 0 !important;
+  right: auto !important;
+  top: -38px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 4px !important;
+  width: max-content !important;
+  min-height: 0 !important;
+  height: 34px !important;
+  padding: 2px 4px !important;
+  border: 1px solid #d7dce2 !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16) !important;
+}
+
+.document-note-floating-actions button {
+  height: 30px !important;
+  width: 30px !important;
+  min-width: 30px !important;
+}
+
+.document-note-floating-spacer {
+  width: 10px !important;
+  min-width: 10px !important;
+  height: 1px !important;
+}
+
+.document-note-floating-color-panel {
+  left: 0 !important;
+  right: auto !important;
+  top: -84px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  border-radius: 999px !important;
+}
+
+
+/* === NOTE COLOR / REVERT FINAL FIX === */
+
+.document-note-floating-editor,
+.document-note-hover-box {
+  border-color: var(--note-color, #ffe766) !important;
+}
+
+
+/* === NOTE TEXTAREA AUTOSIZE === */
+
+.document-note-floating-content textarea {
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+}
+
+
+/* === NOTE BOX FINAL ALIGN === */
+
+.document-note-hover-box,
+.document-note-floating-editor {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+  box-sizing: border-box !important;
+}
+
+.document-note-hover-box {
+  z-index: 10000 !important;
+}
+
+.document-note-floating-editor {
+  z-index: 10002 !important;
+}
+
+.document-note-floating-content {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+.document-note-floating-content textarea {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+  resize: none !important;
+  white-space: pre-wrap !important;
+}
+
+.document-note-hover-box p {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+
+/* === NOTE TEXTAREA REMOVE 2-LINE LIMIT === */
+
+.document-note-floating-content textarea {
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  resize: none !important;
+}
+
+.document-note-floating-content {
+  overflow: visible !important;
+}
+
+.document-note-floating-editor {
+  height: auto !important;
+  min-height: unset !important;
+}
+
+
+/* === NOTE TEXTAREA ROW SYNC WITH PREVIEW === */
+
+.document-note-floating-content textarea {
+  height: auto !important;
+  min-height: 1.4em !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  resize: none !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.document-note-hover-box p,
+.document-note-floating-content textarea {
+  font-size: 0.84rem !important;
+  line-height: 1.4 !important;
+}
+
+
+/* === NOTE TEXTAREA CARET / EXTRA ROW FINAL === */
+
+.document-note-floating-content textarea {
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: content-box !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+
+/* === DOCUMENT PINS V1 === */
+
+.document-content-section {
+  position: relative !important;
+}
+
+.document-pin-layer {
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 32px;
+  z-index: 80;
+}
+
+.document-pin-marker {
+  align-items: center;
+  background: var(--pin-color, #ef4444) !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 999px !important;
+  box-shadow: 0 2px 8px rgba(29, 29, 27, 0.22);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 900;
+  height: 22px;
+  justify-content: center;
+  left: 4px;
+  line-height: 1;
+  pointer-events: auto;
+  position: absolute;
+  transform: translateY(-50%);
+  width: 22px;
+}
+
+.document-pin-marker:hover,
+.document-pin-marker:focus-visible {
+  outline: 2px solid #0869d7;
+  outline-offset: 2px;
+}
+
+.document-extracted-text {
+  padding-left: 42px !important;
+}
+
+.document-pin-floating-editor {
+  background: #ffffff;
+  border: 2px solid var(--pin-color, #ef4444);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  display: grid;
+  gap: 8px;
+  max-width: 320px;
+  padding: 10px 12px;
+  position: fixed;
+  width: 320px;
+  z-index: 10003;
+}
+
+.document-pin-floating-editor strong {
+  color: #0869d7;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.document-pin-floating-editor textarea {
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  padding: 8px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-pin-editor-colors,
+.document-pin-editor-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+
+/* === PIN LAYOUT / TOOLBAR FLOW FIX === */
+
+/* The floating annotation toolbar must not reserve layout space. */
+.document-annotation-toolbar {
+  position: absolute !important;
+  right: 22px !important;
+  top: 12px !important;
+  float: none !important;
+  margin: 0 !important;
+  z-index: 200 !important;
+}
+
+/* Shared coordinate context for text and pins. */
+.document-text-pin-shell {
+  position: relative !important;
+  min-height: 0 !important;
+  width: 100% !important;
+}
+
+/* Text keeps its own scroll, pin layer follows the same visual area. */
+.document-text-pin-shell .document-extracted-text {
+  margin: 0 !important;
+  padding-left: 42px !important;
+}
+
+/* Pin layer is anchored to the text shell, not to the whole document section. */
+.document-text-pin-shell .document-pin-layer {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: auto !important;
+  width: 34px !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 90 !important;
+}
+
+/* Pin marker uses measured px top inside shell. */
+.document-text-pin-shell .document-pin-marker {
+  left: 6px !important;
+  position: absolute !important;
+  pointer-events: auto !important;
+}
+
+
+/* === DOCUMENT PIN EDITOR SAFE === */
+
+.document-pin-hover-box,
+.document-pin-floating-editor {
+  background: #ffffff;
+  border: 2px solid var(--pin-color, #ef4444);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
+  color: #1f2937;
+  position: fixed;
+  width: 300px;
+  z-index: 10004;
+}
+
+.document-pin-hover-box {
+  padding: 10px 12px;
+  pointer-events: none;
+}
+
+.document-pin-hover-box strong {
+  color: #0869d7;
+  display: block;
+  font-size: 0.72rem;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.document-pin-hover-box p {
+  font-size: 0.84rem;
+  line-height: 1.4;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.document-pin-floating-editor {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.document-pin-floating-editor textarea {
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  padding: 8px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-pin-editor-colors {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.document-pin-delete-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: #b42318;
+  cursor: pointer;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  justify-self: end;
+  width: 30px;
+}
+
+.document-pin-delete-button:hover,
+.document-pin-delete-button:focus-visible {
+  background: #fff1ed;
+  outline: none;
+}
+
+
+/* === PIN EDITOR MATCH PREVIEW FINAL === */
+
+.document-pin-hover-box,
+.document-pin-floating-editor {
+  background: #ffffff !important;
+  border: 2px solid var(--pin-color, #ef4444) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18) !important;
+  color: #1f2937 !important;
+  max-width: min(360px, calc(100vw - 32px)) !important;
+  min-width: 240px !important;
+  width: max-content !important;
+  position: fixed !important;
+  z-index: 10004 !important;
+}
+
+.document-pin-hover-box {
+  padding: 10px 12px !important;
+  pointer-events: none !important;
+}
+
+.document-pin-floating-editor {
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-floating-content {
+  display: grid !important;
+  gap: 4px !important;
+  max-width: 360px !important;
+  min-width: 240px !important;
+  padding: 10px 12px !important;
+}
+
+.document-pin-hover-box strong,
+.document-pin-floating-content strong {
+  color: #0869d7 !important;
+  display: block !important;
+  font-size: 0.72rem !important;
+  margin-bottom: 4px !important;
+  text-transform: uppercase !important;
+}
+
+.document-pin-hover-box p,
+.document-pin-floating-content textarea {
+  font-size: 0.84rem !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  white-space: pre-wrap !important;
+}
+
+.document-pin-floating-content textarea {
+  background: transparent !important;
+  border: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  min-height: 1.4em !important;
+  outline: none !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  resize: none !important;
+  width: 100% !important;
+}
+
+.document-pin-editor-toolbar {
+  align-items: center !important;
+  background: #ffffff !important;
+  border: 1px solid #d7dce2 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.16) !important;
+  display: flex !important;
+  gap: 6px !important;
+  height: 34px !important;
+  left: 0 !important;
+  padding: 2px 4px !important;
+  position: absolute !important;
+  top: -38px !important;
+  width: max-content !important;
+}
+
+.document-pin-editor-colors {
+  align-items: center !important;
+  display: flex !important;
+  gap: 5px !important;
+}
+
+.document-pin-delete-button {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: #b42318 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  height: 28px !important;
+  justify-content: center !important;
+  width: 28px !important;
+}
+
+.document-pin-delete-button:hover,
+.document-pin-delete-button:focus-visible {
+  background: #fff1ed !important;
+  outline: none !important;
+}
+
+
+/* === PIN Z-INDEX BELOW DOCUMENT HEADER === */
+
+.document-view-header {
+  position: relative !important;
+  z-index: 120 !important;
+}
+
+.document-text-pin-shell .document-pin-layer {
+  z-index: 20 !important;
+}
+
+.document-text-pin-shell .document-pin-marker {
+  z-index: 21 !important;
+}
+
+
+/* === PIN DRAG NO TEXT SELECTION === */
+
+.document-text-pin-shell.pin-dragging,
+.document-text-pin-shell.pin-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.document-text-pin-shell.pin-dragging .document-extracted-text {
+  cursor: grabbing !important;
+}
+
+
+/* === PIN MARKER MAP ICON === */
+
+.document-pin-marker {
+  gap: 1px !important;
+  height: 28px !important;
+  width: 28px !important;
+  flex-direction: column !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+}
+
+.document-pin-marker-icon {
+  height: 13px !important;
+  width: 13px !important;
+  stroke-width: 3 !important;
+}
+
+.document-pin-marker span {
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  margin-top: -2px !important;
+}
+
+
+/* === PIN MARKER PSEUDO SOLID MAP PIN FINAL === */
+
+.document-pin-marker {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--pin-color, #ef4444) !important;
+  height: 30px !important;
+  width: 30px !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-icon {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  fill: var(--pin-color, #ef4444) !important;
+  stroke: var(--pin-color, #ef4444) !important;
+  stroke-width: 1.7 !important;
+  filter: drop-shadow(0 1px 1px rgba(29, 29, 27, 0.25));
+  pointer-events: none !important;
+}
+
+.document-pin-index {
+  position: absolute !important;
+  left: -7px !important;
+  top: 4px !important;
+  min-width: 13px !important;
+  height: 13px !important;
+  align-items: center !important;
+  background: #ffffff !important;
+  border: 1px solid var(--pin-color, #ef4444) !important;
+  border-radius: 999px !important;
+  color: var(--pin-color, #ef4444) !important;
+  display: inline-flex !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  padding: 0 2px !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+.document-pin-marker:hover,
+.document-pin-marker:focus-visible {
+  outline: 2px solid rgba(8, 105, 215, 0.45) !important;
+  outline-offset: 2px !important;
+}
+
+
+/* === PIN MARKER OUTLINE + BOTTOM INDEX FINAL === */
+
+.document-pin-marker {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--pin-color, #ef4444) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  height: 34px !important;
+  width: 28px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-icon {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  fill: transparent !important;
+  stroke: var(--pin-color, #ef4444) !important;
+  stroke-width: 2.6 !important;
+  filter: drop-shadow(0 1px 1px rgba(29, 29, 27, 0.18));
+  pointer-events: none !important;
+}
+
+.document-pin-index {
+  position: static !important;
+  min-width: 0 !important;
+  height: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--pin-color, #ef4444) !important;
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+.document-pin-marker span {
+  margin-top: 0 !important;
+}
+
+
+/* === BOOKMARK SOLID PIN === */
+
+.document-pin-marker {
+  position: absolute !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 24px !important;
+  height: 28px !important;
+
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.document-pin-icon {
+  position: absolute !important;
+
+  width: 24px !important;
+  height: 24px !important;
+
+  color: var(--pin-color, #ef4444) !important;
+
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+
+  filter: drop-shadow(0 1px 1px rgba(29,29,27,.18));
+}
+
+.document-pin-index {
+  position: absolute !important;
+
+  top: 5px !important;
+  left: 50% !important;
+
+  transform: translateX(-50%) !important;
+
+  color: white !important;
+
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+
+/* === BOOKMARK PIN POSITION POLISH === */
+
+.document-text-pin-shell .document-pin-marker {
+  left: 0px !important;
+}
+
+.document-pin-index {
+  top: 7px !important;
+}
+
+
+/* === JOURNAL INLINE ITEMS MVP === */
+
+.journal-inline-list {
+  display: grid;
+  gap: 6px;
+}
+
+.journal-inline-item {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr auto;
+}
+
+.journal-inline-text {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: text;
+  font: inherit;
+  padding: 4px 0;
+  text-align: left;
+}
+
+.journal-inline-text:hover {
+  color: #0869d7;
+}
+
+.journal-inline-input {
+  border: 1px solid #d7dce2;
+  border-radius: 8px;
+  font: inherit;
+  padding: 7px 9px;
+  width: 100%;
+}
+
+.journal-inline-item.editing {
+  grid-template-columns: 1fr auto;
+}
+
+.journal-inline-delete-button {
+  align-self: center;
+}
+
+/* === JOURNAL INLINE EDIT TOOLBAR === */
+
+.journal-inline-edit-shell {
+  display: grid;
+  gap: 6px;
+}
+
+.journal-inline-edit-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.journal-inline-toolbar-button {
+  height: 26px;
+  min-width: 26px;
+  position: relative;
+  width: 26px;
+}
+
+.journal-inline-toolbar-button.danger {
+  color: #b42318;
+}
+
+.journal-inline-toolbar-icon {
+  height: 15px;
+  width: 15px;
+}
+
+.journal-inline-toolbar-mini-icon {
+  bottom: 3px;
+  height: 10px;
+  position: absolute;
+  right: 3px;
+  width: 10px;
+}
+
+.journal-inline-toolbar-plus {
+  bottom: 1px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  position: absolute;
+  right: 3px;
+}
+
+/* === JOURNAL LINKED BOOKMARK PILLS === */
+
+.journal-inline-read-content {
+  display: grid;
+  gap: 3px;
+}
+
+.journal-linked-bookmarks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-left: 0;
+}
+
+.journal-linked-bookmark-pill {
+  align-items: center;
+  background: #edf5ff;
+  border: 1px solid #b9d7ff;
+  border-radius: 999px;
+  color: #0869d7;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 3px 7px;
+}
+
+/* === JOURNAL ↔ BOOKMARK LINK MODE === */
+
+.document-text-pin-shell.bookmark-link-mode .document-pin-marker {
+  cursor: copy !important;
+  outline: 2px solid rgba(8, 105, 215, 0.35) !important;
+  outline-offset: 2px !important;
+}
+
+.journal-bookmark-linking-state {
+  align-items: center;
+  color: #0869d7;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0 6px;
+}
+
+.journal-linked-bookmark-pill {
+  border-color: var(--bookmark-color, #0869d7);
+  color: var(--bookmark-color, #0869d7);
+}
+
+/* === JOURNAL LINKED BOOKMARK INLINE MARKER === */
+
+.journal-inline-read-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.journal-linked-bookmarks {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.journal-linked-bookmark-marker {
+  align-items: center !important;
+  color: var(--bookmark-color, #ef4444) !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  height: 28px !important;
+  justify-content: center !important;
+  position: relative !important;
+  width: 24px !important;
+}
+
+.journal-linked-bookmark-marker[data-color="red"] {
+  --bookmark-color: #ef4444;
+}
+
+.journal-linked-bookmark-marker[data-color="orange"] {
+  --bookmark-color: #f97316;
+}
+
+.journal-linked-bookmark-marker[data-color="green"] {
+  --bookmark-color: #22c55e;
+}
+
+.journal-linked-bookmark-marker[data-color="blue"] {
+  --bookmark-color: #3b82f6;
+}
+
+.journal-linked-bookmark-marker[data-color="yellow"] {
+  --bookmark-color: #eab308;
+}
+
+.journal-linked-bookmark-icon {
+  color: var(--bookmark-color, #ef4444) !important;
+  fill: currentColor !important;
+  height: 24px !important;
+  position: absolute !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+  width: 24px !important;
+}
+
+.journal-linked-bookmark-index {
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  left: 50% !important;
+  line-height: 1 !important;
+  position: absolute !important;
+  top: 7px !important;
+  transform: translateX(-50%) !important;
+  user-select: none !important;
+  z-index: 2 !important;
+}
+
+.journal-linked-bookmark-pill {
+  display: none !important;
+}
+
+/* === JOURNAL BOOKMARK COLORS MATCH DOCUMENT PINS === */
+
+.journal-linked-bookmark-marker[data-color="red"] {
+  --bookmark-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.journal-linked-bookmark-marker[data-color="orange"] {
+  --bookmark-color: #f97316 !important;
+  color: #f97316 !important;
+}
+
+.journal-linked-bookmark-marker[data-color="green"] {
+  --bookmark-color: #22c55e !important;
+  color: #22c55e !important;
+}
+
+.journal-linked-bookmark-marker[data-color="yellow"] {
+  --bookmark-color: #eab308 !important;
+  color: #eab308 !important;
+}
+
+.journal-linked-bookmark-marker[data-color="blue"] {
+  --bookmark-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+.journal-linked-bookmark-icon {
+  color: var(--bookmark-color, #ef4444) !important;
+  fill: var(--bookmark-color, #ef4444) !important;
+  stroke: var(--bookmark-color, #ef4444) !important;
+}
+
+.journal-linked-bookmark-index {
+  color: #ffffff !important;
+}
+
+/* === JOURNAL ADD ROW CLEAN UX === */
+
+.notebook-ai-card .notebook-card-header .persistent-action {
+  display: none !important;
+}
+
+.journal-add-inline-row {
+  align-self: start;
+  background: transparent;
+  border: 0;
+  color: #8ec5ff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 6px 0 18px;
+  opacity: 0.72;
+  padding: 2px 0;
+  text-align: left;
+}
+
+.journal-add-inline-row:hover,
+.journal-add-inline-row:focus-visible {
+  color: #1d7ed8;
+  opacity: 1;
+  outline: none;
+}
+
+.journal-inline-delete-button,
+.journal-inline-toolbar-delete,
+.journal-inline-toolbar-remove,
+.journal-inline-toolbar-close {
+  display: none !important;
+}
+
+
+/* === JOURNAL ADD ROW TIGHTER SPACING === */
+.journal-add-inline-row {
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message + .journal-add-inline-row {
+  margin-top: -2px !important;
+}
+
+/* === JOURNAL ADD ROW TIGHTER SPACING === */
+.journal-add-inline-row {
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message + .journal-add-inline-row {
+  margin-top: -2px !important;
+}
+
+/* === JOURNAL GOALS CLEAN ACTIONS === */
+
+.goals-section-header .notebook-add-button {
+  display: none !important;
+}
+
+.clean-goals-list .notebook-row-actions {
+  display: none !important;
+}
+
+/* === JOURNAL ADD ROW FINAL SPACING === */
+
+.journal-inline-list {
+  gap: 0 !important;
+}
+
+.journal-inline-item {
+  margin: 0 !important;
+}
+
+.journal-inline-text {
+  padding-bottom: 0 !important;
+}
+
+.journal-add-inline-row {
+  margin: 0 0 10px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message {
+  margin-bottom: 0 !important;
+}
+
+
+/* === JOURNAL VISUAL UNIFICATION FINAL === */
+
+/* remove left vertical ownership labels */
+.notebook-layer-heading {
+  display: none !important;
+}
+
+/* remove empty placeholder messages */
+.notebook-ai-layer .journal-empty-message,
+.notebook-user-layer .journal-empty-message {
+  display: none !important;
+}
+
+/* unify section headings */
+.notebook-ai-layer h3,
+.notebook-ai-layer .notebook-card h3,
+.notebook-user-layer h3,
+.notebook-user-layer .notebook-card h3,
+.goals-section-header h3,
+.situation-documents-header h3 {
+  color: #1d1d1b !important;
+  font-weight: 650 !important;
+}
+
+/* unify icons to blue */
+.notebook-ai-layer .notebook-section-icon,
+.notebook-user-layer .notebook-section-icon,
+.ai-section-icon,
+.user-section-icon {
+  color: #0869d7 !important;
+  stroke: #0869d7 !important;
+}
+
+/* tighten vertical rhythm between sections */
+.notebook-layer {
+  gap: 2px !important;
+}
+
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  margin-bottom: 8px !important;
+}
+
+.situation-documents-section {
+  margin-bottom: 18px !important;
+}
+
+.notebook-card:has(.journal-add-inline-row:only-child),
+.notebook-card .journal-inline-list {
+  margin-top: 0 !important;
+}
+
+.journal-add-inline-row {
+  color: #8ec5ff !important;
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+}
+
+.journal-empty-message + .journal-add-inline-row {
+  margin-top: 0 !important;
+}
+
+
+/* === JOURNAL USER/AI GAP REMOVAL === */
+
+/* old UX separated user notes and AI notes; now notebook is visually unified */
+.notebook-user-layer {
+  margin-bottom: 4px !important;
+  padding-bottom: 0 !important;
+}
+
+.notebook-ai-layer {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.notebook-page {
+  gap: 4px !important;
+}
+
+.situation-documents-section {
+  margin-bottom: 8px !important;
+}
+
+.notebook-ai-layer .notebook-card:first-of-type {
+  margin-top: 0 !important;
+}
+
+
+/* === NOTEBOOK FINAL SECTION RHYTHM OVERRIDE === */
+
+/* base: two visual blank lines between normal sections */
+.notebook-card,
+.goals-section,
+.situation-documents-section {
+  margin-bottom: 18px !important;
+}
+
+/* Situace -> Cíle: bylo těsné, přidat jeden řádek */
+.situation-card {
+  margin-bottom: 18px !important;
+}
+
+/* Dokumenty -> Analýza: bylo moc velké, ubrat jeden řádek */
+.situation-documents-section {
+  margin-bottom: 10px !important;
+}
+
+.notebook-user-layer,
+.notebook-ai-layer,
+.notebook-page {
+  gap: 0 !important;
+}
+
+
+/* === JOURNAL BOOKMARK OPEN TARGET === */
+
+.journal-linked-bookmark-marker {
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.journal-linked-bookmark-marker:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.targeted-document-pin-marker {
+  outline: 3px solid rgba(8, 105, 215, 0.45) !important;
+  outline-offset: 3px !important;
+  z-index: 5 !important;
+}
+
+
+/* === RIGHT PANEL + BOOKMARK VISIBILITY FIX === */
+
+/* restore right panel vertical/right-side tab menu */
+.context-panel {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.right-panel-tabs {
+  align-items: center !important;
+  display: flex !important;
+  gap: 6px !important;
+  min-height: 42px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 300 !important;
+}
+
+.right-panel-tab,
+.right-panel-tab-actions,
+.right-panel-icon-action {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ensure document bookmarks are drawn above text/content */
+.document-text-pin-shell {
+  overflow: visible !important;
+  position: relative !important;
+}
+
+.document-text-pin-shell .document-pin-layer {
+  display: block !important;
+  left: 0 !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  top: 0 !important;
+  visibility: visible !important;
+  width: 34px !important;
+  z-index: 250 !important;
+}
+
+.document-text-pin-shell .document-pin-marker {
+  color: var(--pin-color, #ef4444) !important;
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: absolute !important;
+  visibility: visible !important;
+  z-index: 260 !important;
+}
+
+.document-pin-icon {
+  color: var(--pin-color, #ef4444) !important;
+  display: block !important;
+  fill: currentColor !important;
+  opacity: 1 !important;
+  stroke: currentColor !important;
+  visibility: visible !important;
+}
+
+.document-pin-index {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 261 !important;
+}
+
+
+/* === APP VIEWPORT LOCK + PANEL SCROLLING === */
+
+html,
+body {
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+body {
+  margin: 0 !important;
+}
+
+.workspace-shell {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+.three-panel-layout {
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.workspace-panel,
+.journal-panel,
+.chat-panel,
+.context-panel {
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* independent scrolling inside each main panel */
+.journal-panel {
+  overflow-y: auto !important;
+}
+
+.chat-panel {
+  overflow: hidden !important;
+}
+
+.message-list,
+.chat-messages,
+.chat-scroll-area {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+.context-panel {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.right-panel-tab-content {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  flex: 1 1 auto !important;
+}
+
+/* document text scrolls inside right panel, not the page */
+.document-view-panel {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.document-content-section {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.document-text-pin-shell {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.document-extracted-text {
+  max-height: none !important;
+  overflow-y: auto !important;
+}
+
+
+/* === RIGHT PANEL TABS CENTERING FIX === */
+.right-panel-tabs {
+  align-items: stretch !important;
+}
+
+.right-panel-tab {
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  min-height: 56px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  text-align: center !important;
+}
+
+/* === APP CASE HEADER POLISH === */
+
+.app-case-header {
+
+  align-items: center !important;
+
+  display: grid !important;
+
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+
+  gap: 22px !important;
+
+  max-width: 1440px !important;
+
+  width: 100% !important;
+
+  margin: 0 auto 18px !important;
+
+}
+
+.app-logo-lockup {
+
+  align-items: center !important;
+
+  display: inline-flex !important;
+
+  gap: 12px !important;
+
+  min-width: 240px !important;
+
+}
+
+.app-logo-mark {
+
+  border: 4px solid #0d1b2a !important;
+
+  border-radius: 9px !important;
+
+  height: 46px !important;
+
+  position: relative !important;
+
+  width: 40px !important;
+
+}
+
+.app-logo-ear {
+
+  background: #0d1b2a !important;
+
+  height: 16px !important;
+
+  position: absolute !important;
+
+  top: -11px !important;
+
+  width: 16px !important;
+
+}
+
+.app-logo-ear.left {
+
+  clip-path: polygon(0 100%, 0 0, 100% 100%) !important;
+
+  left: -4px !important;
+
+}
+
+.app-logo-ear.right {
+
+  clip-path: polygon(0 100%, 100% 0, 100% 100%) !important;
+
+  right: -4px !important;
+
+}
+
+.app-logo-eye {
+
+  background: #0d1b2a !important;
+
+  border-radius: 999px !important;
+
+  height: 5px !important;
+
+  position: absolute !important;
+
+  top: 14px !important;
+
+  width: 5px !important;
+
+}
+
+.app-logo-eye.left {
+
+  left: 10px !important;
+
+}
+
+.app-logo-eye.right {
+
+  right: 10px !important;
+
+}
+
+.app-logo-line {
+
+  background: #3b82f6 !important;
+
+  border-radius: 999px !important;
+
+  height: 4px !important;
+
+  left: 9px !important;
+
+  position: absolute !important;
+
+}
+
+.app-logo-line.one {
+
+  top: 27px !important;
+
+  width: 22px !important;
+
+}
+
+.app-logo-line.two {
+
+  top: 35px !important;
+
+  width: 22px !important;
+
+}
+
+.app-logo-line.three {
+
+  top: 43px !important;
+
+  width: 16px !important;
+
+}
+
+.app-logo-text {
+
+  display: grid !important;
+
+  gap: 2px !important;
+
+}
+
+.app-logo-name {
+
+  color: #0d1b2a !important;
+
+  font-size: 22px !important;
+
+  font-weight: 800 !important;
+
+  letter-spacing: -0.04em !important;
+
+  line-height: 1 !important;
+
+}
+
+.app-logo-name strong {
+
+  font-weight: 850 !important;
+
+}
+
+.app-logo-name em {
+
+  color: #3b82f6 !important;
+
+  font-style: normal !important;
+
+  font-weight: 850 !important;
+
+}
+
+.app-logo-subtitle {
+
+  color: #30343b !important;
+
+  font-size: 11px !important;
+
+  font-weight: 500 !important;
+
+  line-height: 1.15 !important;
+
+  white-space: nowrap !important;
+
+}
+
+.app-case-title-block {
+
+  min-width: 0 !important;
+
+}
+
+.app-case-title-block h1 {
+
+  color: #161616 !important;
+
+  font-size: clamp(28px, 3.2vw, 48px) !important;
+
+  font-weight: 760 !important;
+
+  letter-spacing: -0.06em !important;
+
+  line-height: 0.95 !important;
+
+  margin: 0 !important;
+
+  overflow: hidden !important;
+
+  text-overflow: ellipsis !important;
+
+  white-space: nowrap !important;
+
+}
+
+.app-status-pill {
+
+  align-self: center !important;
+
+  justify-self: end !important;
+
+}
+
+.workspace-header .case-meta,
+
+.workspace-header > div:not(.app-logo-lockup):not(.app-case-title-block) .eyebrow {
+
+  display: none !important;
+
+}
+
+/* === APP HEADER WITH REAL LOGO === */
+
+.app-case-header {
+  align-items: center !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: 20px !important;
+}
+
+.app-logo-image {
+  display: block !important;
+  height: 72px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  flex-shrink: 0 !important;
+}
+
+.app-case-title-block {
+  min-width: 0 !important;
+}
+
+.app-case-title-block h1 {
+  margin: 0 !important;
+  font-size: clamp(28px, 3vw, 48px) !important;
+  line-height: 0.95 !important;
+  font-weight: 760 !important;
+  letter-spacing: -0.05em !important;
+}
+
+.app-status-pill {
+  align-self: center !important;
+}
+
+
+/* === CINEMATIC TITLE SCREEN === */
+
+.title-screen {
+  min-height: 100vh !important;
+  background: #080b10 !important;
+  overflow: hidden !important;
+}
+
+.title-hero {
+  min-height: 100vh !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(360px, 0.72fr) !important;
+  align-items: center !important;
+  padding: 56px clamp(32px, 5vw, 88px) !important;
+}
+
+.title-hero-art {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  filter: saturate(0.95) contrast(1.08) brightness(0.78) !important;
+  transform: scale(1.02) !important;
+}
+
+.title-hero-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  background:
+    radial-gradient(circle at 33% 48%, rgba(59, 130, 246, 0.14), transparent 28%),
+    linear-gradient(90deg, rgba(4, 7, 12, 0.18) 0%, rgba(4, 7, 12, 0.38) 48%, rgba(4, 7, 12, 0.86) 100%),
+    linear-gradient(0deg, rgba(4, 7, 12, 0.52), rgba(4, 7, 12, 0.14) 42%, rgba(4, 7, 12, 0.56)) !important;
+  z-index: 1 !important;
+}
+
+.title-brand-panel,
+.title-cases-panel {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.title-brand-panel {
+  align-self: start !important;
+  display: grid !important;
+  gap: 18px !important;
+  max-width: 460px !important;
+  padding-top: 12px !important;
+}
+
+  .title-logo {
+    width: 420px !important;
+    max-width: 100% !important;
+  height: auto !important;
+  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.45)) !important;
+}
+
+.title-kicker {
+  color: rgba(255, 255, 255, 0.84) !important;
+  font-size: 1.08rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  margin: 0 !important;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55) !important;
+}
+
+.title-primary-action {
+  background: #3b82f6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 16px 40px rgba(59, 130, 246, 0.28) !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  justify-self: start !important;
+  padding: 14px 24px !important;
+}
+
+.title-primary-action:hover {
+  background: #2563eb !important;
+  transform: translateY(-1px) !important;
+}
+
+.title-cases-panel {
+  justify-self: end !important;
+  width: min(440px, 100%) !important;
+  padding: 26px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 24px !important;
+  background: rgba(8, 13, 22, 0.68) !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38) !important;
+}
+
+.title-cases-kicker {
+  color: #3b82f6 !important;
+  font-size: 0.75rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.16em !important;
+  margin: 0 0 6px !important;
+  text-transform: uppercase !important;
+}
+
+.title-cases-header h1 {
+  color: #ffffff !important;
+  font-size: clamp(2.4rem, 4vw, 4rem) !important;
+  letter-spacing: -0.06em !important;
+  line-height: 0.95 !important;
+  margin: 0 0 24px !important;
+}
+
+.title-case-list {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.title-case-card {
+  align-items: center !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 16px !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  padding: 16px !important;
+  text-align: left !important;
+}
+
+.title-case-card:hover {
+  background: rgba(59, 130, 246, 0.16) !important;
+  border-color: rgba(59, 130, 246, 0.48) !important;
+  transform: translateY(-1px) !important;
+}
+
+.title-case-card strong {
+  display: block !important;
+  font-size: 1rem !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.title-status-pill {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+
+.title-muted,
+.title-error {
+  color: rgba(255, 255, 255, 0.72) !important;
+  margin: 0 !important;
+}
+
+.title-error {
+  color: #fecaca !important;
+}
+
+@media (max-width: 900px) {
+  .title-hero {
+    grid-template-columns: 1fr !important;
+    align-content: start !important;
+    gap: 28px !important;
+  }
+
+  .title-cases-panel {
+    justify-self: stretch !important;
+  }
+}
+
+
+/* === TITLE SCREEN SPLIT HERO POLISH === */
+
+.title-screen {
+  background: #f4f1eb !important;
+  padding: 28px !important;
+}
+
+.title-hero {
+  border-radius: 18px !important;
+  min-height: calc(100vh - 56px) !important;
+  overflow: hidden !important;
+  padding: 48px !important;
+  grid-template-columns: 0.72fr 0.78fr !important;
+  box-shadow: 0 24px 80px rgba(13, 27, 42, 0.16) !important;
+}
+
+.title-hero-art {
+  filter: saturate(0.96) contrast(1.02) brightness(0.98) !important;
+  object-position: center center !important;
+  transform: scale(1.01) !important;
+}
+
+.title-hero-overlay {
+  background:
+    linear-gradient(90deg,
+      rgba(246, 242, 234, 0.96) 0%,
+      rgba(246, 242, 234, 0.90) 22%,
+      rgba(246, 242, 234, 0.18) 48%,
+      rgba(5, 10, 18, 0.58) 66%,
+      rgba(5, 10, 18, 0.92) 100%
+    ) !important;
+}
+
+.title-brand-panel {
+  align-self: start !important;
+  padding-top: 6px !important;
+  gap: 28px !important;
+}
+
+.title-logo {
+  width: 260px !important;
+  filter: none !important;
+}
+
+.title-kicker {
+  color: #111827 !important;
+  font-size: clamp(1.75rem, 2.3vw, 3rem) !important;
+  font-weight: 820 !important;
+  letter-spacing: -0.055em !important;
+  line-height: 1.12 !important;
+  max-width: 380px !important;
+  text-shadow: none !important;
+}
+
+.title-kicker::before {
+  content: "Váš průvodce\A složitým světem\A úřadů a předpisů.";
+  white-space: pre-line;
+}
+
+.title-kicker {
+  font-size: 0 !important;
+}
+
+.title-kicker::before {
+  font-size: clamp(1.75rem, 2.3vw, 3rem) !important;
+}
+
+.title-primary-action {
+  background: #2563eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.26) !important;
+  font-size: 1rem !important;
+  padding: 16px 28px !important;
+}
+
+.title-primary-action::before {
+  content: "+";
+  margin-right: 12px;
+  font-size: 1.25rem;
+  line-height: 0;
+}
+
+.title-cases-panel {
+  align-self: center !important;
+  background: rgba(8, 13, 22, 0.78) !important;
+  border-radius: 14px !important;
+  justify-self: end !important;
+  padding: 28px !important;
+  width: min(420px, 100%) !important;
+}
+
+.title-cases-kicker {
+  display: none !important;
+}
+
+.title-cases-header h1 {
+  color: #ffffff !important;
+  font-size: 1.2rem !important;
+  letter-spacing: -0.02em !important;
+  margin-bottom: 20px !important;
+}
+
+.title-cases-header h1::before {
+  content: "Poslední ";
+}
+
+.title-case-list {
+  gap: 12px !important;
+}
+
+.title-case-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  min-height: 64px !important;
+}
+
+.title-status-pill {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+  padding: 0 !important;
+}
+
+
+/* === TITLE ARTWORK POSITION + WHITE GRADIENT TUNING === */
+
+.title-hero {
+  min-height: calc(100vh - 56px) !important;
+  max-height: none !important;
+}
+
+.title-hero-art {
+  object-fit: cover !important;
+  object-position: center center !important;
+  width: 100% !important;
+  height: 100% !important;
+  filter: saturate(0.98) contrast(1.02) brightness(0.98) !important;
+  transform: none !important;
+}
+
+.title-hero-overlay {
+  background: none !important;
+}
+
+.title-brand-panel {
+  max-width: 420px !important;
+  padding-left: 4px !important;
+  z-index: 3 !important;
+}
+/* === TITLE SCREEN FINAL SPACING === */
+
+.title-brand-panel {
+  padding-top: 42px !important;
+  gap: 40px !important;
+}
+
+.title-logo {
+  width: 470px !important;
+}
+
+.title-action-stack {
+  margin-top: 26px !important;
+  gap: 18px !important;
+}
+
+.title-primary-action,
+.title-secondary-action {
+  min-width: 270px !important;
+  min-height: 72px !important;
+
+  font-size: 1.18rem !important;
+  font-weight: 850 !important;
+
+  padding: 0 34px !important;
+}
+
+.title-kicker::before {
+  line-height: 1.08 !important;
+}
+
+
+/* === TITLE CTA FINAL SPACING === */
+
+.title-action-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+
+  margin-top: 42px !important; /* celý blok níž */
+
+  gap: 16px !important;        /* mezera mezi tlačítky */
+}
+
+.title-primary-action,
+.title-secondary-action {
+  width: 280px !important;
+  min-height: 72px !important;
+
+  border-radius: 10px !important; /* stejné rohy */
+}
+
+.title-secondary-action {
+  background: #c0842b !important;
+  color: #ffffff !important;
+
+  border-radius: 10px !important; /* explicitně stejné */
+  margin-top: 0 !important;       /* zrušit starý hack */
+}
+
+/* === TITLE RIGHT PANEL DARK GLASSMORPHISM === */
+
+.title-cases-panel {
+  background: rgba(8, 12, 20, 0.08) !important;
+
+  backdrop-filter: blur(1px) saturate(1.9) !important;
+  -webkit-backdrop-filter: blur(1px) saturate(1) !important;
+
+  border: 0px solid rgba(255,255,255,0.22) !important;
+}
+
+.title-case-card {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,0.16) 0%,
+      rgba(255,255,255,0.10) 35%,
+      rgba(18,24,35,0.12) 70%,
+      rgba(4,8,16,0.32) 100%
+    ) !important;
+
+  backdrop-filter: blur(1px) !important;
+
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
+
+.title-case-card:hover {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.24),
+      rgba(255, 255, 255, 0.08)
+    ) !important;
+
+  border-color: rgba(59, 130, 246, 0.42) !important;
+  transform: translateY(-1px) !important;
+}
+/* === TITLE RIGHT PANEL GLASS V2 === */
+
+.title-cases-panel {
+  width: min(560px, 100%) !important;
+  padding: 36px !important;
+  border-radius: 36px !important;
+
+  background:
+  linear-gradient(
+    135deg,
+    rgba(255,255,255,.28) 0%,
+    rgba(255,255,255,.10) 18%,
+    transparent 40%
+  );
+
+  border: 1px solid rgba(210, 230, 255, 0.28) !important;
+
+  backdrop-filter: blur(1px) saturate(1.45) !important;
+  -webkit-backdrop-filter: blur(2px) saturate(1.45) !important;
+
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.title-cases-header h1 {
+  font-size: 1.85rem !important;
+  font-weight: 850 !important;
+  margin-bottom: 28px !important;
+}
+
+.title-case-list {
+  gap: 16px !important;
+}
+
+.title-case-card {
+  position: relative !important;
+  overflow: hidden !important;
+
+  display: grid !important;
+  grid-template-columns: 56px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 18px !important;
+
+  min-height: 84px !important;
+  padding: 18px 20px !important;
+  border-radius: 16px !important;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.10) 3%,
+      rgba(15, 22, 34, 0.12) 8%,
+      rgba(0, 0, 0, 0.34) 10%
+    ) !important;
+
+  border: 1px solid rgba(210, 230, 255, 0.18) !important;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 10px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
+.title-case-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at 12% 22%,
+      rgba(255, 255, 255, 0.20),
+      transparent 9%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.08),
+      transparent 8%
+    );
+
+  border-radius: inherit;
+}
+
+.title-case-card:hover {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(59, 130, 246, 0.22) 0%,
+      rgba(255, 255, 255, 0.10) 64%,
+      rgba(15, 22, 34, 0.22) 82%,
+      rgba(0, 0, 0, 0.80) 100%
+    ) !important;
+
+  border-color: rgba(59, 130, 246, 0.42) !important;
+  transform: translateY(-1px) !important;
+}
+
+.title-case-icon {
+  align-items: center !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 14px !important;
+
+  background: rgba(59, 130, 246, 0.24) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 24px rgba(59, 130, 246, 0.18) !important;
+
+  font-size: 1.35rem !important;
+}
+
+.title-case-main {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 5px !important;
+}
+
+.title-case-main strong {
+  color: #ffffff !important;
+  font-size: 1.08rem !important;
+  font-weight: 850 !important;
+}
+
+.title-case-main small {
+  color: rgba(255, 255, 255, 0.62) !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+}
+
+.title-status-pill {
+  align-items: center !important;
+  display: inline-flex !important;
+  gap: 8px !important;
+
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+
+  font-size: 0.82rem !important;
+  font-weight: 750 !important;
+  padding: 0 !important;
+}
+
+.title-status-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 999px !important;
+  background: #3b82f6 !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.9) !important;
+}
+/* === TITLE CASE LUCIDE ICONS === */
+
+.title-case-lucide-icon {
+  width: 26px !important;
+  height: 26px !important;
+  color: #254f94 !important;
+  stroke-width: 2.35 !important;
+}
+
+.title-case-icon {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.26),
+      rgba(59, 130, 246, 0.10)
+    ) !important;
+
+  border: 1px solid rgba(59, 130, 246, 0.22) !important;
+}
+
+/* === TITLE GLASS FRAME REALISTIC REFLECTION === */
+
+.title-cases-panel,
+.title-case-card {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* remove hard “line border” feeling */
+.title-cases-panel {
+  border: 0 !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(8, 13, 22, 0.16) 38%,
+      rgba(2, 6, 12, 0.30) 100%
+    ) !important;
+
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.34),
+    0 0 70px rgba(59, 130, 246, 0.08),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.24),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 18px 42px rgba(255, 255, 255, 0.035) !important;
+}
+
+/* irregular upper-left glass reflection */
+.title-cases-panel::before {
+  content: "";
+  position: absolute;
+  left: -8%;
+  top: -10%;
+  width: 72%;
+  height: 48%;
+  pointer-events: none;
+  border-radius: 999px;
+
+      background:
+      linear-gradient(
+        115deg,
+        transparent 0%,
+        transparent 42%,
+        rgba(255,255,255,.10) 48%,
+        rgba(255,255,255,.18) 50%,
+        rgba(255,255,255,.10) 52%,
+        transparent 58%
+      
+    ) !important;
+
+  filter: blur(2px);
+  opacity: 0.33;
+}
+
+/* subtle glass edge, not normal border */
+.title-cases-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+
+  box-shadow:
+    inset 2px 2px 1px rgba(255,255,255,.30),
+    inset -1px -1px 1px rgba(255,255,255,.05);
+}
+
+/* glass cards: edge fades to darkness on the right */
+.title-case-card {
+  border: 0 !important;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.10) 32%,
+      rgba(15, 22, 34, 0.12) 64%,
+      rgba(0, 0, 0, 0.40) 100%
+    ) !important;
+
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.20),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.025),
+    0 10px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
+.title-case-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+
+  background:
+    radial-gradient(
+      ellipse at 8% 12%,
+      rgba(255, 255, 255, 0.26),
+      rgba(255, 255, 255, 0.08) 28%,
+      transparent 58%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      transparent 46%
+    ) !important;
+
+  opacity: 0.68;
+}
+
+.title-case-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.20),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(210, 230, 255, 0.07) !important;
+}
+
+.title-case-card:hover {
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.24),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.04),
+    0 14px 36px rgba(0, 0, 0, 0.24),
+    0 0 34px rgba(59, 130, 246, 0.16) !important;
+}
+
+/* === TITLE LEFT PANEL FINAL SCALE === */
+
+.title-brand-panel {
+  max-width: 390px !important;
+  gap: 34px !important;
+}
+
+.title-kicker::before {
+  font-size: clamp(2.05rem, 2.7vw, 3.45rem) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.06em !important;
+  max-width: 390px !important;
+}
+
+.title-action-stack {
+  margin-top: 18px !important;
+  gap: 18px !important;
+}
+
+.title-primary-action,
+.title-secondary-action {
+  width: 290px !important;
+  min-height: 68px !important;
+  font-size: 1.08rem !important;
+  border-radius: 10px !important;
+}
+
+.title-primary-action {
+  box-shadow:
+    0 16px 40px rgba(37, 99, 235, 0.30),
+    0 5px 14px rgba(37, 99, 235, 0.20) !important;
+}
+
+.title-secondary-action {
+  box-shadow:
+    0 16px 40px rgba(192, 132, 43, 0.28),
+    0 5px 14px rgba(192, 132, 43, 0.18) !important;
+}
