@@ -5,7 +5,7 @@
 /* Header */
 
 .document-view-header {
-  background: #edf5ff !important;
+  background: transparent !important;
   margin: 0 !important;
   padding: 8px 18px !important;
 
@@ -95,7 +95,7 @@
 .document-icon-action:hover,
 .document-icon-action:focus-visible,
 .document-icon-action.active {
-  background: #edf5ff !important;
+  background: transparent !important;
   border-color: #d7e9ff !important;
 }
 
@@ -156,7 +156,7 @@
 
 .document-validation-icon-button:hover,
 .document-validation-icon-button:focus-visible {
-  background: #edf5ff !important;
+  background: transparent !important;
   outline: none;
 }
 
@@ -273,5 +273,5 @@
 .right-panel-icon-action:hover,
 .right-panel-icon-action:focus-visible,
 .right-panel-icon-action[aria-pressed="true"] {
-  background: #edf5ff !important;
+  background: transparent !important;
 }

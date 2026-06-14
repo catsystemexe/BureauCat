@@ -50,7 +50,6 @@ export type JournalItemStatus = "active" | "resolved" | "obsolete";
 export type JournalItem = {
   id: string;
   case_id: string;
-  situation_id: string | null;
   section: JournalSectionKey;
   item_type: JournalItemType;
   title: string;

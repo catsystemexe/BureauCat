@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { DocumentList } from "@/components/documents/DocumentList";
 import { DocumentUpload, type DocumentUploadHandle } from "@/components/documents/DocumentUpload";
@@ -307,6 +307,8 @@ export function EvidencePanel({
 export function RightContextPanel({
   caseId,
   mode,
+  activeTab,
+  onActiveTabChange,
   selectedDocument,
   selectedJournalItem,
   documentListRefreshKey,
@@ -321,6 +323,8 @@ export function RightContextPanel({
 }: {
   caseId: string;
   mode: RightPanelMode;
+  activeTab: RightPanelTab;
+  onActiveTabChange: (tab: RightPanelTab) => void;
   selectedDocument: CaseDocument | null;
   selectedJournalItem: JournalItem | null;
   documentListRefreshKey: number;
@@ -333,7 +337,6 @@ export function RightContextPanel({
   selectedSituationId: string | null;
   targetPinId: string | null;
 }) {
-  const [activeTab, setActiveTab] = useState<RightPanelTab>("documents");
   const [isCaseDocumentListVisible, setIsCaseDocumentListVisible] = useState(false);
   const documentUploadRef = useRef<DocumentUploadHandle | null>(null);
   const documentListOverlayRef = useRef<HTMLDivElement | null>(null);
@@ -379,7 +382,7 @@ export function RightContextPanel({
         <button
           aria-selected={activeTab === "documents"}
           className={`right-panel-tab${activeTab === "documents" ? " selected-right-panel-tab" : ""}`}
-          onClick={() => setActiveTab("documents")}
+          onClick={() => onActiveTabChange("documents")}
           role="tab"
           type="button"
         >
@@ -388,7 +391,7 @@ export function RightContextPanel({
         <button
           aria-selected={activeTab === "analysis"}
           className={`right-panel-tab${activeTab === "analysis" ? " selected-right-panel-tab" : ""}`}
-          onClick={() => setActiveTab("analysis")}
+          onClick={() => onActiveTabChange("analysis")}
           role="tab"
           type="button"
         >
@@ -397,7 +400,7 @@ export function RightContextPanel({
         <button
           aria-selected={activeTab === "procedure"}
           className={`right-panel-tab${activeTab === "procedure" ? " selected-right-panel-tab" : ""}`}
-          onClick={() => setActiveTab("procedure")}
+          onClick={() => onActiveTabChange("procedure")}
           role="tab"
           type="button"
         >
@@ -483,8 +486,14 @@ export function RightContextPanel({
 }
 
 export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
+  const [currentCaseTitle, setCurrentCaseTitle] = useState(caseItem.title);
+  const [isEditingCaseTitle, setIsEditingCaseTitle] = useState(false);
+  const [caseTitleDraft, setCaseTitleDraft] = useState(caseItem.title);
+  const [isSavingCaseTitle, setIsSavingCaseTitle] = useState(false);
+  const [caseTitleError, setCaseTitleError] = useState<string | null>(null);
   const [, setJournalRefreshKey] = useState(0);
   const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("help");
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>("documents");
   const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
   const [selectedJournalItem, setSelectedJournalItem] = useState<JournalItem | null>(null);
   const [documentListRefreshKey, setDocumentListRefreshKey] = useState(0);
@@ -505,10 +514,87 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     setJournalRefreshKey((currentKey) => currentKey + 1);
   }
 
+  useEffect(() => {
+    setCurrentCaseTitle(caseItem.title);
+    setCaseTitleDraft(caseItem.title);
+  }, [caseItem.title]);
+
+  function openTitleScreen() {
+    window.location.href = "/cases";
+  }
+
+  function startCaseTitleEdit() {
+    setCaseTitleError(null);
+    setCaseTitleDraft(currentCaseTitle);
+    setIsEditingCaseTitle(true);
+  }
+
+  function cancelCaseTitleEdit() {
+    setCaseTitleError(null);
+    setCaseTitleDraft(currentCaseTitle);
+    setIsEditingCaseTitle(false);
+  }
+
+  async function saveCaseTitle() {
+    const nextTitle = caseTitleDraft.trim();
+
+    if (!nextTitle) {
+      setCaseTitleError("Název případu nesmí být prázdný.");
+      return;
+    }
+
+    if (nextTitle === currentCaseTitle) {
+      setIsEditingCaseTitle(false);
+      setCaseTitleError(null);
+      return;
+    }
+
+    setIsSavingCaseTitle(true);
+    setCaseTitleError(null);
+
+    try {
+      const response = await fetch(`/api/cases/${caseItem.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ title: nextTitle })
+      });
+
+      const data = (await response.json().catch(() => null)) as { case?: CaseSummary; error?: string } | null;
+
+      if (!response.ok || !data?.case) {
+        throw new Error(data?.error ?? "Název případu se nepodařilo uložit.");
+      }
+
+      setCurrentCaseTitle(data.case.title);
+      setCaseTitleDraft(data.case.title);
+      setIsEditingCaseTitle(false);
+    } catch (error) {
+      setCaseTitleError(error instanceof Error ? error.message : "Název případu se nepodařilo uložit.");
+    } finally {
+      setIsSavingCaseTitle(false);
+    }
+  }
+
+  function handleCaseTitleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void saveCaseTitle();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelCaseTitleEdit();
+    }
+  }
+
+  
   function openDocument(document: CaseDocument, pinId: string | null = null) {
     setSelectedDocument(document);
     setTargetDocumentPinId(pinId);
     setRightPanelMode("document");
+    setRightPanelTab("documents");
   }
 
   async function openSourceDocument(documentId: string, pinId: string | null = null) {
@@ -576,15 +662,48 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
 
   return (
     <div className="workspace-shell">
-      <header className="workspace-header app-case-header">
-        <img
-          src="/bureaucat_logo.png"
-          alt="BureauCat"
-          className="app-logo-image"
-        />
+            <header className="workspace-header app-case-header">
+        <button
+          type="button"
+          className="app-logo-button"
+          onClick={openTitleScreen}
+          aria-label="Zpět na titulní obrazovku"
+          title="Zpět na titulní obrazovku"
+        >
+          <img
+            src="/bureaucat_logo.png"
+            alt="BureauCat"
+            className="app-logo-image"
+          />
+        </button>
 
         <div className="app-case-title-block">
-          <h1>{caseItem.title}</h1>
+          {isEditingCaseTitle ? (
+            <div className="app-case-title-edit">
+              <input
+                className="app-case-title-input"
+                value={caseTitleDraft}
+                onChange={(event) => setCaseTitleDraft(event.target.value)}
+                onBlur={() => {
+                  void saveCaseTitle();
+                }}
+                onKeyDown={handleCaseTitleKeyDown}
+                disabled={isSavingCaseTitle}
+                autoFocus
+                aria-label="Název případu"
+              />
+              {caseTitleError ? (
+                <p className="app-case-title-error">{caseTitleError}</p>
+              ) : null}
+            </div>
+          ) : (
+            <h1
+              onDoubleClick={startCaseTitleEdit}
+              title="Dvojklikem upravit název případu"
+            >
+              {currentCaseTitle}
+            </h1>
+          )}
         </div>
 
         <span className="status-pill app-status-pill">
@@ -608,9 +727,11 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         />
         <RightContextPanel
           caseId={caseItem.id}
+          activeTab={rightPanelTab}
           documentListRefreshKey={documentListRefreshKey}
           isBookmarkLinkMode={pendingBookmarkTargetJournalItemId !== null}
           mode={rightPanelMode}
+          onActiveTabChange={setRightPanelTab}
           onBookmarkSelectedForLink={handleBookmarkSelectedForLink}
           onDocumentUploaded={handleDocumentUploaded}
           onOpenDocument={openDocument}

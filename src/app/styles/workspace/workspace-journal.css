@@ -29,7 +29,7 @@
 .notebook-card h3,
 .goals-section-header h3,
 .situation-documents-header h3 {
-  color: #1d1d1b !important;
+  color: #0869d7 !important;
   font-size: 15px !important;
   font-weight: 600 !important;
 }
@@ -71,13 +71,13 @@
 .notebook-user-layer .notebook-card h3,
 .notebook-user-layer .goals-section-header h3,
 .notebook-user-layer .situation-documents-header h3 {
-  color: #1d1d1b !important;
+  color: #0869d7 !important;
   font-weight: 650 !important;
 }
 
 .notebook-ai-layer h3,
 .notebook-ai-layer .notebook-card h3 {
-  color: #7a6a56 !important;
+  color: #0869d7 !important;
   font-weight: 600 !important;
 }
 

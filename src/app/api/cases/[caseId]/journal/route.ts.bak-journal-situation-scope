@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getCaseById } from "@/lib/services/cases";
-import { getSituationById } from "@/lib/services/situations";
 import { createJournalItemForCase, listJournalItemsForCase } from "@/lib/services/journal";
 import { createJournalItemSchema } from "@/lib/validation/journal";
 
@@ -12,26 +11,15 @@ function notFoundResponse() {
   return NextResponse.json({ error: "Case not found." }, { status: 404 });
 }
 
-export async function GET(request: Request, context: CaseJournalRouteContext) {
+export async function GET(_request: Request, context: CaseJournalRouteContext) {
   const { caseId } = await context.params;
-  const situationId = new URL(request.url).searchParams.get("situationId");
   const foundCase = await getCaseById(caseId);
 
   if (!foundCase) {
     return notFoundResponse();
   }
 
-  if (!situationId) {
-    return NextResponse.json({ journal: [] });
-  }
-
-  const situation = await getSituationById(situationId);
-
-  if (!situation || situation.case_id !== caseId) {
-    return NextResponse.json({ error: "Situation not found." }, { status: 404 });
-  }
-
-  const journal = await listJournalItemsForCase(caseId, situationId);
+  const journal = await listJournalItemsForCase(caseId);
 
   return NextResponse.json({ journal });
 }
@@ -55,19 +43,7 @@ export async function POST(request: Request, context: CaseJournalRouteContext) {
     );
   }
 
-  const situationId = parsed.data.situation_id;
-
-  if (!situationId) {
-    return NextResponse.json({ error: "Situation id is required." }, { status: 400 });
-  }
-
-  const situation = await getSituationById(situationId);
-
-  if (!situation || situation.case_id !== caseId) {
-    return NextResponse.json({ error: "Situation not found." }, { status: 404 });
-  }
-
-  const journalItem = await createJournalItemForCase(caseId, situationId, parsed.data);
+  const journalItem = await createJournalItemForCase(caseId, parsed.data);
 
   return NextResponse.json({ journalItem }, { status: 201 });
 }

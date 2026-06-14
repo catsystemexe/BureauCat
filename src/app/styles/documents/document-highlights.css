@@ -202,7 +202,7 @@
 }
 
 .document-highlight-tool > button.active {
-  background: #edf5ff !important;
+  background: transparent !important;
   color: #0869d7 !important;
 }
 
@@ -231,7 +231,7 @@
 /* === DOCUMENT TOOL MODES === */
 
 .document-annotation-toolbar button.active {
-  background: #edf5ff !important;
+  background: transparent !important;
   color: #0869d7 !important;
   outline: 2px solid #b9d7ff !important;
 }

@@ -457,10 +457,8 @@ function JournalInlineItem({
 }
 
 function AILayer({
-  caseId,
   draftItems,
   journalItems,
-  selectedSituationId,
   onArchiveItem,
   onCreateItem,
   onCreateDraftItem,
@@ -470,10 +468,8 @@ function AILayer({
   onUpdateItem,
   pendingBookmarkTargetJournalItemId
 }: {
-  caseId: string;
   draftItems: DraftJournalItem[];
   journalItems: JournalItem[];
-  selectedSituationId: string | null;
   onArchiveItem: (itemId: string) => void;
   onCreateItem: (section: typeof JOURNAL_SECTIONS[number]) => void;
   onCreateDraftItem: (draftId: string, title: string) => void;
@@ -517,8 +513,7 @@ function AILayer({
                       forceEdit
                       item={{
                         id: draftItem.id,
-                        case_id: caseId,
-                        situation_id: selectedSituationId ?? null,
+                        case_id: "",
                         section: draftItem.section.section,
                         item_type: draftItem.section.itemType,
                         title: "",
@@ -600,13 +595,7 @@ export function JournalPanel({
 
     async function loadJournalItems() {
       try {
-        if (!selectedSituationId) {
-          setJournalItems([]);
-          setJournalError(null);
-          return;
-        }
-
-        const response = await fetch(`/api/cases/${caseItem.id}/journal?situationId=${encodeURIComponent(selectedSituationId)}`, {
+        const response = await fetch(`/api/cases/${caseItem.id}/journal`, {
           cache: "no-store"
         });
         const data = (await response.json()) as JournalResponse;
@@ -654,14 +643,9 @@ export function JournalPanel({
       window.removeEventListener("bureaucat:journal-refresh", handleExternalJournalRefresh);
       window.removeEventListener("bureaucat:journal-item-updated", handleExternalJournalItemUpdated);
     };
-  }, [caseItem.id, selectedSituationId]);
+  }, [caseItem.id]);
 
   function handleCreateJournalItem(section: typeof JOURNAL_SECTIONS[number]) {
-    if (!selectedSituationId) {
-      setJournalError("Nejdřív vyber situaci.");
-      return;
-    }
-
     const draftId = `draft-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     setDraftJournalItems((current) => [...current, { id: draftId, section }]);
   }
@@ -669,8 +653,7 @@ export function JournalPanel({
   async function handleCreateDraftJournalItem(draftId: string, title: string) {
     const draftItem = draftJournalItems.find((item) => item.id === draftId);
 
-    if (!draftItem || !selectedSituationId) {
-      setJournalError("Nejdřív vyber situaci.");
+    if (!draftItem) {
       return;
     }
 
@@ -681,7 +664,6 @@ export function JournalPanel({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          situation_id: selectedSituationId ?? null,
           section: draftItem.section.section,
           item_type: draftItem.section.itemType,
           title,
@@ -833,10 +815,6 @@ export function JournalPanel({
     }
   }
 
-  useEffect(() => {
-    setDraftJournalItems([]);
-  }, [selectedSituationId]);
-
   const selectedSituation = useMemo(
     () =>
       situations.find(
@@ -876,9 +854,7 @@ export function JournalPanel({
         />
         {journalError ? <p className="notebook-inline-error">{journalError}</p> : null}
         <AILayer
-          caseId={caseItem.id}
           draftItems={draftJournalItems}
-          selectedSituationId={selectedSituationId}
           journalItems={journalItems}
           onArchiveItem={handleArchiveJournalItem}
           onCreateDraftItem={handleCreateDraftJournalItem}

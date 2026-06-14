@@ -17,7 +17,7 @@
   background: #ffffff;
   border: 0;
   border-right: 1px solid var(--panel-border);
-  color: #726a61;
+  color: #0869d7;
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 760;
@@ -27,13 +27,13 @@
 
 .right-panel-tab:hover,
 .right-panel-tab:focus-visible {
-  background: #fffaf4;
+  background: #ffffff;
   outline: none;
 }
 
 .selected-right-panel-tab {
-  color: #1d1d1b;
-  background: #ffffff;
+  color: #111111;
+  background: #f6f6f4;
   box-shadow: inset 0 -3px 0 #0869d7;
 }
 
@@ -75,12 +75,12 @@
 }
 
 .document-view-panel {
-  background: #ffffff;
-  border: 1px solid var(--panel-border);
-  border-radius: 12px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   display: grid;
   gap: 12px;
-  padding: 16px;
+  padding: 0;
 }
 
 .document-view-header h2 {
@@ -111,8 +111,8 @@
 }
 
 .document-extracted-text {
-  background: #fffaf4;
-  border: 1px solid #eadbca;
+  background: #ffffff;
+  border: 0;
   border-radius: 9px;
   font-size: 0.8rem;
   max-height: 420px;
@@ -122,8 +122,8 @@
 }
 
 .document-file-path {
-  background: #fffaf4;
-  border: 1px solid #eadbca;
+  background: #ffffff;
+  border: 0;
   border-radius: 8px;
   color: #7a7067;
   font-size: 0.74rem;

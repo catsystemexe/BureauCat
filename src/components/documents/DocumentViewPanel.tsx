@@ -754,6 +754,10 @@ export function DocumentViewPanel({
     // Pin layer is outside the scrolling <pre>, so use visible viewport position, not document-scroll position.
 
     for (const pin of pins) {
+      if (dragPinRef.current.pinId === pin.id) {
+        continue;
+      }
+
       const effectiveOffset = pin.visual_offset ?? pin.start_offset;
       const target = getTextNodeAtOffset(root, effectiveOffset);
 
@@ -1886,7 +1890,11 @@ export function DocumentViewPanel({
                     return;
                   }
 
-                  const offset = getTextOffsetFromPoint(event.clientX, event.clientY);
+                  const root = documentTextRef.current;
+                  const shell = documentTextShellRef.current;
+                  const rootRect = root?.getBoundingClientRect();
+                  const stableTextX = rootRect ? rootRect.left + 56 : event.clientX;
+                  const offset = getTextOffsetFromPoint(stableTextX, event.clientY);
 
                   if (offset === null) {
                     return;
@@ -1894,9 +1902,6 @@ export function DocumentViewPanel({
 
                   dragPinRef.current.lastOffset = offset;
                   dragPinRef.current.didMove = true;
-
-                  const root = documentTextRef.current;
-                  const shell = documentTextShellRef.current;
 
                   if (root && shell) {
                     const target = getTextNodeAtOffset(root, offset);
@@ -1941,16 +1946,6 @@ export function DocumentViewPanel({
                     }
                   }
 
-                  setPins((current) =>
-                    current.map((p) =>
-                      p.id === pin.id
-                        ? {
-                            ...p,
-                            visual_offset: offset
-                          }
-                        : p
-                    )
-                  );
                 }}
                 onPointerUp={async (event) => {
                   if (dragPinRef.current.pinId !== pin.id) {

@@ -21,6 +21,7 @@ const aiSuggestionSelect = {
 const journalItemSelect = {
   id: true,
   case_id: true,
+  situation_id: true,
   section: true,
   item_type: true,
   title: true,

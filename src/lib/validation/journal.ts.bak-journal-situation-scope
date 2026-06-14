@@ -43,7 +43,6 @@ export const sourceLinksJsonSchema = z.string().refine(
 
 export const createJournalItemSchema = z
   .object({
-    situation_id: z.string().trim().min(1, "Situation id cannot be empty.").optional(),
     section: journalSectionSchema,
     item_type: journalItemTypeSchema,
     title: z.string().trim().min(1, "Title cannot be empty."),
@@ -60,7 +59,6 @@ export type CreateJournalItemInput = z.infer<typeof createJournalItemSchema>;
 
 export const updateJournalItemSchema = z
   .object({
-    situation_id: z.string().trim().min(1, "Situation id cannot be empty.").nullable().optional(),
     section: journalSectionSchema.optional(),
     item_type: journalItemTypeSchema.optional(),
     title: z.string().trim().min(1, "Title cannot be empty.").optional(),

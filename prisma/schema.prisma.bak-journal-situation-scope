@@ -37,7 +37,6 @@ model Situation {
   case                Case                @relation(fields: [case_id], references: [id], onDelete: Cascade)
   goals               Goal[]
   situation_documents SituationDocument[]
-  journal_items       JournalItem[]
 
   @@index([case_id])
   @@index([case_id, display_order])
@@ -141,7 +140,6 @@ model SituationDocument {
 model JournalItem {
   id                String   @id @default(cuid())
   case_id           String
-  situation_id      String?
   /// Allowed values: description, goals, risks, open_questions, strategy.
   section           String
   /// Allowed values: FACT, CLAIM, GOAL, QUESTION, ACTION, RISK.
@@ -158,12 +156,10 @@ model JournalItem {
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  case      Case       @relation(fields: [case_id], references: [id], onDelete: Cascade)
-  situation Situation?  @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  case Case @relation(fields: [case_id], references: [id], onDelete: Cascade)
 
   @@index([case_id])
-  @@index([situation_id])
-  @@index([case_id, situation_id, section, display_order])
+  @@index([case_id, section, display_order])
 }
 
 model ChatMessage {

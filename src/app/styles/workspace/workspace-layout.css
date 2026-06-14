@@ -35,6 +35,14 @@ body {
 
 /* independent scrolling inside each main panel */
 .journal-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.journal-panel .notebook-page {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
   overflow-y: auto !important;
 }
 

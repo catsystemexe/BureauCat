@@ -39,7 +39,7 @@
 /* Case document list should behave like a light overlay above document content */
 .document-list-card {
   background: #ffffff;
-  border: 1px solid #ded4c6;
+  border: 0;
   border-radius: 12px;
   box-shadow: 0 14px 32px rgba(48, 40, 28, 0.12);
   left: 14px;
@@ -90,7 +90,7 @@
 
 .document-list-item:hover,
 .document-list-item:focus-visible {
-  background: #f8f8f6;
+  background: #ffffff;
   outline: none;
 }
 
@@ -145,7 +145,7 @@
 .document-validation-toggle {
   align-items: center;
   background: #ffffff;
-  border: 1px solid #e5e2dc;
+  border: 0;
   border-radius: 8px;
   color: #5f5850;
   cursor: pointer;
@@ -167,7 +167,7 @@
 .document-validation-toggle:hover,
 .document-validation-toggle:focus-visible,
 .document-icon-action.active {
-  background: #f6f6f4;
+  background: #ffffff;
   outline: none;
 }
 
@@ -207,7 +207,7 @@
 }
 
 .document-original-placeholder {
-  background: #f6f6f4;
+  background: #ffffff;
   border-bottom: 1px solid #e5e2dc;
   color: #6f655c;
   font-size: 0.78rem;
@@ -216,7 +216,7 @@
 
 .document-annotation-toolbar {
   background: #ffffff;
-  border: 1px solid #e5e2dc;
+  border: 0;
   border-radius: 999px;
   box-shadow: 0 8px 22px rgba(29, 29, 27, 0.10);
   display: grid;
@@ -243,7 +243,7 @@
 
 .document-annotation-toolbar button:hover,
 .document-annotation-toolbar button:focus-visible {
-  background: #f6f6f4;
+  background: #ffffff;
   outline: none;
 }
 
@@ -255,7 +255,7 @@
 
 .document-text-editor {
   background: #ffffff;
-  border: 1px solid #e5e2dc;
+  border: 0;
   border-radius: 10px;
   color: #1d1d1b;
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;

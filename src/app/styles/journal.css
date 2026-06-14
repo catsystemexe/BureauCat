@@ -91,7 +91,7 @@
 .notebook-row-menu button {
   background: transparent !important;
   border: 0 !important;
-  color: #1d1d1b !important;
+  color: #0869d7 !important;
   cursor: pointer !important;
   font-size: 0.78rem !important;
   padding: 7px 9px !important;
@@ -218,7 +218,7 @@
 
 .journal-linked-bookmark-pill {
   align-items: center;
-  background: #edf5ff;
+  background: transparent;
   border: 1px solid #b9d7ff;
   border-radius: 999px;
   color: #0869d7;
@@ -247,7 +247,7 @@
 }
 
 .journal-linked-bookmark-pill {
-  border-color: var(--bookmark-color, #0869d7);
+  border-color: transparent;
   color: var(--bookmark-color, #0869d7);
 }
 
@@ -270,11 +270,17 @@
 
 .journal-linked-bookmark-marker {
   align-items: center !important;
+  appearance: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
   color: var(--bookmark-color, #ef4444) !important;
+  cursor: pointer !important;
   display: inline-flex !important;
   flex: 0 0 auto !important;
   height: 28px !important;
   justify-content: center !important;
+  padding: 0 !important;
   position: relative !important;
   width: 24px !important;
 }
@@ -471,7 +477,7 @@
 .notebook-user-layer .notebook-card h3,
 .goals-section-header h3,
 .situation-documents-header h3 {
-  color: #1d1d1b !important;
+  color: #0869d7 !important;
   font-weight: 650 !important;
 }
 
@@ -496,7 +502,7 @@
 }
 
 .situation-documents-section {
-  margin-bottom: 18px !important;
+  margin-bottom: 8px !important;
 }
 
 .notebook-card:has(.journal-add-inline-row:only-child),
@@ -506,7 +512,7 @@
 
 .journal-add-inline-row {
   color: #8ec5ff !important;
-  margin: 0 0 8px !important;
+  margin: 0 !important;
   padding: 0 !important;
 }
 
@@ -541,21 +547,11 @@
 
 /* === NOTEBOOK FINAL SECTION RHYTHM OVERRIDE === */
 
-/* base: two visual blank lines between normal sections */
+/* unified category spacing in the left journal panel */
 .notebook-card,
 .goals-section,
 .situation-documents-section {
-  margin-bottom: 18px !important;
-}
-
-/* Situace -> Cíle: bylo těsné, přidat jeden řádek */
-.situation-card {
-  margin-bottom: 18px !important;
-}
-
-/* Dokumenty -> Analýza: bylo moc velké, ubrat jeden řádek */
-.situation-documents-section {
-  margin-bottom: 10px !important;
+  margin-bottom: 8px !important;
 }
 
 .notebook-user-layer,
@@ -565,6 +561,7 @@
 }
 
 /* === JOURNAL BOOKMARK OPEN TARGET === */
+
 
 .journal-linked-bookmark-marker {
   border: 0;

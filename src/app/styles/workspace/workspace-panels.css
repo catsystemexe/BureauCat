@@ -84,11 +84,11 @@
 }
 
 .right-panel-tab {
-  background: #f6f6f4 !important;
+  background: #ffffff !important;
   border: 0 !important;
   border-right: 1px solid #e7e5e0 !important;
   border-radius: 0 !important;
-  color: #6f6a63 !important;
+  color: #0869d7 !important;
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 18px !important;
   font-weight: 700 !important;
@@ -98,10 +98,10 @@
   text-align: left !important;
 }
 
-.right-panel-tab.is-active {
-  background: #ffffff !important;
+.selected-right-panel-tab {
+  background: #f6f6f4 !important;
   box-shadow: inset 0 -3px 0 #0869d7 !important;
-  color: #1d1d1b !important;
+  color: #111111 !important;
   font-weight: 740 !important;
 }
 

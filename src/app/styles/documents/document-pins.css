@@ -47,7 +47,7 @@
 
 .document-pin-floating-editor {
   background: #ffffff;
-  border: 2px solid var(--pin-color, #ef4444);
+  border: 0;
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
   color: #1f2937;
@@ -134,7 +134,7 @@
 .document-pin-hover-box,
 .document-pin-floating-editor {
   background: #ffffff;
-  border: 2px solid var(--pin-color, #ef4444);
+  border: 0;
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
   color: #1f2937;
@@ -211,7 +211,7 @@
 .document-pin-hover-box,
 .document-pin-floating-editor {
   background: #ffffff !important;
-  border: 2px solid var(--pin-color, #ef4444) !important;
+  border: 0 !important;
   border-radius: 10px !important;
   box-shadow: 0 10px 30px rgba(29, 29, 27, 0.18) !important;
   color: #1f2937 !important;
@@ -307,7 +307,7 @@
 
 .document-pin-delete-button:hover,
 .document-pin-delete-button:focus-visible {
-  background: #fff1ed !important;
+  background: transparent !important;
   outline: none !important;
 }
 

@@ -657,14 +657,13 @@ h1 {
 .document-upload,
 .last-document-card,
 .right-panel-placeholder,
-.document-view-panel,
-.evidence-panel {
-  background: #fffdf8;
-  border: 1px solid var(--panel-border);
-  border-radius: 16px;
+.context-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   display: grid;
-  gap: 12px;
-  padding: 16px;
+  gap: 10px;
+  padding: 0;
 }
 
 .document-upload {
@@ -1019,7 +1018,7 @@ h1 {
   --user-accent: #0869d7;
   --user-accent-dark: #075cb8;
   --user-border: #d9e8f8;
-  --ai-accent: #e97812;
+  --ai-accent: #0869d7;
   --ai-border: #f4dfca;
   --notebook-text: #17202d;
   --notebook-muted: #657184;
