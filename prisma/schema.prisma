@@ -63,8 +63,13 @@ model Document {
   id                String   @id @default(cuid())
   case_id           String
   filename          String
+  display_name      String?
   filetype          String
   original_file     String
+
+  document_type      String  @default("source")
+  analysis_type      String?
+  parent_document_id String?
 
   extracted_text      String?
   processed_text      String?
@@ -82,8 +87,14 @@ model Document {
   situation_documents SituationDocument[]
   annotations         DocumentAnnotation[]
   pins                DocumentPin[]
+  insights            DocumentInsight[]
+
+  parent_document     Document?  @relation("DocumentChildren", fields: [parent_document_id], references: [id], onDelete: SetNull)
+  child_documents     Document[] @relation("DocumentChildren")
 
   @@index([case_id])
+  @@index([document_type])
+  @@index([parent_document_id])
 }
 
 model DocumentAnnotation {
@@ -123,6 +134,44 @@ model DocumentPin {
   @@index([document_id, start_offset])
   @@index([case_bookmark_number])
 }
+
+model DocumentInsight {
+  id                 String   @id @default(cuid())
+  document_id         String
+  source_document_id  String?
+  source_pin_id       String?
+
+  /// Allowed values: fact, claim, risk, question, legal_reference, term.
+  insight_type        String
+
+  /// Target JournalItem fields.
+  target_section      String
+  target_item_type    String
+
+  title               String
+  content             String?
+  evidence_state      String   @default("inferred")
+
+  /// Allowed values: pending, approved, rejected, journalized.
+  status              String   @default("pending")
+
+  source_text         String?
+  source_start_offset Int?
+  source_end_offset   Int?
+
+  journal_item_id     String?
+
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  document            Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@index([document_id])
+  @@index([source_document_id])
+  @@index([source_pin_id])
+  @@index([status])
+}
+
 
 model SituationDocument {
   id           String   @id @default(cuid())

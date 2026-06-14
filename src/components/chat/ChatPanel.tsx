@@ -9,6 +9,7 @@ import { SuggestionPreview } from "@/components/chat/SuggestionPreview";
 import type {
   AISuggestionPreview,
   AISuggestionRecord,
+  CaseDocument,
   CaseSummary,
   ChatMessage,
   MeetingPrepReport,
@@ -72,9 +73,13 @@ function parseSuggestion(record: AISuggestionRecord): AISuggestionPreview | null
 
 export function ChatPanel({
   caseItem,
+  activeAnalysisDocument = null,
+  onCloseAnalysisDocument,
   onJournalRefreshRequested
 }: {
+  activeAnalysisDocument?: CaseDocument | null;
   caseItem: CaseSummary;
+  onCloseAnalysisDocument?: () => void;
   onJournalRefreshRequested: () => void;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -263,6 +268,26 @@ export function ChatPanel({
           <h2 id="chat-title">Konzultace</h2>
         </div>
       </div>
+
+      {activeAnalysisDocument ? (
+        <section className="analysis-floating-panel" aria-label="Inspekce analýzy dokumentu">
+          <header className="analysis-floating-header">
+            <div>
+              <p>Analýza dokumentu</p>
+              <h3>{activeAnalysisDocument.display_name ?? activeAnalysisDocument.filename}</h3>
+            </div>
+            <button type="button" onClick={onCloseAnalysisDocument} title="Zavřít analýzu">
+              ×
+            </button>
+          </header>
+          <pre className="analysis-floating-content">
+            {activeAnalysisDocument.processed_markdown ??
+              activeAnalysisDocument.processed_text ??
+              activeAnalysisDocument.extracted_text ??
+              "Analýza neobsahuje text."}
+          </pre>
+        </section>
+      ) : null}
 
       <div className="chat-panel-body">
         <section className="workflow-card" aria-labelledby="workflow-card-title">

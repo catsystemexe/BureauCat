@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Brain,
   Check,
   CircleCheck,
   Eraser,
@@ -15,8 +16,9 @@ import {
   Pin,
   SquarePen,
   Trash2,
-  TriangleAlert} from "lucide-react";
-import type { CaseDocument, DocumentAnnotation, DocumentAnnotationType, DocumentPin } from "@/components/types";
+  TriangleAlert
+} from "lucide-react";
+import type { CaseDocument, DocumentAnnotation, DocumentAnnotationType, DocumentInsight, DocumentPin } from "@/components/types";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("cs-CZ", {
@@ -62,6 +64,11 @@ type PinUpdateResponse = {
   error?: string;
 };
 
+type InsightListResponse = {
+  insights?: DocumentInsight[];
+  error?: string;
+};
+
 const highlightColors = [
   { label: "Žlutá", value: "yellow", css: "#ffe766" },
   { label: "Zelená", value: "green", css: "#b7f7c2" },
@@ -95,11 +102,13 @@ export function DocumentViewPanel({
   document: initialDocument,
   isBookmarkLinkMode = false,
   onBookmarkSelectedForLink,
+  onAnalysisCreated,
   targetPinId = null
 }: {
   document: CaseDocument;
   isBookmarkLinkMode?: boolean;
   onBookmarkSelectedForLink?: (pin: DocumentPin) => void;
+  onAnalysisCreated?: (document: CaseDocument) => void;
   targetPinId?: string | null;
 }) {
   const [currentDocument, setCurrentDocument] = useState(initialDocument);
@@ -128,6 +137,8 @@ export function DocumentViewPanel({
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [annotations, setAnnotations] = useState<DocumentAnnotation[]>([]);
+  const [insights, setInsights] = useState<DocumentInsight[]>([]);
+  const [isInsightEvidenceVisible, setIsInsightEvidenceVisible] = useState(false);
   const [pins, setPins] = useState<DocumentPin[]>([]);
   const [pinPositions, setPinPositions] = useState<Record<string, number>>({});
   const [isPinDragging, setIsPinDragging] = useState(false);
@@ -182,7 +193,7 @@ export function DocumentViewPanel({
   );
   const renderedDisplayText = useMemo(
     () => renderDisplayTextWithHighlights(displayText),
-    [annotations, displayText, isAnnotationNoteOpen]
+    [annotations, insights, isInsightEvidenceVisible, displayText, isAnnotationNoteOpen]
   );
 
   useEffect(() => {
@@ -232,6 +243,23 @@ export function DocumentViewPanel({
     });
   }, [currentDocument.id, displayText, pins, targetPinId]);
 
+
+  useEffect(() => {
+    async function loadInsights() {
+      try {
+        const response = await fetch(`/api/documents/${initialDocument.id}/insights`);
+        const data = (await response.json()) as InsightListResponse;
+
+        if (response.ok && data.insights) {
+          setInsights(data.insights);
+        }
+      } catch {
+        setInsights([]);
+      }
+    }
+
+    void loadInsights();
+  }, [initialDocument.id]);
 
   useEffect(() => {
     async function loadPins() {
@@ -364,6 +392,14 @@ export function DocumentViewPanel({
     return selectedText.trim();
   }
 
+  function getInsightLabel(insightType: string) {
+    if (insightType === "risk") return "⚠";
+    if (insightType === "question") return "?";
+    if (insightType === "legal_reference") return "§";
+    if (insightType === "term") return "T";
+    return "F";
+  }
+
   function renderDisplayTextWithHighlights(text: string) {
     const highlightRanges = annotations
       .filter((annotation) => annotation.annotation_type === "highlight" && annotation.highlight_color !== "transparent")
@@ -403,7 +439,25 @@ export function DocumentViewPanel({
       .sort((a, b) => a.offset - b.offset)
       .map((marker, index) => ({ ...marker, number: index + 1 }));
 
-    if (highlightRanges.length === 0 && noteMarkers.length === 0) {
+    const insightRanges = isInsightEvidenceVisible
+      ? insights
+          .filter(
+            (insight) =>
+              insight.source_start_offset !== null &&
+              insight.source_end_offset !== null &&
+              insight.source_end_offset > insight.source_start_offset &&
+              insight.source_start_offset >= 0 &&
+              insight.source_end_offset <= text.length
+          )
+          .map((insight) => ({
+            insight,
+            start: insight.source_start_offset!,
+            end: insight.source_end_offset!
+          }))
+          .sort((a, b) => a.start - b.start)
+      : [];
+
+    if (highlightRanges.length === 0 && noteMarkers.length === 0 && insightRanges.length === 0) {
       return text;
     }
 
@@ -420,6 +474,11 @@ export function DocumentViewPanel({
       breakpoints.add(marker.offset);
     }
 
+    for (const range of insightRanges) {
+      breakpoints.add(range.start);
+      breakpoints.add(range.end);
+    }
+
     const points = [...breakpoints].sort((a, b) => a - b);
     const parts: React.ReactNode[] = [];
 
@@ -430,18 +489,32 @@ export function DocumentViewPanel({
       const activeHighlight = highlightRanges.find((range) => range.start <= start && range.end >= end);
 
       if (segment.length > 0) {
-        if (activeHighlight) {
+        const activeInsight = insightRanges.find((range) => range.start <= start && range.end >= end);
+        const segmentNode = activeHighlight ? (
+          <mark
+            className="document-inline-highlight"
+            key={`highlight-inner-${index}-${start}`}
+            style={{ backgroundColor: activeHighlight.color }}
+          >
+            {segment}
+          </mark>
+        ) : (
+          segment
+        );
+
+        if (activeInsight) {
           parts.push(
-            <mark
-              className="document-inline-highlight"
-              key={`highlight-${index}-${start}`}
-              style={{ backgroundColor: activeHighlight.color }}
+            <span
+              className={`document-insight-range document-insight-range-${activeInsight.insight.insight_type}`}
+              data-insight-label={getInsightLabel(activeInsight.insight.insight_type)}
+              key={`insight-${activeInsight.insight.id}-${index}-${start}`}
+              title={activeInsight.insight.title}
             >
-              {segment}
-            </mark>
+              {segmentNode}
+            </span>
           );
         } else {
-          parts.push(segment);
+          parts.push(segmentNode);
         }
       }
 
@@ -1364,6 +1437,29 @@ export function DocumentViewPanel({
     textarea.style.height = `${textarea.scrollHeight}px`;
   }
 
+  async function handleAnalyzeDocument() {
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/documents/${currentDocument.id}/analyze`, {
+        method: "POST"
+      });
+
+      const data = (await response.json()) as DocumentResponse;
+
+      if (!response.ok || !data.document) {
+        throw new Error(data.error ?? "Analýzu se nepodařilo vytvořit.");
+      }
+
+      onAnalysisCreated?.(data.document);
+    } catch (analysisError) {
+      setError(analysisError instanceof Error ? analysisError.message : "Analýzu se nepodařilo vytvořit.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function handleDeleteDocument() {
     const confirmed = window.confirm(
       `Smazat dokument?\n\n${currentDocument.filename}\n\nBude odstraněn originál, zpracovaný text a budoucí anotace. Tuto akci nelze vrátit.`
@@ -1404,6 +1500,16 @@ export function DocumentViewPanel({
           </div>
 
           <div className="document-main-actions" aria-label="Akce dokumentu">
+            <button
+              className="document-icon-action"
+              disabled={isSaving || displayText.trim().length === 0}
+              onClick={handleAnalyzeDocument}
+              title="Analyzovat dokument"
+              type="button"
+            >
+              <Brain aria-hidden="true" className="document-action-icon" />
+            </button>
+
             <button
               aria-pressed={isFullscreen}
               className={`document-icon-action${isFullscreen ? " active" : ""}`}
@@ -1596,6 +1702,17 @@ export function DocumentViewPanel({
 
       <section className="document-view-section document-content-section" aria-label="Obsah dokumentu">
         <div className="document-annotation-toolbar" aria-label="Anotace dokumentu">
+          <button
+            aria-pressed={isInsightEvidenceVisible}
+            className={isInsightEvidenceVisible ? "active" : ""}
+            disabled={insights.length === 0}
+            onClick={() => setIsInsightEvidenceVisible((current) => !current)}
+            title="Zobrazit / skrýt AI evidence"
+            type="button"
+          >
+            AI
+          </button>
+
           {activeAnnotationTool ? (
             <div className="document-tool-color-rail" aria-label="Barvy aktivního nástroje">
               {(activeAnnotationTool === "pin" ? pinColors : highlightColors).map((color) => {

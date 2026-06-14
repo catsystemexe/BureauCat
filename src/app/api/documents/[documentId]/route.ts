@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   deleteDocumentById,
   getDocumentById,
+  updateDocumentDisplayName,
   updateDocumentProcessedText,
   updateDocumentValidationStatus
 } from "@/lib/services/documents";
@@ -26,6 +27,7 @@ export async function GET(_request: Request, context: DocumentRouteContext) {
 export async function PATCH(request: Request, context: DocumentRouteContext) {
   const { documentId } = await context.params;
   const body = (await request.json()) as {
+    display_name?: unknown;
     processed_text?: unknown;
     validation_status?: unknown;
   };
@@ -34,6 +36,21 @@ export async function PATCH(request: Request, context: DocumentRouteContext) {
 
   if (!existingDocument) {
     return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  }
+
+  if (typeof body.display_name === "string") {
+    const displayName = body.display_name.trim();
+
+    if (!displayName) {
+      return NextResponse.json({ error: "Document display name cannot be empty." }, { status: 400 });
+    }
+
+    if (existingDocument.document_type === "analysis") {
+      return NextResponse.json({ error: "Analysis document title is derived from its source document." }, { status: 409 });
+    }
+
+    const document = await updateDocumentDisplayName(documentId, displayName);
+    return NextResponse.json({ document });
   }
 
   if (typeof body.validation_status === "string") {

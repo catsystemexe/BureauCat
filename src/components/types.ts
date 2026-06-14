@@ -75,8 +75,12 @@ export type CaseDocument = {
   id: string;
   case_id: string;
   filename: string;
+  display_name: string | null;
   filetype: string;
   original_file: string;
+  document_type: "source" | "analysis" | "generated";
+  analysis_type: string | null;
+  parent_document_id: string | null;
   extracted_text: string | null;
   processed_text: string | null;
   processed_markdown: string | null;
@@ -170,6 +174,37 @@ export type DocumentPin = {
   case_bookmark_number: number | null;
   color: string;
   note_text: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+
+export type DocumentInsightStatus = "pending" | "approved" | "rejected" | "journalized";
+
+export type DocumentInsightType =
+  | "fact"
+  | "claim"
+  | "risk"
+  | "question"
+  | "legal_reference"
+  | "term";
+
+export type DocumentInsight = {
+  id: string;
+  document_id: string;
+  source_document_id: string | null;
+  source_pin_id: string | null;
+  insight_type: DocumentInsightType;
+  target_section: JournalSectionKey;
+  target_item_type: JournalItemType;
+  title: string;
+  content: string | null;
+  evidence_state: EvidenceState;
+  status: DocumentInsightStatus;
+  source_text: string | null;
+  source_start_offset: number | null;
+  source_end_offset: number | null;
+  journal_item_id: string | null;
   created_at: string;
   updated_at: string;
 };

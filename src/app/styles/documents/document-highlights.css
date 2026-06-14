@@ -341,3 +341,58 @@
   background-color: #ef4444 !important;
 }
 
+
+/* === AI INSIGHT EVIDENCE RANGES === */
+
+.document-insight-range {
+  border-bottom: 1.5px dashed #3b82f6;
+  border-radius: 2px;
+  position: relative;
+}
+
+.document-insight-range::before {
+  color: #3b82f6;
+  content: attr(data-insight-label);
+  display: inline-block;
+  font-size: 0.72em;
+  font-weight: 900;
+  line-height: 1;
+  margin-right: 3px;
+  transform: translateY(-1px);
+}
+
+.document-insight-range-risk {
+  border-bottom-color: #ef4444;
+}
+
+.document-insight-range-risk::before {
+  color: #ef4444;
+}
+
+.document-insight-range-question {
+  border-bottom-color: #f97316;
+}
+
+.document-insight-range-question::before {
+  color: #f97316;
+}
+
+.document-insight-range-legal_reference,
+.document-insight-range-term {
+  border-bottom-color: #8b5cf6;
+}
+
+.document-insight-range-legal_reference::before,
+.document-insight-range-term::before {
+  color: #8b5cf6;
+}
+
+.document-insight-range-claim,
+.document-insight-range-fact {
+  border-bottom-color: #3b82f6;
+}
+
+.document-insight-range-claim::before,
+.document-insight-range-fact::before {
+  color: #3b82f6;
+}

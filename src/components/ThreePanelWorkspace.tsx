@@ -182,13 +182,24 @@ function formatSourceLink(sourceLink: unknown) {
 }
 
 export function MiddleChatPanel({
+  activeAnalysisDocument,
   caseItem,
+  onCloseAnalysisDocument,
   onJournalRefreshRequested
 }: {
+  activeAnalysisDocument: CaseDocument | null;
   caseItem: CaseSummary;
+  onCloseAnalysisDocument: () => void;
   onJournalRefreshRequested: () => void;
 }) {
-  return <ChatPanel caseItem={caseItem} onJournalRefreshRequested={onJournalRefreshRequested} />;
+  return (
+    <ChatPanel
+      activeAnalysisDocument={activeAnalysisDocument}
+      caseItem={caseItem}
+      onCloseAnalysisDocument={onCloseAnalysisDocument}
+      onJournalRefreshRequested={onJournalRefreshRequested}
+    />
+  );
 }
 
 export function EvidencePanel({
@@ -313,6 +324,7 @@ export function RightContextPanel({
   selectedJournalItem,
   documentListRefreshKey,
   isBookmarkLinkMode,
+  onAnalysisCreated,
   onBookmarkSelectedForLink,
   onDocumentUploaded,
   onOpenDocument,
@@ -329,6 +341,7 @@ export function RightContextPanel({
   selectedJournalItem: JournalItem | null;
   documentListRefreshKey: number;
   isBookmarkLinkMode: boolean;
+  onAnalysisCreated: (document: CaseDocument) => void;
   onBookmarkSelectedForLink: (pin: DocumentPin) => void;
   onDocumentUploaded: (document: CaseDocument) => void;
   onOpenDocument: (document: CaseDocument) => void;
@@ -454,6 +467,7 @@ export function RightContextPanel({
             <DocumentViewPanel
               document={selectedDocument}
               isBookmarkLinkMode={isBookmarkLinkMode}
+              onAnalysisCreated={onAnalysisCreated}
               onBookmarkSelectedForLink={onBookmarkSelectedForLink}
               targetPinId={targetPinId}
             />
@@ -495,6 +509,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("help");
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>("documents");
   const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
+  const [activeAnalysisDocument, setActiveAnalysisDocument] = useState<CaseDocument | null>(null);
   const [selectedJournalItem, setSelectedJournalItem] = useState<JournalItem | null>(null);
   const [documentListRefreshKey, setDocumentListRefreshKey] = useState(0);
   const [situationDocumentListRefreshKey, setSituationDocumentListRefreshKey] = useState(0);
@@ -722,7 +737,9 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           selectedSituationId={selectedSituationId}
         />
         <MiddleChatPanel
+          activeAnalysisDocument={activeAnalysisDocument}
           caseItem={caseItem}
+          onCloseAnalysisDocument={() => setActiveAnalysisDocument(null)}
           onJournalRefreshRequested={requestJournalRefresh}
         />
         <RightContextPanel
@@ -732,6 +749,10 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           isBookmarkLinkMode={pendingBookmarkTargetJournalItemId !== null}
           mode={rightPanelMode}
           onActiveTabChange={setRightPanelTab}
+          onAnalysisCreated={(document) => {
+            setActiveAnalysisDocument(document);
+            setDocumentListRefreshKey((currentKey) => currentKey + 1);
+          }}
           onBookmarkSelectedForLink={handleBookmarkSelectedForLink}
           onDocumentUploaded={handleDocumentUploaded}
           onOpenDocument={openDocument}
