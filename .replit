@@ -8,9 +8,5 @@ packages = ["iproute2", "sqlite", "tesseract4"]
 runButton = "Project"
 
 [[ports]]
-localPort = 3000
-externalPort = 80
-
-[[ports]]
 localPort = 3002
-externalPort = 3002
+externalPort = 80

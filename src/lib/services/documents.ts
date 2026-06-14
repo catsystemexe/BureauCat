@@ -225,6 +225,21 @@ export async function createMockAnalysisDocument(sourceDocumentId: string) {
     return null;
   }
 
+  const existingAnalysis = await prisma.document.findFirst({
+    where: {
+      parent_document_id: sourceDocument.id,
+      document_type: "analysis"
+    },
+    orderBy: {
+      created_at: "desc"
+    },
+    select: documentSelect
+  });
+
+  if (existingAnalysis) {
+    return existingAnalysis;
+  }
+
   const sourceText =
     sourceDocument.processed_markdown ??
     sourceDocument.processed_text ??
@@ -239,6 +254,10 @@ export async function createMockAnalysisDocument(sourceDocumentId: string) {
     clampRange(sourceText, Math.min(160, sourceText.length), Math.min(340, sourceText.length)),
     clampRange(sourceText, Math.min(340, sourceText.length), Math.min(520, sourceText.length))
   ].filter((range) => range.end > range.start);
+
+  const factLine = "- Testovací skutečnost navázaná na začátek dokumentu.";
+  const riskLine = "- Testovací riziko pro ověření AI evidence vrstvy.";
+  const questionLine = "- Jaké informace v dokumentu chybí?";
 
   const markdown = `# ${analysisTitle}
 
@@ -256,7 +275,7 @@ Toto je testovací analýza pro ověření workflow: vytvoření meta dokumentu,
 
 ## 4. Klíčové skutečnosti
 
-- Testovací skutečnost navázaná na začátek dokumentu.
+${factLine}
 - Testovací tvrzení navázané na další část dokumentu.
 
 ## 5. Paragrafy a právní odkazy
@@ -265,13 +284,26 @@ Toto je testovací analýza pro ověření workflow: vytvoření meta dokumentu,
 
 ## 6. Rizika a důležité termíny
 
-- Testovací riziko pro ověření AI evidence vrstvy.
+${riskLine}
 
 ## 7. Otázky
 
-- Jaké informace v dokumentu chybí?
+${questionLine}
 - Jaká lhůta nebo povinnost z dokumentu plyne?
 `;
+
+  function findAnalysisRange(needle: string) {
+    const start = markdown.indexOf(needle);
+
+    if (start < 0) {
+      return null;
+    }
+
+    return {
+      start,
+      end: start + needle.length
+    };
+  }
 
   return prisma.$transaction(async (transaction) => {
     const analysisDocument = await transaction.document.create({
@@ -303,7 +335,8 @@ Toto je testovací analýza pro ověření workflow: vytvoření meta dokumentu,
         target_item_type: "FACT",
         title: "Testovací klíčová skutečnost",
         content: "Mock poznatek vytvořený z analyzovaného dokumentu.",
-        range: ranges[0]
+        range: ranges[0],
+        analysisRange: findAnalysisRange(factLine)
       },
       {
         insight_type: "risk",
@@ -311,7 +344,8 @@ Toto je testovací analýza pro ověření workflow: vytvoření meta dokumentu,
         target_item_type: "RISK",
         title: "Testovací riziko",
         content: "Mock riziko vytvořené pro ověření workflow.",
-        range: ranges[1] ?? ranges[0]
+        range: ranges[1] ?? ranges[0],
+        analysisRange: findAnalysisRange(riskLine)
       },
       {
         insight_type: "question",
@@ -319,7 +353,8 @@ Toto je testovací analýza pro ověření workflow: vytvoření meta dokumentu,
         target_item_type: "QUESTION",
         title: "Testovací otázka",
         content: "Mock otázka vytvořená pro pozdější zápis do zápisníku.",
-        range: ranges[2] ?? ranges[0]
+        range: ranges[2] ?? ranges[0],
+        analysisRange: findAnalysisRange(questionLine)
       }
     ].filter((seed) => seed.range);
 
@@ -337,7 +372,9 @@ Toto je testovací analýza pro ověření workflow: vytvoření meta dokumentu,
           status: "pending",
           source_text: seed.range.sourceText,
           source_start_offset: seed.range.start,
-          source_end_offset: seed.range.end
+          source_end_offset: seed.range.end,
+          analysis_start_offset: seed.analysisRange?.start ?? null,
+          analysis_end_offset: seed.analysisRange?.end ?? null
         }
       });
     }

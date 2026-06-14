@@ -159,6 +159,9 @@ model DocumentInsight {
   source_start_offset Int?
   source_end_offset   Int?
 
+  analysis_start_offset Int?
+  analysis_end_offset   Int?
+
   journal_item_id     String?
 
   created_at          DateTime @default(now())
@@ -170,6 +173,7 @@ model DocumentInsight {
   @@index([source_document_id])
   @@index([source_pin_id])
   @@index([status])
+  @@index([document_id, analysis_start_offset, analysis_end_offset])
 }
 
 

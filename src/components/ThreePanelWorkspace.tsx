@@ -17,7 +17,7 @@ import {
   ArrowUpTrayIcon,
   FolderIcon
 } from "@heroicons/react/24/outline";
-import type { CaseDocument, CaseSummary, DocumentPin, JournalItem } from "./types";
+import type { CaseDocument, CaseSummary, DocumentInsight, DocumentPin, JournalItem } from "./types";
 
 type RightPanelMode = "help" | "evidence" | "document";
 type RightPanelTab = "documents" | "analysis" | "procedure";
@@ -181,28 +181,37 @@ function formatSourceLink(sourceLink: unknown) {
   return "Podklad bez dalšího popisu.";
 }
 
-export function MiddleChatPanel({
+function MiddleChatPanel({
   activeAnalysisDocument,
   caseItem,
+  onActiveAnalysisInsightsChange,
   onCloseAnalysisDocument,
-  onJournalRefreshRequested
+  onJournalRefreshRequested,
+  selectedSituationId,
+  hoveredBookmarkPinId
 }: {
   activeAnalysisDocument: CaseDocument | null;
   caseItem: CaseSummary;
+  onActiveAnalysisInsightsChange: (insights: DocumentInsight[]) => void;
   onCloseAnalysisDocument: () => void;
   onJournalRefreshRequested: () => void;
+  selectedSituationId: string | null;
+  hoveredBookmarkPinId: string | null;
 }) {
   return (
     <ChatPanel
       activeAnalysisDocument={activeAnalysisDocument}
       caseItem={caseItem}
+      onActiveAnalysisInsightsChange={onActiveAnalysisInsightsChange}
       onCloseAnalysisDocument={onCloseAnalysisDocument}
       onJournalRefreshRequested={onJournalRefreshRequested}
+      selectedSituationId={selectedSituationId}
+      hoveredBookmarkPinId={hoveredBookmarkPinId}
     />
   );
 }
 
-export function EvidencePanel({
+function EvidencePanel({
   journalItem,
   onOpenDocument
 }: {
@@ -315,10 +324,12 @@ export function EvidencePanel({
   );
 }
 
-export function RightContextPanel({
+function RightContextPanel({
   caseId,
   mode,
   activeTab,
+  activeAnalysisInsights,
+  hoveredBookmarkPinId,
   onActiveTabChange,
   selectedDocument,
   selectedJournalItem,
@@ -336,6 +347,8 @@ export function RightContextPanel({
   caseId: string;
   mode: RightPanelMode;
   activeTab: RightPanelTab;
+  activeAnalysisInsights: DocumentInsight[];
+  hoveredBookmarkPinId: string | null;
   onActiveTabChange: (tab: RightPanelTab) => void;
   selectedDocument: CaseDocument | null;
   selectedJournalItem: JournalItem | null;
@@ -466,6 +479,8 @@ export function RightContextPanel({
           {selectedDocument ? (
             <DocumentViewPanel
               document={selectedDocument}
+              activeAnalysisInsights={activeAnalysisInsights}
+              hoveredBookmarkPinId={hoveredBookmarkPinId}
               isBookmarkLinkMode={isBookmarkLinkMode}
               onAnalysisCreated={onAnalysisCreated}
               onBookmarkSelectedForLink={onBookmarkSelectedForLink}
@@ -510,6 +525,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>("documents");
   const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
   const [activeAnalysisDocument, setActiveAnalysisDocument] = useState<CaseDocument | null>(null);
+  const [activeAnalysisInsights, setActiveAnalysisInsights] = useState<DocumentInsight[]>([]);
+  const [hoveredBookmarkPinId, setHoveredBookmarkPinId] = useState<string | null>(null);
   const [selectedJournalItem, setSelectedJournalItem] = useState<JournalItem | null>(null);
   const [documentListRefreshKey, setDocumentListRefreshKey] = useState(0);
   const [situationDocumentListRefreshKey, setSituationDocumentListRefreshKey] = useState(0);
@@ -735,17 +752,27 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           onStartBookmarkLink={setPendingBookmarkTargetJournalItemId}
           pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
           selectedSituationId={selectedSituationId}
+          onBookmarkHover={setHoveredBookmarkPinId}
+          onBookmarkLeave={() => setHoveredBookmarkPinId(null)}
         />
         <MiddleChatPanel
           activeAnalysisDocument={activeAnalysisDocument}
           caseItem={caseItem}
-          onCloseAnalysisDocument={() => setActiveAnalysisDocument(null)}
+          onActiveAnalysisInsightsChange={setActiveAnalysisInsights}
+          onCloseAnalysisDocument={() => {
+            setActiveAnalysisDocument(null);
+            setActiveAnalysisInsights([]);
+          }}
           onJournalRefreshRequested={requestJournalRefresh}
+          selectedSituationId={selectedSituationId}
+          hoveredBookmarkPinId={hoveredBookmarkPinId}
         />
         <RightContextPanel
           caseId={caseItem.id}
           activeTab={rightPanelTab}
+          activeAnalysisInsights={activeAnalysisInsights}
           documentListRefreshKey={documentListRefreshKey}
+          hoveredBookmarkPinId={hoveredBookmarkPinId}
           isBookmarkLinkMode={pendingBookmarkTargetJournalItemId !== null}
           mode={rightPanelMode}
           onActiveTabChange={setRightPanelTab}

@@ -84,10 +84,14 @@ function parseBookmarkSourceLinks(sourceLinksJson: string): BookmarkSourceLink[]
 
 function JournalLinkedBookmarks({
   item,
-  onOpenBookmark
+  onOpenBookmark,
+  onBookmarkHover,
+  onBookmarkLeave
 }: {
   item: JournalItem;
   onOpenBookmark?: (documentId: string, pinId: string) => void;
+  onBookmarkHover?: (pinId: string) => void;
+  onBookmarkLeave?: () => void;
 }) {
   const bookmarkLinks = parseBookmarkSourceLinks(item.source_links_json);
 
@@ -103,6 +107,8 @@ function JournalLinkedBookmarks({
           data-color={link.color}
           key={`${link.documentId}-${link.pinId}`}
           onClick={() => onOpenBookmark?.(link.documentId, link.pinId)}
+          onMouseEnter={() => onBookmarkHover?.(link.pinId)}
+          onMouseLeave={() => onBookmarkLeave?.()}
           style={{ "--bookmark-color": link.color ?? "#ef4444" } as React.CSSProperties}
           title={`Otevřít bookmark #${link.caseBookmarkNumber ?? "?"} v dokumentu`}
           type="button"
@@ -302,7 +308,9 @@ function JournalInlineItem({
   onDiscardDraft,
   onOpenBookmark,
   onStartBookmarkLink,
-  onUpdate
+  onUpdate,
+  onBookmarkHover,
+  onBookmarkLeave
 }: {
   item: JournalItem;
   forceEdit?: boolean;
@@ -313,6 +321,8 @@ function JournalInlineItem({
   onOpenBookmark?: (documentId: string, pinId: string) => void;
   onStartBookmarkLink?: (itemId: string) => void;
   onUpdate: (itemId: string, title: string) => void;
+  onBookmarkHover?: (pinId: string) => void;
+  onBookmarkLeave?: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(forceEdit);
   const [draft, setDraft] = useState(forceEdit ? "" : item.title);
@@ -431,7 +441,12 @@ function JournalInlineItem({
           value={draft}
         />
         </div>
-        <JournalLinkedBookmarks item={item} onOpenBookmark={onOpenBookmark} />
+        <JournalLinkedBookmarks
+            item={item}
+            onOpenBookmark={onOpenBookmark}
+            onBookmarkHover={onBookmarkHover}
+            onBookmarkLeave={onBookmarkLeave}
+          />
       </div>
     );
   }
@@ -448,7 +463,12 @@ function JournalInlineItem({
           >
             {item.title}
           </button>
-          <JournalLinkedBookmarks item={item} onOpenBookmark={onOpenBookmark} />
+          <JournalLinkedBookmarks
+            item={item}
+            onOpenBookmark={onOpenBookmark}
+            onBookmarkHover={onBookmarkHover}
+            onBookmarkLeave={onBookmarkLeave}
+          />
         </div>
       </div>
       {/* Delete is intentionally hidden in read mode. It appears only while editing. */}
@@ -468,7 +488,9 @@ function AILayer({
   onOpenBookmark,
   onStartBookmarkLink,
   onUpdateItem,
-  pendingBookmarkTargetJournalItemId
+  pendingBookmarkTargetJournalItemId,
+  onBookmarkHover,
+  onBookmarkLeave
 }: {
   caseId: string;
   draftItems: DraftJournalItem[];
@@ -482,6 +504,8 @@ function AILayer({
   onStartBookmarkLink: (itemId: string) => void;
   onUpdateItem: (itemId: string, title: string) => void;
   pendingBookmarkTargetJournalItemId: string | null;
+  onBookmarkHover: (pinId: string) => void;
+  onBookmarkLeave: () => void;
 }) {
   return (
     <div className="notebook-layer notebook-ai-layer" aria-label="Zápisník situace">
@@ -576,7 +600,9 @@ export function JournalPanel({
   onSelectSituation,
   onStartBookmarkLink,
   pendingBookmarkTargetJournalItemId,
-  selectedSituationId
+  selectedSituationId,
+  onBookmarkHover,
+  onBookmarkLeave
 }: {
   caseItem: CaseSummary;
   documentListRefreshKey: number;
@@ -586,6 +612,8 @@ export function JournalPanel({
   onStartBookmarkLink: (journalItemId: string) => void;
   pendingBookmarkTargetJournalItemId: string | null;
   selectedSituationId: string | null;
+  onBookmarkHover: (pinId: string) => void;
+  onBookmarkLeave: () => void;
 }) {
   const [situations, setSituations] = useState<Situation[]>([]);
   const [isLoadingSituations, setIsLoadingSituations] = useState(true);
@@ -888,6 +916,8 @@ export function JournalPanel({
           onStartBookmarkLink={onStartBookmarkLink}
           onUpdateItem={handleUpdateJournalItem}
           pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
+          onBookmarkHover={onBookmarkHover}
+          onBookmarkLeave={onBookmarkLeave}
         />
       </div>
     </aside>

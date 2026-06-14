@@ -603,3 +603,11 @@
 }
 
 /* === LEFT PANEL CATEGORY TITLE COLOR FINAL END === */
+
+
+.hovered-document-pin-marker {
+  outline: 3px solid rgba(59, 130, 246, 0.65) !important;
+  outline-offset: 3px !important;
+  transform: scale(1.08);
+  z-index: 10 !important;
+}

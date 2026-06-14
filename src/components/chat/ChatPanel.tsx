@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { BookmarkCheck, Check, Trash2 } from "lucide-react";
 import { MeetingPrepButton } from "@/components/chat/MeetingPrepButton";
 import { MeetingPrepCard } from "@/components/chat/MeetingPrepCard";
 import { MessageComposer } from "@/components/chat/MessageComposer";
@@ -15,7 +16,8 @@ import type {
   MeetingPrepReport,
   SuggestionAction,
   SuggestionActionState,
-  SuggestionJournalItem
+  SuggestionJournalItem,
+  DocumentInsight
 } from "@/components/types";
 
 type MessagesResponse = {
@@ -74,13 +76,19 @@ function parseSuggestion(record: AISuggestionRecord): AISuggestionPreview | null
 export function ChatPanel({
   caseItem,
   activeAnalysisDocument = null,
+  onActiveAnalysisInsightsChange,
   onCloseAnalysisDocument,
-  onJournalRefreshRequested
+  onJournalRefreshRequested,
+  selectedSituationId,
+  hoveredBookmarkPinId
 }: {
   activeAnalysisDocument?: CaseDocument | null;
   caseItem: CaseSummary;
+  onActiveAnalysisInsightsChange?: (insights: DocumentInsight[]) => void;
   onCloseAnalysisDocument?: () => void;
   onJournalRefreshRequested: () => void;
+  selectedSituationId: string | null;
+  hoveredBookmarkPinId?: string | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [composerContent, setComposerContent] = useState("");
@@ -94,6 +102,10 @@ export function ChatPanel({
   const [isPreparingMeeting, setIsPreparingMeeting] = useState(false);
   const [meetingPrepError, setMeetingPrepError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [analysisInsights, setAnalysisInsights] = useState<DocumentInsight[]>([]);
+  const [analysisInsightsError, setAnalysisInsightsError] = useState<string | null>(null);
+  const [expandedInsightIds, setExpandedInsightIds] = useState<string[]>([]);
+  const [hoveredInsightId, setHoveredInsightId] = useState<string | null>(null);
 
   const loadMessages = useCallback(async () => {
     const response = await fetch(`/api/cases/${caseItem.id}/messages`, { cache: "no-store" });
@@ -143,6 +155,297 @@ export function ChatPanel({
       isMounted = false;
     };
   }, [loadMessages]);
+
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAnalysisInsights() {
+      if (!activeAnalysisDocument) {
+        setAnalysisInsights([]);
+        setAnalysisInsightsError(null);
+        setExpandedInsightIds([]);
+        setHoveredInsightId(null);
+        onActiveAnalysisInsightsChange?.([]);
+        return;
+      }
+
+      try {
+        setAnalysisInsightsError(null);
+        const response = await fetch(`/api/documents/${activeAnalysisDocument.id}/insights`, {
+          cache: "no-store"
+        });
+        const data = (await response.json()) as { insights?: DocumentInsight[]; error?: string };
+
+        if (!response.ok || !Array.isArray(data.insights)) {
+          throw new Error(data.error ?? "Insighty se nepodařilo načíst.");
+        }
+
+        if (isMounted) {
+          setAnalysisInsights(data.insights);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setAnalysisInsights([]);
+          setAnalysisInsightsError(loadError instanceof Error ? loadError.message : "Insighty se nepodařilo načíst.");
+        }
+      }
+    }
+
+    void loadAnalysisInsights();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeAnalysisDocument]);
+
+  function getAnalysisInsightLabel(type: string) {
+    if (type === "risk") return "Riziko";
+    if (type === "question") return "Otázka";
+    if (type === "legal_reference") return "Právní odkaz";
+    if (type === "term") return "Termín";
+    if (type === "claim") return "Tvrzení";
+    return "Poznatek";
+  }
+
+  function getAnalysisInsightStatusLabel(status: string) {
+    if (status === "approved") return "Schváleno";
+    if (status === "rejected") return "Zamítnuto";
+    if (status === "journalized") return "Zapsáno";
+    return "Čeká";
+  }
+
+  async function updateAnalysisInsightStatus(
+    insightId: string,
+    status: "approved" | "journalized" | "rejected"
+  ) {
+    try {
+      setAnalysisInsightsError(null);
+
+      const response = await fetch(`/api/document-insights/${insightId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+
+      const data = (await response.json()) as { insight?: DocumentInsight; error?: string };
+
+      if (!response.ok || !data.insight) {
+        throw new Error(data.error ?? "Insight se nepodařilo upravit.");
+      }
+
+      setAnalysisInsights((currentInsights) =>
+        currentInsights.map((insight) =>
+          insight.id === insightId ? data.insight! : insight
+        )
+      );
+    } catch (updateError) {
+      setAnalysisInsightsError(
+        updateError instanceof Error ? updateError.message : "Insight se nepodařilo upravit."
+      );
+    }
+  }
+
+
+  async function journalizeAnalysisInsight(insightId: string) {
+    if (!selectedSituationId) {
+      setAnalysisInsightsError("Nejdřív vyber situaci.");
+      return;
+    }
+
+    try {
+      setAnalysisInsightsError(null);
+
+      const response = await fetch(`/api/document-insights/${insightId}/journalize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ situation_id: selectedSituationId })
+      });
+
+      const data = (await response.json()) as { insight?: DocumentInsight; error?: string };
+
+      if (!response.ok || !data.insight) {
+        throw new Error(data.error ?? "Insight se nepodařilo zapsat.");
+      }
+
+      setAnalysisInsights((currentInsights) =>
+        currentInsights.map((insight) =>
+          insight.id === insightId ? data.insight! : insight
+        )
+      );
+
+      onJournalRefreshRequested();
+      window.dispatchEvent(new CustomEvent("bureaucat:journal-refresh"));
+    } catch (journalizeError) {
+      setAnalysisInsightsError(
+        journalizeError instanceof Error ? journalizeError.message : "Insight se nepodařilo zapsat."
+      );
+    }
+  }
+
+  useEffect(() => {
+    const activeIds = [
+      ...expandedInsightIds,
+      ...(hoveredInsightId ? [hoveredInsightId] : [])
+    ].filter((id, index, array) => array.indexOf(id) === index);
+
+    const activeInsights = activeIds
+      .map((id) => analysisInsights.find((insight) => insight.id === id))
+      .filter((insight): insight is DocumentInsight => Boolean(insight));
+
+    onActiveAnalysisInsightsChange?.(activeInsights);
+  }, [analysisInsights, expandedInsightIds, hoveredInsightId, onActiveAnalysisInsightsChange]);
+
+  function toggleExpandedInsight(insightId: string) {
+    setExpandedInsightIds((currentIds) =>
+      currentIds.includes(insightId)
+        ? currentIds.filter((id) => id !== insightId)
+        : [...currentIds, insightId]
+    );
+  }
+
+  function renderAnalysisTextWithInlineInsights(text: string) {
+    
+    console.log("TEXT LENGTH", text.length);
+
+    console.log(
+      "ALL INSIGHTS",
+      analysisInsights.map((i) => ({
+        title: i.title,
+        status: i.status,
+        start: i.analysis_start_offset,
+        end: i.analysis_end_offset
+      }))
+    );
+    
+    const inlineInsights = analysisInsights
+      
+      
+      .filter(
+        (insight) =>
+          insight.analysis_start_offset !== null &&
+          insight.analysis_end_offset !== null &&
+          insight.analysis_end_offset > insight.analysis_start_offset &&
+          insight.analysis_start_offset >= 0 &&
+          insight.analysis_end_offset <= text.length
+      )
+      .map((insight) => ({
+        insight,
+        start: insight.analysis_start_offset!,
+        end: insight.analysis_end_offset!
+      }))
+      .sort((a, b) => a.start - b.start);
+
+    console.log("INLINE COUNT", inlineInsights.length);
+
+    inlineInsights.forEach((i) => {
+      console.log(
+        "INLINE",
+        i.insight.title,
+        i.start,
+        i.end,
+        text.slice(i.start, i.end)
+      );
+    });
+    
+    if (inlineInsights.length === 0) {
+      return text;
+    }
+
+    const parts: React.ReactNode[] = [];
+    let cursor = 0;
+
+    for (const range of inlineInsights) {
+      if (range.start > cursor) {
+        parts.push(text.slice(cursor, range.start));
+      }
+
+      const isExpanded = expandedInsightIds.includes(range.insight.id);
+      const isBookmarkHovered =
+        hoveredBookmarkPinId !== null &&
+        hoveredBookmarkPinId !== undefined &&
+        range.insight.source_pin_id === hoveredBookmarkPinId;
+      const selectedText = text.slice(range.start, range.end);
+
+      parts.push(
+        <span className="analysis-inline-insight-wrap" key={range.insight.id}>
+          <button
+            className={`analysis-inline-insight analysis-inline-insight-${range.insight.insight_type} analysis-inline-insight-status-${range.insight.status}${isBookmarkHovered ? " analysis-inline-insight-bookmark-hover" : ""}`}
+            onClick={() => toggleExpandedInsight(range.insight.id)}
+            onMouseEnter={() => setHoveredInsightId(range.insight.id)}
+            onMouseLeave={() => setHoveredInsightId((currentId) => currentId === range.insight.id ? null : currentId)}
+            title={range.insight.title}
+            type="button"
+          >
+            {selectedText}
+          </button>
+
+          {range.insight.status === "pending" ? (
+            <span className="analysis-inline-insight-quick-actions" aria-label="Rychlé rozhodnutí insightu">
+              <button
+                aria-label="Schválit insight"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void updateAnalysisInsightStatus(range.insight.id, "approved");
+                }}
+                title="Schválit insight"
+                type="button"
+              >
+                <Check aria-hidden="true" />
+              </button>
+              <button
+                aria-label="Schválit a zapsat do zápisníku s bookmarkem"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void journalizeAnalysisInsight(range.insight.id);
+                }}
+                title="Schválit + zapsat do zápisníku + bookmark"
+                type="button"
+              >
+                <BookmarkCheck aria-hidden="true" />
+              </button>
+              <button
+                aria-label="Odmítnout insight"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void updateAnalysisInsightStatus(range.insight.id, "rejected");
+                }}
+                title="Odmítnout insight"
+                type="button"
+              >
+                <Trash2 aria-hidden="true" />
+              </button>
+            </span>
+          ) : null}
+
+          {isExpanded ? (
+            <span className="analysis-inline-insight-detail">
+              <span className="analysis-inline-insight-meta">
+                <strong>{getAnalysisInsightLabel(range.insight.insight_type)}</strong>
+                <em>{getAnalysisInsightStatusLabel(range.insight.status)}</em>
+              </span>
+              <span className="analysis-inline-insight-title">{range.insight.title}</span>
+              {range.insight.content ? (
+                <span className="analysis-inline-insight-content">{range.insight.content}</span>
+              ) : null}
+              {range.insight.source_text ? (
+                <span className="analysis-inline-insight-source">{range.insight.source_text}</span>
+              ) : null}
+            </span>
+          ) : null}
+        </span>
+      );
+
+      cursor = range.end;
+    }
+
+    if (cursor < text.length) {
+      parts.push(text.slice(cursor));
+    }
+
+    return parts;
+  }
+
 
   async function handleSend() {
     const content = composerContent.trim();
@@ -275,17 +578,30 @@ export function ChatPanel({
             <div>
               <p>Analýza dokumentu</p>
               <h3>{activeAnalysisDocument.display_name ?? activeAnalysisDocument.filename}</h3>
+              <span className="analysis-pending-counter">
+                {analysisInsights.filter((insight) => insight.status === "pending").length > 0
+                  ? `${analysisInsights.filter((insight) => insight.status === "pending").length} čeká na rozhodnutí`
+                  : "Všechny insighty vyřešeny"}
+              </span>
             </div>
             <button type="button" onClick={onCloseAnalysisDocument} title="Zavřít analýzu">
               ×
             </button>
           </header>
-          <pre className="analysis-floating-content">
-            {activeAnalysisDocument.processed_markdown ??
-              activeAnalysisDocument.processed_text ??
-              activeAnalysisDocument.extracted_text ??
-              "Analýza neobsahuje text."}
-          </pre>
+          <div className="analysis-floating-content">
+            {analysisInsightsError ? (
+              <p className="analysis-insight-error">{analysisInsightsError}</p>
+            ) : null}
+
+            <pre className="analysis-floating-text">
+              {renderAnalysisTextWithInlineInsights(
+                activeAnalysisDocument.processed_markdown ??
+                  activeAnalysisDocument.processed_text ??
+                  activeAnalysisDocument.extracted_text ??
+                  "Analýza neobsahuje text."
+              )}
+            </pre>
+          </div>
         </section>
       ) : null}
 

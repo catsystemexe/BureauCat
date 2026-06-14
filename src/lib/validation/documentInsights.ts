@@ -33,7 +33,9 @@ export const createDocumentInsightSchema = z
     evidence_state: evidenceStateSchema.default("inferred"),
     source_text: z.string().nullable().optional(),
     source_start_offset: z.number().int().nullable().optional(),
-    source_end_offset: z.number().int().nullable().optional()
+    source_end_offset: z.number().int().nullable().optional(),
+    analysis_start_offset: z.number().int().nullable().optional(),
+    analysis_end_offset: z.number().int().nullable().optional()
   })
   .strict();
 
@@ -45,7 +47,9 @@ export const updateDocumentInsightSchema = z
     evidence_state: evidenceStateSchema.optional(),
     source_text: z.string().nullable().optional(),
     source_start_offset: z.number().int().nullable().optional(),
-    source_end_offset: z.number().int().nullable().optional()
+    source_end_offset: z.number().int().nullable().optional(),
+    analysis_start_offset: z.number().int().nullable().optional(),
+    analysis_end_offset: z.number().int().nullable().optional()
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, {

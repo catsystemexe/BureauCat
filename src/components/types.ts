@@ -204,6 +204,8 @@ export type DocumentInsight = {
   source_text: string | null;
   source_start_offset: number | null;
   source_end_offset: number | null;
+  analysis_start_offset: number | null;
+  analysis_end_offset: number | null;
   journal_item_id: string | null;
   created_at: string;
   updated_at: string;

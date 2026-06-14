@@ -87,7 +87,8 @@ const pinColors = [
   { label: "Oranžová", value: "orange", css: "#f97316" },
   { label: "Zelená", value: "green", css: "#22c55e" },
   { label: "Žlutá", value: "yellow", css: "#eab308" },
-  { label: "Modrá", value: "blue", css: "#3b82f6" }
+  { label: "Modrá", value: "blue", css: "#3b82f6" },
+  { label: "Fialová", value: "purple", css: "#8b5cf6" }
 ];
 
 function getPinCssColor(value: string | null | undefined) {
@@ -100,16 +101,20 @@ function getNoteCssColor(value: string | null | undefined) {
 
 export function DocumentViewPanel({
   document: initialDocument,
+  activeAnalysisInsights = [],
   isBookmarkLinkMode = false,
   onBookmarkSelectedForLink,
   onAnalysisCreated,
-  targetPinId = null
+  targetPinId = null,
+  hoveredBookmarkPinId = null
 }: {
   document: CaseDocument;
+  activeAnalysisInsights?: DocumentInsight[];
   isBookmarkLinkMode?: boolean;
   onBookmarkSelectedForLink?: (pin: DocumentPin) => void;
   onAnalysisCreated?: (document: CaseDocument) => void;
   targetPinId?: string | null;
+  hoveredBookmarkPinId?: string | null;
 }) {
   const [currentDocument, setCurrentDocument] = useState(initialDocument);
   const [isOriginalVisible, setIsOriginalVisible] = useState(false);
@@ -193,7 +198,7 @@ export function DocumentViewPanel({
   );
   const renderedDisplayText = useMemo(
     () => renderDisplayTextWithHighlights(displayText),
-    [annotations, insights, isInsightEvidenceVisible, displayText, isAnnotationNoteOpen]
+    [annotations, insights, activeAnalysisInsights, isInsightEvidenceVisible, displayText, isAnnotationNoteOpen]
   );
 
   useEffect(() => {
@@ -439,23 +444,35 @@ export function DocumentViewPanel({
       .sort((a, b) => a.offset - b.offset)
       .map((marker, index) => ({ ...marker, number: index + 1 }));
 
-    const insightRanges = isInsightEvidenceVisible
-      ? insights
-          .filter(
-            (insight) =>
-              insight.source_start_offset !== null &&
-              insight.source_end_offset !== null &&
-              insight.source_end_offset > insight.source_start_offset &&
-              insight.source_start_offset >= 0 &&
-              insight.source_end_offset <= text.length
-          )
-          .map((insight) => ({
-            insight,
-            start: insight.source_start_offset!,
-            end: insight.source_end_offset!
-          }))
-          .sort((a, b) => a.start - b.start)
+    const activeSourceInsights = activeAnalysisInsights.filter(
+      (insight) =>
+        insight.source_document_id === currentDocument.id &&
+        insight.source_start_offset !== null &&
+        insight.source_end_offset !== null &&
+        insight.source_end_offset > insight.source_start_offset &&
+        insight.source_start_offset >= 0 &&
+        insight.source_end_offset <= text.length
+    );
+
+    const fallbackDocumentInsights = isInsightEvidenceVisible
+      ? insights.filter(
+          (insight) =>
+            insight.source_start_offset !== null &&
+            insight.source_end_offset !== null &&
+            insight.source_end_offset > insight.source_start_offset &&
+            insight.source_start_offset >= 0 &&
+            insight.source_end_offset <= text.length
+        )
       : [];
+
+    const insightRanges = [...activeSourceInsights, ...fallbackDocumentInsights]
+      .filter((insight, index, array) => array.findIndex((item) => item.id === insight.id) === index)
+      .map((insight) => ({
+        insight,
+        start: insight.source_start_offset!,
+        end: insight.source_end_offset!
+      }))
+      .sort((a, b) => a.start - b.start);
 
     if (highlightRanges.length === 0 && noteMarkers.length === 0 && insightRanges.length === 0) {
       return text;
@@ -506,7 +523,6 @@ export function DocumentViewPanel({
           parts.push(
             <span
               className={`document-insight-range document-insight-range-${activeInsight.insight.insight_type}`}
-              data-insight-label={getInsightLabel(activeInsight.insight.insight_type)}
               key={`insight-${activeInsight.insight.id}-${index}-${start}`}
               title={activeInsight.insight.title}
             >
@@ -1982,7 +1998,7 @@ export function DocumentViewPanel({
           <div className="document-pin-layer" aria-label="Piny dokumentu">
             {orderedPins.map((pin) => (
               <button
-                className={`document-pin-marker${targetPinId === pin.id ? " targeted-document-pin-marker" : ""}`}
+                className={`document-pin-marker${targetPinId === pin.id ? " targeted-document-pin-marker" : ""}${hoveredBookmarkPinId === pin.id ? " hovered-document-pin-marker" : ""}`}
                 key={pin.id}
                 onPointerDown={(event) => {
                   event.stopPropagation();
