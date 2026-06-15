@@ -276,6 +276,7 @@ export function ChatPanel({
 
       onJournalRefreshRequested();
       window.dispatchEvent(new CustomEvent("bureaucat:journal-refresh"));
+      window.dispatchEvent(new CustomEvent("bureaucat:document-pins-refresh"));
     } catch (journalizeError) {
       setAnalysisInsightsError(
         journalizeError instanceof Error ? journalizeError.message : "Insight se nepodařilo zapsat."
@@ -447,6 +448,50 @@ export function ChatPanel({
   }
 
 
+  async function deleteAnalysisDocument(
+    analysisDocumentId: string
+  ) {
+    const confirmed = window.confirm(
+      "Smazat analýzu včetně insightů a bookmarků?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/documents/${analysisDocumentId}/analysis`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Analýzu se nepodařilo smazat."
+        );
+      }
+
+      setAnalysisInsights([]);
+      setExpandedInsightIds([]);
+      setHoveredInsightId(null);
+
+      onActiveAnalysisInsightsChange?.([]);
+      onJournalRefreshRequested();
+      window.dispatchEvent(new CustomEvent("bureaucat:journal-refresh"));
+      window.dispatchEvent(new CustomEvent("bureaucat:document-pins-refresh"));
+
+      onCloseAnalysisDocument?.();
+    } catch (error) {
+      setAnalysisInsightsError(
+        error instanceof Error
+          ? error.message
+          : "Analýzu se nepodařilo smazat."
+      );
+    }
+  }
+
   async function handleSend() {
     const content = composerContent.trim();
 
@@ -584,9 +629,29 @@ export function ChatPanel({
                   : "Všechny insighty vyřešeny"}
               </span>
             </div>
-            <button type="button" onClick={onCloseAnalysisDocument} title="Zavřít analýzu">
-              ×
-            </button>
+            <div className="analysis-floating-header-actions">
+              <button
+                type="button"
+                title="Smazat analýzu"
+                onClick={() => {
+                  if (activeAnalysisDocument) {
+                    void deleteAnalysisDocument(
+                      activeAnalysisDocument.id
+                    );
+                  }
+                }}
+              >
+                <Trash2 size={16} />
+              </button>
+
+              <button
+                type="button"
+                onClick={onCloseAnalysisDocument}
+                title="Zavřít analýzu"
+              >
+                ×
+              </button>
+            </div>
           </header>
           <div className="analysis-floating-content">
             {analysisInsightsError ? (

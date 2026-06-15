@@ -274,13 +274,62 @@ export function DocumentViewPanel({
 
         if (response.ok && data.pins) {
           setPins(data.pins);
+
+          const nextPinIds = new Set(data.pins.map((pin) => pin.id));
+
+          setEditingPinId((currentEditingPinId) => {
+            if (currentEditingPinId && !nextPinIds.has(currentEditingPinId)) {
+              setIsPinEditorOpen(false);
+              setPinNote("");
+              setPinEditorPosition(null);
+              return null;
+            }
+
+            return currentEditingPinId;
+          });
+
+          setHoveredPin((currentHoveredPin) => {
+            if (currentHoveredPin && !nextPinIds.has(currentHoveredPin.pin.id)) {
+              return null;
+            }
+
+            return currentHoveredPin;
+          });
+
+          setPinPositions((currentPositions) => {
+            const nextPositions: Record<string, number> = {};
+
+            for (const pinId of Object.keys(currentPositions)) {
+              if (nextPinIds.has(pinId)) {
+                nextPositions[pinId] = currentPositions[pinId];
+              }
+            }
+
+            return nextPositions;
+          });
+
+          window.requestAnimationFrame(measurePinPositions);
         }
       } catch {
         setPins([]);
+        setIsPinEditorOpen(false);
+        setEditingPinId(null);
+        setHoveredPin(null);
+        setPinPositions({});
       }
     }
 
+    function handleDocumentPinsRefresh() {
+      void loadPins();
+    }
+
     void loadPins();
+
+    window.addEventListener("bureaucat:document-pins-refresh", handleDocumentPinsRefresh);
+
+    return () => {
+      window.removeEventListener("bureaucat:document-pins-refresh", handleDocumentPinsRefresh);
+    };
   }, [initialDocument.id]);
 
   useEffect(() => {
@@ -1458,7 +1507,7 @@ export function DocumentViewPanel({
     setError(null);
 
     try {
-      const response = await fetch(`/api/documents/${currentDocument.id}/analyze`, {
+      const response = await fetch(`/api/documents/${currentDocument.id}/analysis`, {
         method: "POST"
       });
 

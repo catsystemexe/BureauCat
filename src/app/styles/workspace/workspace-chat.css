@@ -565,3 +565,15 @@
   border-bottom-width: 3px !important;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18);
 }
+
+.analysis-floating-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.analysis-floating-header-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

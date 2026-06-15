@@ -382,3 +382,116 @@ ${questionLine}
     return analysisDocument;
   });
 }
+
+
+
+export async function deleteAnalysisDocument(analysisDocumentId: string) {
+  return prisma.$transaction(async (tx) => {
+    const analysisDocument = await tx.document.findUnique({
+      where: { id: analysisDocumentId },
+      select: {
+        id: true,
+        document_type: true
+      }
+    });
+
+    if (!analysisDocument || analysisDocument.document_type !== "analysis") {
+      return false;
+    }
+
+    const linkedInsights = await tx.documentInsight.findMany({
+      where: {
+        document_id: analysisDocumentId
+      },
+      select: {
+        source_pin_id: true,
+        journal_item_id: true
+      }
+    });
+
+    const directlyLinkedPinIds = linkedInsights
+      .map((insight) => insight.source_pin_id)
+      .filter((pinId): pinId is string => typeof pinId === "string" && pinId.length > 0);
+
+    const directlyLinkedJournalItemIds = linkedInsights
+      .map((insight) => insight.journal_item_id)
+      .filter((journalItemId): journalItemId is string => typeof journalItemId === "string" && journalItemId.length > 0);
+
+    const jsonLinkedJournalItems = await tx.journalItem.findMany({
+      where: {
+        source_links_json: {
+          contains: analysisDocumentId
+        }
+      },
+      select: {
+        id: true,
+        source_links_json: true
+      }
+    });
+
+    const jsonLinkedJournalItemIds = jsonLinkedJournalItems.map((item) => item.id);
+
+    const jsonLinkedPinIds = jsonLinkedJournalItems.flatMap((item) => {
+      try {
+        const parsed = JSON.parse(item.source_links_json) as unknown;
+
+        if (!Array.isArray(parsed)) {
+          return [];
+        }
+
+        return parsed
+          .map((link) => {
+            if (!link || typeof link !== "object") {
+              return null;
+            }
+
+            const candidate = link as { pinId?: unknown; analysisDocumentId?: unknown };
+
+            if (
+              candidate.analysisDocumentId === analysisDocumentId &&
+              typeof candidate.pinId === "string" &&
+              candidate.pinId.length > 0
+            ) {
+              return candidate.pinId;
+            }
+
+            return null;
+          })
+          .filter((pinId): pinId is string => typeof pinId === "string");
+      } catch {
+        return [];
+      }
+    });
+
+    const pinIds = [...new Set([...directlyLinkedPinIds, ...jsonLinkedPinIds])];
+    const journalItemIds = [...new Set([...directlyLinkedJournalItemIds, ...jsonLinkedJournalItemIds])];
+
+    if (journalItemIds.length > 0) {
+      await tx.journalItem.deleteMany({
+        where: {
+          id: {
+            in: journalItemIds
+          }
+        }
+      });
+    }
+
+    if (pinIds.length > 0) {
+      await tx.documentPin.deleteMany({
+        where: {
+          id: {
+            in: pinIds
+          }
+        }
+      });
+    }
+
+    await tx.document.delete({
+      where: { id: analysisDocumentId }
+    });
+
+    return true;
+  });
+}
+
+
