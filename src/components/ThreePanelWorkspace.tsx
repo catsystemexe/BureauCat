@@ -625,6 +625,9 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   function openDocument(document: CaseDocument, pinId: string | null = null) {
     setSelectedDocument(document);
     setTargetDocumentPinId(pinId);
+      window.setTimeout(() => {
+        setTargetDocumentPinId((currentPinId) => currentPinId === pinId ? null : currentPinId);
+      }, 1600);
     setRightPanelMode("document");
     setRightPanelTab("documents");
   }
