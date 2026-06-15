@@ -2049,6 +2049,12 @@ export function DocumentViewPanel({
               <button
                 className={`document-pin-marker${targetPinId === pin.id ? " targeted-document-pin-marker" : ""}${hoveredBookmarkPinId === pin.id ? " hovered-document-pin-marker" : ""}`}
                 key={pin.id}
+                onMouseEnter={() => {
+                  window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: pin.id } }));
+                }}
+                onMouseLeave={() => {
+                  window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: pin.id } }));
+                }}
                 onPointerDown={(event) => {
                   event.stopPropagation();
 
@@ -2193,10 +2199,8 @@ export function DocumentViewPanel({
                   setHoveredPin(null);
                   openPinEditor(pin, rect.right + 12, rect.top);
                 }}
-                onMouseEnter={() => {
-                  // Bookmark hover notes are intentionally disabled.
-                }}
-                onMouseLeave={() => setHoveredPin(null)}
+               
+               
                 style={{
                   "--pin-color": getPinCssColor(pin.color),
                   top: `${pinPositions[pin.id] ?? 0}px`,

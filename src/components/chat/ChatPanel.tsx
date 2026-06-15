@@ -106,6 +106,26 @@ export function ChatPanel({
   const [analysisInsightsError, setAnalysisInsightsError] = useState<string | null>(null);
   const [expandedInsightIds, setExpandedInsightIds] = useState<string[]>([]);
   const [hoveredInsightId, setHoveredInsightId] = useState<string | null>(null);
+  const [externalHoveredBookmarkPinId, setExternalHoveredBookmarkPinId] = useState<string | null>(null);
+
+  useEffect(() => {
+    function handleBookmarkPinHover(event: Event) {
+      const customEvent = event as CustomEvent<{ pinId?: string }>;
+      setExternalHoveredBookmarkPinId(customEvent.detail?.pinId ?? null);
+    }
+
+    function handleBookmarkPinLeave() {
+      setExternalHoveredBookmarkPinId(null);
+    }
+
+    window.addEventListener("bureaucat:bookmark-pin-hover", handleBookmarkPinHover);
+    window.addEventListener("bureaucat:bookmark-pin-leave", handleBookmarkPinLeave);
+
+    return () => {
+      window.removeEventListener("bureaucat:bookmark-pin-hover", handleBookmarkPinHover);
+      window.removeEventListener("bureaucat:bookmark-pin-leave", handleBookmarkPinLeave);
+    };
+  }, []);
 
   const loadMessages = useCallback(async () => {
     const response = await fetch(`/api/cases/${caseItem.id}/messages`, { cache: "no-store" });
@@ -363,9 +383,8 @@ export function ChatPanel({
 
       const isExpanded = expandedInsightIds.includes(range.insight.id);
       const isBookmarkHovered =
-        hoveredBookmarkPinId !== null &&
-        hoveredBookmarkPinId !== undefined &&
-        range.insight.source_pin_id === hoveredBookmarkPinId;
+        ((hoveredBookmarkPinId !== null && hoveredBookmarkPinId !== undefined) || externalHoveredBookmarkPinId !== null) &&
+        range.insight.source_pin_id === (hoveredBookmarkPinId ?? externalHoveredBookmarkPinId);
       const selectedText = text.slice(range.start, range.end);
 
       parts.push(
@@ -373,8 +392,14 @@ export function ChatPanel({
           <button
             className={`analysis-inline-insight analysis-inline-insight-${range.insight.insight_type} analysis-inline-insight-status-${range.insight.status}${isBookmarkHovered ? " analysis-inline-insight-bookmark-hover" : ""}`}
             onClick={() => toggleExpandedInsight(range.insight.id)}
-            onMouseEnter={() => setHoveredInsightId(range.insight.id)}
-            onMouseLeave={() => setHoveredInsightId((currentId) => currentId === range.insight.id ? null : currentId)}
+            onMouseEnter={() => {
+              setHoveredInsightId(range.insight.id);
+              window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-hover", { detail: { insightId: range.insight.id } }));
+            }}
+            onMouseLeave={() => {
+              setHoveredInsightId((currentId) => currentId === range.insight.id ? null : currentId);
+              window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-leave", { detail: { insightId: range.insight.id } }));
+            }}
             title={range.insight.title}
             type="button"
           >

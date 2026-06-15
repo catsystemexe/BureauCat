@@ -54,6 +54,7 @@ type BookmarkSourceLink = {
   documentId: string;
   caseBookmarkNumber: number | null;
   color?: string | null;
+  insightId?: string | null;
 };
 
 function parseBookmarkSourceLinks(sourceLinksJson: string): BookmarkSourceLink[] {
@@ -74,7 +75,8 @@ function parseBookmarkSourceLinks(sourceLinksJson: string): BookmarkSourceLink[]
         typeof candidate.pinId === "string" &&
         typeof candidate.documentId === "string" &&
         (typeof candidate.caseBookmarkNumber === "number" || candidate.caseBookmarkNumber === null) &&
-        (candidate.color === undefined || typeof candidate.color === "string" || candidate.color === null)
+        (candidate.color === undefined || typeof candidate.color === "string" || candidate.color === null) &&
+        (candidate.insightId === undefined || typeof candidate.insightId === "string" || candidate.insightId === null)
       );
     });
   } catch {
@@ -86,12 +88,16 @@ function JournalLinkedBookmarks({
   item,
   onOpenBookmark,
   onBookmarkHover,
-  onBookmarkLeave
+  onBookmarkLeave,
+  highlightedAnalysisInsightId,
+  highlightedBookmarkPinId
 }: {
   item: JournalItem;
   onOpenBookmark?: (documentId: string, pinId: string) => void;
   onBookmarkHover?: (pinId: string) => void;
   onBookmarkLeave?: () => void;
+  highlightedAnalysisInsightId?: string | null;
+  highlightedBookmarkPinId?: string | null;
 }) {
   const bookmarkLinks = parseBookmarkSourceLinks(item.source_links_json);
 
@@ -103,7 +109,7 @@ function JournalLinkedBookmarks({
     <div className="journal-linked-bookmarks" aria-label="Připojené bookmarky">
       {bookmarkLinks.map((link) => (
         <button
-          className="journal-linked-bookmark-marker"
+          className={`journal-linked-bookmark-marker${(highlightedAnalysisInsightId && link.insightId === highlightedAnalysisInsightId) || (highlightedBookmarkPinId && link.pinId === highlightedBookmarkPinId) ? " journal-linked-bookmark-marker-insight-hover" : ""}`}
           data-color={link.color}
           key={`${link.documentId}-${link.pinId}`}
           onClick={() => onOpenBookmark?.(link.documentId, link.pinId)}
@@ -310,7 +316,9 @@ function JournalInlineItem({
   onStartBookmarkLink,
   onUpdate,
   onBookmarkHover,
-  onBookmarkLeave
+  onBookmarkLeave,
+  highlightedAnalysisInsightId,
+  highlightedBookmarkPinId
 }: {
   item: JournalItem;
   forceEdit?: boolean;
@@ -323,6 +331,8 @@ function JournalInlineItem({
   onUpdate: (itemId: string, title: string) => void;
   onBookmarkHover?: (pinId: string) => void;
   onBookmarkLeave?: () => void;
+  highlightedAnalysisInsightId?: string | null;
+  highlightedBookmarkPinId?: string | null;
 }) {
   const [isEditing, setIsEditing] = useState(forceEdit);
   const [draft, setDraft] = useState(forceEdit ? "" : item.title);
@@ -446,6 +456,8 @@ function JournalInlineItem({
             onOpenBookmark={onOpenBookmark}
             onBookmarkHover={onBookmarkHover}
             onBookmarkLeave={onBookmarkLeave}
+            highlightedAnalysisInsightId={highlightedAnalysisInsightId}
+            highlightedBookmarkPinId={highlightedBookmarkPinId}
           />
       </div>
     );
@@ -468,6 +480,8 @@ function JournalInlineItem({
             onOpenBookmark={onOpenBookmark}
             onBookmarkHover={onBookmarkHover}
             onBookmarkLeave={onBookmarkLeave}
+            highlightedAnalysisInsightId={highlightedAnalysisInsightId}
+            highlightedBookmarkPinId={highlightedBookmarkPinId}
           />
         </div>
       </div>
@@ -490,7 +504,9 @@ function AILayer({
   onUpdateItem,
   pendingBookmarkTargetJournalItemId,
   onBookmarkHover,
-  onBookmarkLeave
+  onBookmarkLeave,
+  highlightedAnalysisInsightId,
+  highlightedBookmarkPinId
 }: {
   caseId: string;
   draftItems: DraftJournalItem[];
@@ -506,6 +522,8 @@ function AILayer({
   pendingBookmarkTargetJournalItemId: string | null;
   onBookmarkHover: (pinId: string) => void;
   onBookmarkLeave: () => void;
+  highlightedAnalysisInsightId?: string | null;
+  highlightedBookmarkPinId?: string | null;
 }) {
   return (
     <div className="notebook-layer notebook-ai-layer" aria-label="Zápisník situace">
@@ -534,6 +552,10 @@ function AILayer({
                       onOpenBookmark={onOpenBookmark}
                       onStartBookmarkLink={onStartBookmarkLink}
                       onUpdate={onUpdateItem}
+                      onBookmarkHover={onBookmarkHover}
+                      onBookmarkLeave={onBookmarkLeave}
+                      highlightedAnalysisInsightId={highlightedAnalysisInsightId}
+                      highlightedBookmarkPinId={highlightedBookmarkPinId}
                     />
                   ))}
                   {sectionDraftItems.map((draftItem) => (
@@ -560,6 +582,10 @@ function AILayer({
                       onCreateDraft={onCreateDraftItem}
                       onDiscardDraft={onDiscardDraftItem}
                       onUpdate={onUpdateItem}
+                      onBookmarkHover={onBookmarkHover}
+                      onBookmarkLeave={onBookmarkLeave}
+                      highlightedAnalysisInsightId={highlightedAnalysisInsightId}
+                      highlightedBookmarkPinId={highlightedBookmarkPinId}
                     />
                   ))}
                   <button
@@ -614,6 +640,8 @@ export function JournalPanel({
   selectedSituationId: string | null;
   onBookmarkHover: (pinId: string) => void;
   onBookmarkLeave: () => void;
+  highlightedAnalysisInsightId?: string | null;
+  highlightedBookmarkPinId?: string | null;
 }) {
   const [situations, setSituations] = useState<Situation[]>([]);
   const [isLoadingSituations, setIsLoadingSituations] = useState(true);
@@ -622,6 +650,40 @@ export function JournalPanel({
   const [journalItems, setJournalItems] = useState<JournalItem[]>([]);
   const [draftJournalItems, setDraftJournalItems] = useState<DraftJournalItem[]>([]);
   const [journalError, setJournalError] = useState<string | null>(null);
+  const [highlightedAnalysisInsightId, setHighlightedAnalysisInsightId] = useState<string | null>(null);
+  const [highlightedBookmarkPinId, setHighlightedBookmarkPinId] = useState<string | null>(null);
+
+  useEffect(() => {
+    function handleInsightHover(event: Event) {
+      const customEvent = event as CustomEvent<{ insightId?: string }>;
+      setHighlightedAnalysisInsightId(customEvent.detail?.insightId ?? null);
+    }
+
+    function handleInsightLeave() {
+      setHighlightedAnalysisInsightId(null);
+    }
+
+    function handleBookmarkPinHover(event: Event) {
+      const customEvent = event as CustomEvent<{ pinId?: string }>;
+      setHighlightedBookmarkPinId(customEvent.detail?.pinId ?? null);
+    }
+
+    function handleBookmarkPinLeave() {
+      setHighlightedBookmarkPinId(null);
+    }
+
+    window.addEventListener("bureaucat:analysis-insight-hover", handleInsightHover);
+    window.addEventListener("bureaucat:analysis-insight-leave", handleInsightLeave);
+    window.addEventListener("bureaucat:bookmark-pin-hover", handleBookmarkPinHover);
+    window.addEventListener("bureaucat:bookmark-pin-leave", handleBookmarkPinLeave);
+
+    return () => {
+      window.removeEventListener("bureaucat:analysis-insight-hover", handleInsightHover);
+      window.removeEventListener("bureaucat:analysis-insight-leave", handleInsightLeave);
+      window.removeEventListener("bureaucat:bookmark-pin-hover", handleBookmarkPinHover);
+      window.removeEventListener("bureaucat:bookmark-pin-leave", handleBookmarkPinLeave);
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -916,6 +978,8 @@ export function JournalPanel({
           onStartBookmarkLink={onStartBookmarkLink}
           onUpdateItem={handleUpdateJournalItem}
           pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
+          highlightedAnalysisInsightId={highlightedAnalysisInsightId}
+          highlightedBookmarkPinId={highlightedBookmarkPinId}
           onBookmarkHover={onBookmarkHover}
           onBookmarkLeave={onBookmarkLeave}
         />
