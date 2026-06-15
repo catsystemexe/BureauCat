@@ -247,7 +247,7 @@ export async function createMockAnalysisDocument(sourceDocumentId: string) {
     "";
 
   const sourceTitle = getDocumentTitle(sourceDocument);
-  const analysisTitle = `Analýza: ${sourceTitle}`;
+  const analysisTitle = `${sourceTitle}`;
 
   const ranges = [
     clampRange(sourceText, 0, Math.min(160, sourceText.length)),
@@ -259,34 +259,30 @@ export async function createMockAnalysisDocument(sourceDocumentId: string) {
   const riskLine = "- Testovací riziko pro ověření AI evidence vrstvy.";
   const questionLine = "- Jaké informace v dokumentu chybí?";
 
-  const markdown = `# ${analysisTitle}
-
-## 1. Identifikace dokumentu
+  const markdown = `## Identifikace
 
 Mock analýza vytvořená nad dokumentem: **${sourceTitle}**.
 
-## 2. Klíčové osoby a instituce
-
 Zatím mock položka. Skutečná AI extrakce bude doplněna později.
 
-## 3. Stručné shrnutí
+## Stručné shrnutí
 
 Toto je testovací analýza pro ověření workflow: vytvoření meta dokumentu, otevření floating panelu a vytvoření insightů navázaných na range v původním dokumentu.
 
-## 4. Klíčové skutečnosti
+## Klíčové skutečnosti
 
 ${factLine}
 - Testovací tvrzení navázané na další část dokumentu.
 
-## 5. Paragrafy a právní odkazy
+## Paragrafy a právní odkazy
 
 - Zatím bez skutečné právní extrakce.
 
-## 6. Rizika a důležité termíny
+## Rizika a důležité termíny
 
 ${riskLine}
 
-## 7. Otázky
+## Otázky
 
 ${questionLine}
 - Jaká lhůta nebo povinnost z dokumentu plyne?

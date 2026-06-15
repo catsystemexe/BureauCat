@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BookmarkCheck, Check, Trash2 } from "lucide-react";
+import { BookmarkCheck, Brain, Check, Download, Trash2 } from "lucide-react";
 import { MeetingPrepButton } from "@/components/chat/MeetingPrepButton";
 import { MeetingPrepCard } from "@/components/chat/MeetingPrepCard";
 import { MessageComposer } from "@/components/chat/MessageComposer";
@@ -350,6 +350,50 @@ export function ChatPanel({
     );
   }
 
+  function renderAnalysisPlainTextSegment(segment: string, keyPrefix: string) {
+    const normalizedSegment = segment
+      .replace(/\r\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/(^|\n)##\s+/g, "$1## ");
+
+    const lines = normalizedSegment.split("\n");
+    const parts: React.ReactNode[] = [];
+
+    for (let index = 0; index < lines.length; index += 1) {
+      const rawLine = lines[index];
+      const line = rawLine.trim();
+
+      if (!line) {
+        continue;
+      }
+
+      if (line.startsWith("## ")) {
+        if (parts.length > 0) {
+          parts.push("\n\n");
+        }
+
+        parts.push(
+          <span className="analysis-category-heading" key={`${keyPrefix}-heading-${index}`}>
+            {line.replace(/^##\s+/, "")}
+          </span>
+        );
+
+        parts.push("\n\n");
+        continue;
+      }
+
+      parts.push(rawLine.replace(/^##\s+/, ""));
+
+      const nextLine = lines[index + 1]?.trim();
+
+      if (nextLine && !nextLine.startsWith("## ")) {
+        parts.push("\n");
+      }
+    }
+
+    return parts;
+  }
+
   useEffect(() => {
     const expandedInsights = expandedInsightIds
       .map((id) => analysisInsights.find((insight) => insight.id === id))
@@ -382,9 +426,52 @@ export function ChatPanel({
     };
   }, [analysisInsights, expandedInsightIds]);
 
-  function renderAnalysisTextWithInlineInsights(text: string) {
+  function splitAnalysisMarkdownSections(text: string) {
+    const normalizedText = text
+      .replace(/\r\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n");
+
+    const matches = [...normalizedText.matchAll(/^##\s+(.+)$/gm)];
+
+    return matches.map((match, index) => {
+      const headingStart = match.index ?? 0;
+      const headingText = match[0];
+      const title = match[1].trim();
+      const bodyStart = headingStart + headingText.length;
+      const nextHeadingStart = matches[index + 1]?.index ?? normalizedText.length;
+      const rawBody = normalizedText.slice(bodyStart, nextHeadingStart);
+      const bodyTrimStart = rawBody.match(/^\n*/)?.[0].length ?? 0;
+      const body = rawBody.trim();
+
+      return {
+        title,
+        body,
+        bodyStartOffset: bodyStart + bodyTrimStart
+      };
+    });
+  }
+
+  function renderAnalysisStructuredText(text: string) {
+    return (
+      <div className="analysis-section-list">
+        {splitAnalysisMarkdownSections(text).map((section) => (
+          <section className="analysis-section-block" key={section.title}>
+            <h4 className="analysis-section-title">{section.title}</h4>
+            <div className="analysis-section-body">
+              {renderAnalysisTextWithInlineInsights(section.body, section.bodyStartOffset)}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  }
+
+  function renderAnalysisTextWithInlineInsights(text: string, baseOffset = 0) {
+    const normalizedAnalysisText = text
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/(^|\n)##\s+/g, "$1## ");
     
-    console.log("TEXT LENGTH", text.length);
+    console.log("TEXT LENGTH", normalizedAnalysisText.length);
 
     console.log(
       "ALL INSIGHTS",
@@ -404,13 +491,13 @@ export function ChatPanel({
           insight.analysis_start_offset !== null &&
           insight.analysis_end_offset !== null &&
           insight.analysis_end_offset > insight.analysis_start_offset &&
-          insight.analysis_start_offset >= 0 &&
-          insight.analysis_end_offset <= text.length
+          insight.analysis_start_offset >= baseOffset &&
+          insight.analysis_end_offset <= baseOffset + normalizedAnalysisText.length
       )
       .map((insight) => ({
         insight,
-        start: insight.analysis_start_offset!,
-        end: insight.analysis_end_offset!
+        start: insight.analysis_start_offset! - baseOffset,
+        end: insight.analysis_end_offset! - baseOffset
       }))
       .sort((a, b) => a.start - b.start);
 
@@ -422,7 +509,7 @@ export function ChatPanel({
         i.insight.title,
         i.start,
         i.end,
-        text.slice(i.start, i.end)
+        normalizedAnalysisText.slice(i.start, i.end)
       );
     });
     
@@ -435,14 +522,14 @@ export function ChatPanel({
 
     for (const range of inlineInsights) {
       if (range.start > cursor) {
-        parts.push(text.slice(cursor, range.start));
+        parts.push(...renderAnalysisPlainTextSegment(normalizedAnalysisText.slice(cursor, range.start), `plain-${cursor}`));
       }
 
       const isExpanded = expandedInsightIds.includes(range.insight.id);
       const isBookmarkHovered =
         ((hoveredBookmarkPinId !== null && hoveredBookmarkPinId !== undefined) || externalHoveredBookmarkPinId !== null) &&
         range.insight.source_pin_id === (hoveredBookmarkPinId ?? externalHoveredBookmarkPinId);
-      const selectedText = text.slice(range.start, range.end);
+      const selectedText = normalizedAnalysisText.slice(range.start, range.end);
 
       parts.push(
         <span className="analysis-inline-insight-wrap" key={range.insight.id}>
@@ -530,7 +617,7 @@ export function ChatPanel({
     }
 
     if (cursor < text.length) {
-      parts.push(text.slice(cursor));
+      parts.push(...renderAnalysisPlainTextSegment("\n\n" + normalizedAnalysisText.slice(cursor), `plain-${cursor}`));
     }
 
     return parts;
@@ -709,16 +796,29 @@ export function ChatPanel({
       {activeAnalysisDocument ? (
         <section className="analysis-floating-panel" aria-label="Inspekce analýzy dokumentu">
           <header className="analysis-floating-header">
-            <div>
-              <p>Analýza dokumentu</p>
-              <h3>{activeAnalysisDocument.display_name ?? activeAnalysisDocument.filename}</h3>
-              <span className="analysis-pending-counter">
-                {analysisInsights.filter((insight) => insight.status === "pending").length > 0
-                  ? `${analysisInsights.filter((insight) => insight.status === "pending").length} čeká na rozhodnutí`
-                  : "Všechny insighty vyřešeny"}
-              </span>
+            <div className="analysis-floating-title-block">
+              <Brain className="analysis-floating-title-icon" aria-hidden="true" />
+              <div className="analysis-floating-title-text">
+                <h3>
+                  {(
+                    activeAnalysisDocument.display_name ??
+                    activeAnalysisDocument.filename
+                  ).replace(/^Analýza:\s*/i, "")}
+                </h3>
+
+              </div>
             </div>
             <div className="analysis-floating-header-actions">
+              <button
+                type="button"
+                title="Export analýzy"
+                onClick={() => {
+                  setAnalysisInsightsError("Export analýzy bude doplněn později.");
+                }}
+              >
+                <Download size={16} />
+              </button>
+
               <button
                 type="button"
                 title="Smazat analýzu"
@@ -742,19 +842,26 @@ export function ChatPanel({
               </button>
             </div>
           </header>
+          <div className="analysis-floating-subheader">
+            <span className="analysis-pending-counter">
+              {analysisInsights.filter((insight) => insight.status === "pending").length > 0
+                ? `${analysisInsights.filter((insight) => insight.status === "pending").length} čeká na rozhodnutí`
+                : "Všechny insighty vyřešeny"}
+            </span>
+          </div>
           <div className="analysis-floating-content">
             {analysisInsightsError ? (
               <p className="analysis-insight-error">{analysisInsightsError}</p>
             ) : null}
 
-            <pre className="analysis-floating-text">
-              {renderAnalysisTextWithInlineInsights(
+            <div className="analysis-floating-text">
+              {renderAnalysisStructuredText(
                 activeAnalysisDocument.processed_markdown ??
                   activeAnalysisDocument.processed_text ??
                   activeAnalysisDocument.extracted_text ??
                   "Analýza neobsahuje text."
               )}
-            </pre>
+            </div>
           </div>
         </section>
       ) : null}

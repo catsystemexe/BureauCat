@@ -591,3 +591,247 @@
   background: color-mix(in srgb, var(--insight-link-color, #22c55e) 14%, transparent) !important;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--insight-link-color, #22c55e) 22%, transparent) !important;
 }
+
+/* === ANALYSIS HEADER V2 === */
+
+.analysis-floating-title-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.analysis-floating-title-icon {
+  margin-top: 3px;
+}
+
+.analysis-floating-title-icon {
+  color: #d18b38;
+  flex: 0 0 auto;
+  height: 18px;
+  width: 18px;
+  stroke-width: 2.4;
+}
+
+.analysis-floating-title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.analysis-pending-counter {
+  margin-top: 0;
+  font-size: 0.82rem;
+}
+
+.analysis-floating-title-text h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analysis-floating-header-actions button svg {
+  height: 16px;
+  width: 16px;
+  stroke-width: 2.4;
+}
+
+/* === ANALYSIS SUBHEADER STATUS === */
+
+.analysis-floating-subheader {
+  align-items: center;
+  border: 0 !important;
+  display: flex;
+  justify-content: flex-end;
+  min-height: 28px;
+  padding: 4px 14px;
+
+}
+
+.analysis-floating-subheader .analysis-pending-counter {
+  margin-top: 0 !important;
+  text-align: right;
+}
+
+/* === ANALYSIS TEXT COMPACT CATEGORY RHYTHM FINAL === */
+
+.analysis-floating-subheader {
+  min-height: 22px !important;
+  padding: 2px 14px 0 !important;
+}
+
+.analysis-floating-content {
+  padding-top: 6px !important;
+}
+
+.analysis-category-heading {
+  color: #d18b38 !important;
+  display: inline-block !important;
+  font-weight: 850 !important;
+  line-height: 1.25 !important;
+  margin: 10px 0 0 !important;
+}
+
+/* === ANALYSIS CATEGORY SPACING FINAL === */
+
+.analysis-floating-text {
+  line-height: 1.38 !important;
+}
+
+.analysis-category-heading {
+  color: #d18b38 !important;
+  display: inline-block !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+  margin: 14px 0 2px !important;
+}
+
+.analysis-category-heading + br,
+.analysis-category-heading + span {
+  margin-top: 0 !important;
+}
+
+/* === FINAL FIX: ANALYSIS CATEGORY NO EXTRA VISUAL GAP === */
+
+.analysis-floating-text {
+  line-height: 1.32 !important;
+}
+
+.analysis-category-heading {
+  color: #d18b38 !important;
+  display: inline !important;
+  font-weight: 850 !important;
+  line-height: inherit !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* === FINAL: ANALYSIS CONTENT SPACING HARD OVERRIDE === */
+
+.analysis-floating-content {
+  display: block !important;
+  gap: 0 !important;
+  padding-top: 6px !important;
+}
+
+.analysis-floating-content > pre,
+.analysis-floating-text {
+  line-height: 1.28 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: pre-wrap !important;
+}
+
+.analysis-category-heading {
+  color: #d18b38 !important;
+  display: inline !important;
+  font-weight: 850 !important;
+  line-height: inherit !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* === FINAL FINAL: ANALYSIS TEXT RHYTHM === */
+
+.analysis-floating-content {
+  display: block !important;
+  gap: 0 !important;
+  padding: 6px 14px 14px !important;
+}
+
+.analysis-floating-text {
+  line-height: 1.28 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: pre-wrap !important;
+}
+
+.analysis-category-heading {
+  color: #d18b38 !important;
+  display: inline !important;
+  font-weight: 850 !important;
+  line-height: inherit !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* === ANALYSIS TEXT CLEAN FINAL === */
+
+.analysis-floating-text,
+.analysis-floating-text * {
+  color: #1d1d1b !important;
+}
+
+.analysis-category-heading {
+  color: #d18b38 !important;
+  display: inline !important;
+  font-weight: 850 !important;
+}
+
+.analysis-inline-insight {
+  color: #1d1d1b !important;
+}
+
+/* === ANALYSIS PANEL FULL HEIGHT FINAL === */
+
+.analysis-floating-panel {
+  bottom: 14px !important;
+  max-height: none !important;
+}
+
+.analysis-floating-content {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+/* === FIX: ANALYSIS CATEGORY MUST START NEW BLOCK === */
+
+.analysis-category-heading {
+  color: #d18b38 !important;
+  display: block !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+  margin: 18px 0 10px !important;
+  padding: 0 !important;
+}
+
+.analysis-floating-text .analysis-category-heading:first-child {
+  margin-top: 0 !important;
+}
+
+/* === ANALYSIS STRUCTURED SECTION LAYOUT FINAL === */
+
+.analysis-section-list {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.analysis-section-block {
+  display: grid !important;
+  gap: 5px !important;
+  margin: 0 !important;
+}
+
+.analysis-section-title {
+  color: #d18b38 !important;
+  font-size: 15px !important;
+  font-weight: 650 !important;
+  line-height: 1.25 !important;
+  margin: 0 !important;
+}
+
+.analysis-section-body {
+  color: #1d1d1b !important;
+  font-size: 15px !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+  white-space: pre-wrap !important;
+}
+
+.analysis-floating-text {
+  white-space: normal !important;
+}
+
+.analysis-category-heading {
+  display: none !important;
+}
