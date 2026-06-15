@@ -295,3 +295,216 @@
 }
 
 /* === DOCUMENT REVIEW WORKFLOW V03 END === */
+
+/* === ORIGINAL PREVIEW PORTAL VISIBILITY FIX === */
+
+.document-original-overlay {
+  position: fixed !important;
+  z-index: 9999 !important;
+  background: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border: 1px solid #e5e2dc !important;
+  border-radius: 18px !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32) !important;
+  min-width: 420px !important;
+  min-height: 320px !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100vh - 32px) !important;
+}
+
+.document-original-frame {
+  border: 0 !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  background: #ffffff !important;
+}
+
+/* === ORIGINAL DOCX PREVIEW SCROLL + PADDING FINAL === */
+
+.document-original-docx-preview {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  padding: 16px 18px 20px !important;
+}
+
+.document-original-docx-preview-note {
+  background: #fff8dc !important;
+  border: 1px solid #f3d99b !important;
+  border-radius: 10px !important;
+  color: #3f3f46 !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  margin: 0 0 14px !important;
+  padding: 10px 12px !important;
+}
+
+.document-original-docx-preview-note a {
+  color: #0869d7 !important;
+  font-weight: 750 !important;
+  white-space: nowrap !important;
+}
+
+.document-original-docx-preview-text {
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  box-sizing: border-box !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+  font-size: 0.9rem !important;
+  line-height: 1.55 !important;
+  margin: 0 !important;
+  min-height: 100% !important;
+  overflow-wrap: anywhere !important;
+  padding: 18px 20px !important;
+  white-space: pre-wrap !important;
+}
+
+.document-original-docx-preview-empty {
+  background: #ffffff !important;
+  color: #374151 !important;
+  padding: 24px !important;
+}
+
+/* === ORIGINAL PREVIEW HEADER ANALYSIS STYLE FINAL === */
+
+.document-original-overlay-header {
+  align-items: center !important;
+  border-bottom: 1px solid #e5e2dc !important;
+  display: flex !important;
+  gap: 16px !important;
+  justify-content: space-between !important;
+  min-height: 56px !important;
+  padding: 10px 18px !important;
+}
+
+.document-original-title-block {
+  align-items: center !important;
+  display: flex !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+.document-original-title-icon {
+  color: #0869d7 !important;
+  flex: 0 0 auto !important;
+  height: 24px !important;
+  stroke-width: 2.4 !important;
+  width: 24px !important;
+}
+
+.document-original-title-block strong {
+  color: #1d1d1b !important;
+  font-size: 1.02rem !important;
+  font-weight: 850 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.document-original-window-controls {
+  align-items: center !important;
+  display: flex !important;
+  flex: 0 0 auto !important;
+  gap: 10px !important;
+}
+
+.document-original-icon-button {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #0869d7 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  height: 34px !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  width: 34px !important;
+}
+
+.document-original-icon-button svg {
+  height: 22px !important;
+  stroke-width: 2.5 !important;
+  width: 22px !important;
+}
+
+.document-original-icon-button:hover,
+.document-original-icon-button:focus-visible {
+  background: #eef5ff !important;
+  border-radius: 999px !important;
+  outline: none !important;
+}
+
+.document-original-close-button {
+  color: #6f7780 !important;
+  margin-left: 8px !important;
+}
+
+.document-original-close-button:hover,
+.document-original-close-button:focus-visible {
+  background: #f2f4f7 !important;
+}
+
+.document-original-zoom-label {
+  color: #4b5563 !important;
+  font-size: 0.84rem !important;
+  font-weight: 750 !important;
+  min-width: 44px !important;
+  text-align: center !important;
+}
+
+/* === ORIGINAL PREVIEW REMOVE INNER FRAMES FINAL === */
+
+.document-original-docx-preview {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.document-original-docx-preview-note {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.document-original-docx-preview-text {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 18px 0 20px !important;
+}
+
+/* === ORIGINAL VIEW TYPOGRAPHY POLISH === */
+
+.document-original-title-block strong {
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.document-original-docx-preview-note {
+  background: #fff9db !important;
+  border-radius: 8px !important;
+  color: #6b7280 !important;
+  font-size: 0.78rem !important;
+  line-height: 1.4 !important;
+  padding: 8px 10px !important;
+}
+
+.document-original-docx-preview-note a {
+  font-size: 0.78rem !important;
+}
+
+.document-original-docx-preview-text {
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: 0.92rem !important;
+  line-height: 1.65 !important;
+  font-weight: 400 !important;
+}

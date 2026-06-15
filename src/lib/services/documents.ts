@@ -330,7 +330,7 @@ ${questionLine}
         target_section: "description",
         target_item_type: "FACT",
         title: "Testovací klíčová skutečnost",
-        content: "Mock poznatek vytvořený z analyzovaného dokumentu.",
+        content: null,
         range: ranges[0],
         analysisRange: findAnalysisRange(factLine)
       },

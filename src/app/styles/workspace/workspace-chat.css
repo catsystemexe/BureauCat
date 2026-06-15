@@ -835,3 +835,105 @@
 .analysis-category-heading {
   display: none !important;
 }
+
+/* === ANALYSIS INSIGHT UNDERLINE ONLY ON HOVER / ACTIVE LINK === */
+
+.analysis-section-body .analysis-inline-insight {
+  border-bottom-color: transparent !important;
+  border-bottom-style: dashed !important;
+  border-bottom-width: 2px !important;
+  box-shadow: none !important;
+}
+
+.analysis-section-body .analysis-inline-insight:hover,
+.analysis-section-body .analysis-inline-insight:focus-visible,
+.analysis-section-body .analysis-inline-insight-bookmark-hover {
+  border-bottom-color: var(--insight-link-color, #22c55e) !important;
+  background: color-mix(in srgb, var(--insight-link-color, #22c55e) 10%, transparent) !important;
+}
+
+/* === ANALYSIS INSIGHT: NO UNDERLINE, HOVER HIGHLIGHT ONLY === */
+
+.analysis-section-body .analysis-inline-insight {
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+.analysis-section-body .analysis-inline-insight:hover,
+.analysis-section-body .analysis-inline-insight:focus-visible,
+.analysis-section-body .analysis-inline-insight-bookmark-hover {
+  border-bottom: none !important;
+  box-shadow: none !important;
+  background: color-mix(in srgb, var(--insight-link-color, #22c55e) 14%, transparent) !important;
+}
+
+
+/* === EXPANDED ANALYSIS INSIGHT MINIMAL FINAL === */
+
+.analysis-inline-insight-detail {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: block !important;
+  gap: 0 !important;
+  margin: 6px 0 10px !important;
+  padding: 0 !important;
+  white-space: normal !important;
+}
+
+.analysis-inline-insight-meta,
+.analysis-inline-insight-title {
+  display: none !important;
+}
+
+.analysis-inline-insight-content,
+.analysis-inline-insight-source {
+  background: transparent !important;
+  border: 0 !important;
+  border-left: 2px solid #d18b38 !important;
+  color: #1d1d1b !important;
+  display: block !important;
+  margin: 4px 0 !important;
+  padding: 2px 0 2px 9px !important;
+  white-space: pre-wrap !important;
+}
+
+/* === EXPANDED ANALYSIS INSIGHT ACTIVE SHADOW + TYPE COLOR === */
+
+.analysis-inline-insight-detail {
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.12) !important;
+}
+
+.analysis-inline-insight-content,
+.analysis-inline-insight-source {
+  border-left-color: var(--insight-link-color, #d18b38) !important;
+}
+
+.analysis-section-body .analysis-inline-insight.analysis-inline-insight-bookmark-hover {
+  background: color-mix(in srgb, var(--insight-link-color, #22c55e) 14%, transparent) !important;
+}
+
+/* === EXPANDED ANALYSIS INSIGHT COMFORT SPACING FINAL === */
+
+.analysis-inline-insight-detail {
+  border-radius: 8px !important;
+  box-shadow: 0 8px 22px rgba(29, 29, 27, 0.12) !important;
+  margin: 8px 0 12px !important;
+  padding: 7px 11px !important;
+}
+
+.analysis-inline-insight-source {
+  margin: 0 !important;
+  padding: 6px 0 6px 13px !important;
+}
+
+/* === EXPANDED INSIGHT SOFTER VERTICAL TYPE LINE === */
+
+.analysis-inline-insight-source {
+  border-left-color: color-mix(
+    in srgb,
+    var(--insight-link-color, #22c55e) 42%,
+    white
+  ) !important;
+}

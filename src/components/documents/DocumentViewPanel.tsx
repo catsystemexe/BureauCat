@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Brain,
@@ -8,6 +9,9 @@ import {
   Eraser,
   Eye,
   Highlighter,
+  ZoomIn,
+  ZoomOut,
+  X,
   Maximize2,
   MessageCircle,
   Move,
@@ -131,8 +135,8 @@ export function DocumentViewPanel({
   const [originalWindow, setOriginalWindow] = useState({
     x: 24,
     y: 96,
-    width: 760,
-    height: 620,
+    width: 960,
+    height: 720,
     zoom: 1
   });
 
@@ -1688,7 +1692,7 @@ export function DocumentViewPanel({
         </p>
       ) : null}
 
-      {isOriginalVisible ? (
+      {isOriginalVisible && typeof window !== "undefined" ? createPortal((
         <div
           className="document-original-overlay"
           role="dialog"
@@ -1707,19 +1711,45 @@ export function DocumentViewPanel({
             onPointerUp={handleOriginalDragEnd}
             onPointerCancel={handleOriginalDragEnd}
           >
-            <strong>Originál: {currentDocument.filename}</strong>
+            <div className="document-original-title-block">
+              <Eye className="document-original-title-icon" aria-hidden="true" />
+              <strong>{currentDocument.filename}</strong>
+            </div>
+
             <div className="document-original-window-controls">
               {currentDocument.filetype !== "pdf" ? (
                 <>
-                  <button type="button" onClick={() => zoomOriginalWindow(-0.1)}>− zoom</button>
-                  <button type="button" onClick={() => zoomOriginalWindow(0.1)}>+ zoom</button>
-                  <span>{Math.round(originalWindow.zoom * 100)}%</span>
+                  <button
+                    aria-label="Přiblížit originál"
+                    className="document-original-icon-button"
+                    onClick={() => zoomOriginalWindow(0.1)}
+                    title="Přiblížit"
+                    type="button"
+                  >
+                    <ZoomIn aria-hidden="true" />
+                  </button>
+                  <button
+                    aria-label="Oddálit originál"
+                    className="document-original-icon-button"
+                    onClick={() => zoomOriginalWindow(-0.1)}
+                    title="Oddálit"
+                    type="button"
+                  >
+                    <ZoomOut aria-hidden="true" />
+                  </button>
+                  <span className="document-original-zoom-label">{Math.round(originalWindow.zoom * 100)}%</span>
                 </>
               ) : (
-                <span>Zoom použij v PDF toolbaru</span>
+                <span className="document-original-zoom-label">PDF toolbar</span>
               )}
-              <button className="secondary-action" onClick={() => setIsOriginalVisible(false)} type="button">
-                Zavřít
+              <button
+                aria-label="Zavřít originál"
+                className="document-original-icon-button document-original-close-button"
+                onClick={() => setIsOriginalVisible(false)}
+                title="Zavřít"
+                type="button"
+              >
+                <X aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -1806,7 +1836,7 @@ export function DocumentViewPanel({
             onPointerCancel={handleOriginalResizeEnd}
           />
         </div>
-      ) : null}
+      ), document.body) : null}
 
       <section className="document-view-section document-content-section" aria-label="Obsah dokumentu">
         <div className="document-annotation-toolbar" aria-label="Anotace dokumentu">

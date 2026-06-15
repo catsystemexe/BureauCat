@@ -532,10 +532,13 @@ export function ChatPanel({
       const selectedText = normalizedAnalysisText.slice(range.start, range.end);
 
       parts.push(
-        <span className="analysis-inline-insight-wrap" key={range.insight.id}>
+        <span
+          className="analysis-inline-insight-wrap"
+          key={range.insight.id}
+          style={{ "--insight-link-color": getAnalysisInsightColor(range.insight.insight_type) } as React.CSSProperties}
+        >
           <button
-            className={`analysis-inline-insight analysis-inline-insight-${range.insight.insight_type} analysis-inline-insight-status-${range.insight.status}${isBookmarkHovered ? " analysis-inline-insight-bookmark-hover" : ""}`}
-            style={{ "--insight-link-color": getAnalysisInsightColor(range.insight.insight_type) } as React.CSSProperties}
+            className={`analysis-inline-insight analysis-inline-insight-${range.insight.insight_type} analysis-inline-insight-status-${range.insight.status}${isBookmarkHovered || isExpanded ? " analysis-inline-insight-bookmark-hover" : ""}`}
             onClick={() => toggleExpandedInsight(range.insight.id)}
             onMouseEnter={() => {
               setHoveredInsightId(range.insight.id);
@@ -595,19 +598,9 @@ export function ChatPanel({
             </span>
           ) : null}
 
-          {isExpanded ? (
+          {isExpanded && range.insight.source_text ? (
             <span className="analysis-inline-insight-detail">
-              <span className="analysis-inline-insight-meta">
-                <strong>{getAnalysisInsightLabel(range.insight.insight_type)}</strong>
-                <em>{getAnalysisInsightStatusLabel(range.insight.status)}</em>
-              </span>
-              <span className="analysis-inline-insight-title">{range.insight.title}</span>
-              {range.insight.content ? (
-                <span className="analysis-inline-insight-content">{range.insight.content}</span>
-              ) : null}
-              {range.insight.source_text ? (
-                <span className="analysis-inline-insight-source">{range.insight.source_text}</span>
-              ) : null}
+              <span className="analysis-inline-insight-source">{range.insight.source_text}</span>
             </span>
           ) : null}
         </span>
