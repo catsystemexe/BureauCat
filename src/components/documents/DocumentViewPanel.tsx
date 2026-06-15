@@ -99,6 +99,14 @@ function getNoteCssColor(value: string | null | undefined) {
   return getHighlightCssColor(value ?? "yellow");
 }
 
+function getInsightLinkColor(type: string) {
+  if (type === "risk") return "#f97316";
+  if (type === "question") return "#7c3aed";
+  if (type === "legal_reference") return "#0f766e";
+  if (type === "term") return "#475569";
+  return "#22c55e";
+}
+
 export function DocumentViewPanel({
   document: initialDocument,
   activeAnalysisInsights = [],
@@ -168,6 +176,8 @@ export function DocumentViewPanel({
   const [editingPinId, setEditingPinId] = useState<string | null>(null);
   const [pinNote, setPinNote] = useState("");
   const [pinEditorPosition, setPinEditorPosition] = useState<{ x: number; y: number } | null>(null);
+  const [expandedLinkedPinIds, setExpandedLinkedPinIds] = useState<string[]>([]);
+  const [externallyHoveredBookmarkPinId, setExternallyHoveredBookmarkPinId] = useState<string | null>(null);
   const [hoveredPin, setHoveredPin] = useState<{
     pin: DocumentPin;
     x: number;
@@ -331,6 +341,38 @@ export function DocumentViewPanel({
       window.removeEventListener("bureaucat:document-pins-refresh", handleDocumentPinsRefresh);
     };
   }, [initialDocument.id]);
+
+  useEffect(() => {
+    function handleBookmarkPinHover(event: Event) {
+      const customEvent = event as CustomEvent<{ pinId?: string }>;
+      setExternallyHoveredBookmarkPinId(customEvent.detail?.pinId ?? null);
+    }
+
+    function handleBookmarkPinLeave() {
+      setExternallyHoveredBookmarkPinId(null);
+    }
+
+    window.addEventListener("bureaucat:bookmark-pin-hover", handleBookmarkPinHover);
+    window.addEventListener("bureaucat:bookmark-pin-leave", handleBookmarkPinLeave);
+
+    return () => {
+      window.removeEventListener("bureaucat:bookmark-pin-hover", handleBookmarkPinHover);
+      window.removeEventListener("bureaucat:bookmark-pin-leave", handleBookmarkPinLeave);
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleExpandedInsightLinksChange(event: Event) {
+      const customEvent = event as CustomEvent<{ pinIds?: string[] }>;
+      setExpandedLinkedPinIds(Array.isArray(customEvent.detail?.pinIds) ? customEvent.detail.pinIds : []);
+    }
+
+    window.addEventListener("bureaucat:expanded-insight-links-change", handleExpandedInsightLinksChange);
+
+    return () => {
+      window.removeEventListener("bureaucat:expanded-insight-links-change", handleExpandedInsightLinksChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isAnnotationNoteOpen && !isPinEditorOpen) {
@@ -573,6 +615,7 @@ export function DocumentViewPanel({
             <span
               className={`document-insight-range document-insight-range-${activeInsight.insight.insight_type}`}
               key={`insight-${activeInsight.insight.id}-${index}-${start}`}
+              style={{ "--insight-link-color": getInsightLinkColor(activeInsight.insight.insight_type) } as React.CSSProperties}
               title={activeInsight.insight.title}
             >
               {segmentNode}
@@ -2047,7 +2090,7 @@ export function DocumentViewPanel({
           <div className="document-pin-layer" aria-label="Piny dokumentu">
             {orderedPins.map((pin) => (
               <button
-                className={`document-pin-marker${targetPinId === pin.id ? " targeted-document-pin-marker" : ""}${hoveredBookmarkPinId === pin.id ? " hovered-document-pin-marker" : ""}`}
+                className={`document-pin-marker${targetPinId === pin.id ? " targeted-document-pin-marker" : ""}${hoveredBookmarkPinId === pin.id || externallyHoveredBookmarkPinId === pin.id || hoveredPin?.pin.id === pin.id || expandedLinkedPinIds.includes(pin.id) ? " hovered-document-pin-marker" : ""}`}
                 key={pin.id}
                 onMouseEnter={() => {
                   window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: pin.id } }));

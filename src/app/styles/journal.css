@@ -621,3 +621,93 @@
   filter: brightness(1.12) !important;
   transform: translateY(-1px) scale(1.04) !important;
 }
+
+/* === DOCUMENT BOOKMARK LINK HOVER / EXPANDED INSIGHT === */
+
+.hovered-document-pin-marker {
+  outline: 2px dashed var(--pin-color, #3b82f6) !important;
+  outline-offset: 4px !important;
+  border-radius: 9px !important;
+  filter: brightness(1.12) !important;
+  transform: translateY(-1px) scale(1.04) !important;
+}
+
+/* === DOCUMENT BOOKMARK LINK HOVER / EXPANDED INSIGHT === */
+
+.hovered-document-pin-marker {
+  outline: 2px dashed var(--pin-color, #3b82f6) !important;
+  outline-offset: 4px !important;
+  border-radius: 9px !important;
+  filter: brightness(1.12) !important;
+  transform: translateY(-1px) scale(1.04) !important;
+}
+
+/* === LINKED BOOKMARK HOVER POLISH === */
+
+.journal-linked-bookmark-marker-insight-hover {
+  border-radius: 0 !important;
+  outline: 2px dashed var(--bookmark-color, #3b82f6) !important;
+  outline-offset: 4px !important;
+  transform: none !important;
+}
+
+.hovered-document-pin-marker {
+  border-radius: 0 !important;
+  outline: 2px dashed var(--pin-color, #3b82f6) !important;
+  outline-offset: 4px !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+.document-pin-marker.hovered-document-pin-marker,
+.document-pin-marker.hovered-document-pin-marker:hover,
+.document-pin-marker.hovered-document-pin-marker:focus-visible {
+  border-color: var(--pin-color, #3b82f6) !important;
+  box-shadow: none !important;
+  outline: 2px dashed var(--pin-color, #3b82f6) !important;
+  outline-offset: 4px !important;
+  transform: none !important;
+}
+
+/* === HARD LOCK DOCUMENT PIN POSITION ON HOVER === */
+
+.document-pin-marker,
+.document-pin-marker:hover,
+.document-pin-marker:focus,
+.document-pin-marker:focus-visible,
+.document-pin-marker.hovered-document-pin-marker,
+.document-pin-marker.hovered-document-pin-marker:hover,
+.document-pin-marker.hovered-document-pin-marker:focus,
+.document-pin-marker.hovered-document-pin-marker:focus-visible {
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+}
+
+.document-pin-marker.hovered-document-pin-marker,
+.document-pin-marker.hovered-document-pin-marker:hover,
+.document-pin-marker.hovered-document-pin-marker:focus-visible {
+  outline: 2px dashed var(--pin-color, #3b82f6) !important;
+  outline-offset: 4px !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* === UNIFIED LINK COLOR: BOOKMARK / ANALYSIS / DOCUMENT RANGE === */
+
+.analysis-inline-insight {
+  border-bottom-color: var(--insight-link-color, #22c55e) !important;
+}
+
+.analysis-inline-insight-bookmark-hover,
+.analysis-inline-insight:hover,
+.analysis-inline-insight:focus-visible {
+  background: color-mix(in srgb, var(--insight-link-color, #22c55e) 14%, transparent) !important;
+  border-bottom-color: var(--insight-link-color, #22c55e) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--insight-link-color, #22c55e) 22%, transparent) !important;
+}
+
+.document-insight-range {
+  outline-color: var(--insight-link-color, #22c55e) !important;
+}

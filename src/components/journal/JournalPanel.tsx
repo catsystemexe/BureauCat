@@ -113,8 +113,20 @@ function JournalLinkedBookmarks({
           data-color={link.color}
           key={`${link.documentId}-${link.pinId}`}
           onClick={() => onOpenBookmark?.(link.documentId, link.pinId)}
-          onMouseEnter={() => onBookmarkHover?.(link.pinId)}
-          onMouseLeave={() => onBookmarkLeave?.()}
+          onMouseEnter={() => {
+            onBookmarkHover?.(link.pinId);
+            window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: link.pinId } }));
+            if (link.insightId) {
+              window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-hover", { detail: { insightId: link.insightId } }));
+            }
+          }}
+          onMouseLeave={() => {
+            onBookmarkLeave?.();
+            window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: link.pinId } }));
+            if (link.insightId) {
+              window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-leave", { detail: { insightId: link.insightId } }));
+            }
+          }}
           style={{ "--bookmark-color": link.color ?? "#ef4444" } as React.CSSProperties}
           title={`Otevřít bookmark #${link.caseBookmarkNumber ?? "?"} v dokumentu`}
           type="button"
@@ -652,6 +664,8 @@ export function JournalPanel({
   const [journalError, setJournalError] = useState<string | null>(null);
   const [highlightedAnalysisInsightId, setHighlightedAnalysisInsightId] = useState<string | null>(null);
   const [highlightedBookmarkPinId, setHighlightedBookmarkPinId] = useState<string | null>(null);
+  const [expandedAnalysisInsightIds, setExpandedAnalysisInsightIds] = useState<string[]>([]);
+  const [expandedBookmarkPinIds, setExpandedBookmarkPinIds] = useState<string[]>([]);
 
   useEffect(() => {
     function handleInsightHover(event: Event) {
@@ -672,16 +686,24 @@ export function JournalPanel({
       setHighlightedBookmarkPinId(null);
     }
 
+    function handleExpandedInsightLinksChange(event: Event) {
+      const customEvent = event as CustomEvent<{ insightIds?: string[]; pinIds?: string[] }>;
+      setExpandedAnalysisInsightIds(Array.isArray(customEvent.detail?.insightIds) ? customEvent.detail.insightIds : []);
+      setExpandedBookmarkPinIds(Array.isArray(customEvent.detail?.pinIds) ? customEvent.detail.pinIds : []);
+    }
+
     window.addEventListener("bureaucat:analysis-insight-hover", handleInsightHover);
     window.addEventListener("bureaucat:analysis-insight-leave", handleInsightLeave);
     window.addEventListener("bureaucat:bookmark-pin-hover", handleBookmarkPinHover);
     window.addEventListener("bureaucat:bookmark-pin-leave", handleBookmarkPinLeave);
+    window.addEventListener("bureaucat:expanded-insight-links-change", handleExpandedInsightLinksChange);
 
     return () => {
       window.removeEventListener("bureaucat:analysis-insight-hover", handleInsightHover);
       window.removeEventListener("bureaucat:analysis-insight-leave", handleInsightLeave);
       window.removeEventListener("bureaucat:bookmark-pin-hover", handleBookmarkPinHover);
       window.removeEventListener("bureaucat:bookmark-pin-leave", handleBookmarkPinLeave);
+      window.removeEventListener("bureaucat:expanded-insight-links-change", handleExpandedInsightLinksChange);
     };
   }, []);
 
@@ -978,8 +1000,8 @@ export function JournalPanel({
           onStartBookmarkLink={onStartBookmarkLink}
           onUpdateItem={handleUpdateJournalItem}
           pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
-          highlightedAnalysisInsightId={highlightedAnalysisInsightId}
-          highlightedBookmarkPinId={highlightedBookmarkPinId}
+          highlightedAnalysisInsightId={highlightedAnalysisInsightId ?? expandedAnalysisInsightIds[0] ?? null}
+          highlightedBookmarkPinId={highlightedBookmarkPinId ?? expandedBookmarkPinIds[0] ?? null}
           onBookmarkHover={onBookmarkHover}
           onBookmarkLeave={onBookmarkLeave}
         />

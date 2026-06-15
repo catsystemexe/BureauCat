@@ -450,3 +450,16 @@
   outline-color: #475569 !important;
 }
 
+
+/* === FINAL: DOCUMENT INSIGHT RANGE LINK COLOR OVERRIDE === */
+
+.document-insight-range,
+.document-insight-range-risk,
+.document-insight-range-question,
+.document-insight-range-legal_reference,
+.document-insight-range-term,
+.document-insight-range-claim,
+.document-insight-range-fact {
+  outline-color: var(--insight-link-color, #22c55e) !important;
+  border-color: var(--insight-link-color, #22c55e) !important;
+}

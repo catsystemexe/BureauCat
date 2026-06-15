@@ -235,6 +235,14 @@ export function ChatPanel({
     return "Čeká";
   }
 
+  function getAnalysisInsightColor(type: string) {
+    if (type === "risk") return "#f97316";
+    if (type === "question") return "#7c3aed";
+    if (type === "legal_reference") return "#0f766e";
+    if (type === "term") return "#475569";
+    return "#22c55e";
+  }
+
   async function updateAnalysisInsightStatus(
     insightId: string,
     status: "approved" | "journalized" | "rejected"
@@ -310,12 +318,29 @@ export function ChatPanel({
       ...(hoveredInsightId ? [hoveredInsightId] : [])
     ].filter((id, index, array) => array.indexOf(id) === index);
 
-    const activeInsights = activeIds
+    const activeInsightsById = activeIds
       .map((id) => analysisInsights.find((insight) => insight.id === id))
       .filter((insight): insight is DocumentInsight => Boolean(insight));
 
+    const activePinId = hoveredBookmarkPinId ?? externalHoveredBookmarkPinId;
+
+    const activeInsightsByPin = activePinId
+      ? analysisInsights.filter((insight) => insight.source_pin_id === activePinId)
+      : [];
+
+    const activeInsights = [...activeInsightsById, ...activeInsightsByPin].filter(
+      (insight, index, array) => array.findIndex((candidate) => candidate.id === insight.id) === index
+    );
+
     onActiveAnalysisInsightsChange?.(activeInsights);
-  }, [analysisInsights, expandedInsightIds, hoveredInsightId, onActiveAnalysisInsightsChange]);
+  }, [
+    analysisInsights,
+    expandedInsightIds,
+    hoveredInsightId,
+    hoveredBookmarkPinId,
+    externalHoveredBookmarkPinId,
+    onActiveAnalysisInsightsChange
+  ]);
 
   function toggleExpandedInsight(insightId: string) {
     setExpandedInsightIds((currentIds) =>
@@ -324,6 +349,38 @@ export function ChatPanel({
         : [...currentIds, insightId]
     );
   }
+
+  useEffect(() => {
+    const expandedInsights = expandedInsightIds
+      .map((id) => analysisInsights.find((insight) => insight.id === id))
+      .filter((insight): insight is DocumentInsight => Boolean(insight));
+
+    const expandedPinIds = expandedInsights
+      .map((insight) => insight.source_pin_id)
+      .filter((pinId): pinId is string => typeof pinId === "string" && pinId.length > 0);
+
+    const expandedInsightIdSet = new Set(expandedInsights.map((insight) => insight.id));
+
+    window.dispatchEvent(
+      new CustomEvent("bureaucat:expanded-insight-links-change", {
+        detail: {
+          insightIds: [...expandedInsightIdSet],
+          pinIds: [...new Set(expandedPinIds)]
+        }
+      })
+    );
+
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("bureaucat:expanded-insight-links-change", {
+          detail: {
+            insightIds: [],
+            pinIds: []
+          }
+        })
+      );
+    };
+  }, [analysisInsights, expandedInsightIds]);
 
   function renderAnalysisTextWithInlineInsights(text: string) {
     
@@ -391,14 +448,21 @@ export function ChatPanel({
         <span className="analysis-inline-insight-wrap" key={range.insight.id}>
           <button
             className={`analysis-inline-insight analysis-inline-insight-${range.insight.insight_type} analysis-inline-insight-status-${range.insight.status}${isBookmarkHovered ? " analysis-inline-insight-bookmark-hover" : ""}`}
+            style={{ "--insight-link-color": getAnalysisInsightColor(range.insight.insight_type) } as React.CSSProperties}
             onClick={() => toggleExpandedInsight(range.insight.id)}
             onMouseEnter={() => {
               setHoveredInsightId(range.insight.id);
               window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-hover", { detail: { insightId: range.insight.id } }));
+              if (range.insight.source_pin_id) {
+                window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: range.insight.source_pin_id } }));
+              }
             }}
             onMouseLeave={() => {
               setHoveredInsightId((currentId) => currentId === range.insight.id ? null : currentId);
               window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-leave", { detail: { insightId: range.insight.id } }));
+              if (range.insight.source_pin_id) {
+                window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: range.insight.source_pin_id } }));
+              }
             }}
             title={range.insight.title}
             type="button"

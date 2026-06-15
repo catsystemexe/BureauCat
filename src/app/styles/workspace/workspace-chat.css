@@ -577,3 +577,17 @@
   align-items: center;
   justify-content: center;
 }
+
+/* === FINAL: ANALYSIS INSIGHT LINK COLOR OVERRIDE === */
+
+.analysis-inline-insight,
+.analysis-inline-insight:hover,
+.analysis-inline-insight:focus-visible,
+.analysis-inline-insight-bookmark-hover {
+  border-bottom-color: var(--insight-link-color, #22c55e) !important;
+}
+
+.analysis-inline-insight-bookmark-hover {
+  background: color-mix(in srgb, var(--insight-link-color, #22c55e) 14%, transparent) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--insight-link-color, #22c55e) 22%, transparent) !important;
+}
