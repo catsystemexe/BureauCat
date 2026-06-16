@@ -5,6 +5,10 @@ export type CaseSummary = {
   title: string;
   area: string | null;
   status: CaseStatus;
+  icon: string;
+  icon_color: string;
+  document_count: number;
+  situation_count: number;
   created_at?: string;
   updated_at?: string;
 };

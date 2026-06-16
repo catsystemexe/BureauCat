@@ -105,7 +105,7 @@ function getNoteCssColor(value: string | null | undefined) {
 
 function getInsightLinkColor(type: string) {
   if (type === "risk") return "#f97316";
-  if (type === "question") return "#7c3aed";
+  if (type === "question") return "#eab308";
   if (type === "legal_reference") return "#0f766e";
   if (type === "term") return "#475569";
   return "#22c55e";

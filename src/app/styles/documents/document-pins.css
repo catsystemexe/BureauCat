@@ -524,3 +524,132 @@
 .document-pin-index {
   top: 7px !important;
 }
+
+/* === FINAL: BOOKMARK OUTLINE ICON + HALO ONLY === */
+
+.document-pin-marker::before,
+.document-pin-marker::after,
+.document-pin-icon::before,
+.document-pin-icon::after {
+  content: none !important;
+  display: none !important;
+}
+
+.document-pin-icon {
+  fill: transparent !important;
+  stroke: var(--pin-color, #ef4444) !important;
+  stroke-width: 2.6 !important;
+}
+
+.document-pin-marker.hovered-document-pin-marker,
+.document-pin-marker.targeted-document-pin-marker {
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.document-pin-marker.hovered-document-pin-marker .document-pin-icon,
+.document-pin-marker.targeted-document-pin-marker .document-pin-icon {
+  fill: transparent !important;
+  filter:
+    drop-shadow(0 0 5px color-mix(in srgb, var(--pin-color, #22c55e) 42%, transparent))
+    drop-shadow(0 0 11px color-mix(in srgb, var(--pin-color, #22c55e) 24%, transparent)) !important;
+}
+
+/* === FINAL HARD RESET: SOLID BOOKMARK + STABLE ACTIVE HALO === */
+
+.document-pin-marker,
+.document-pin-marker:hover,
+.document-pin-marker:focus,
+.document-pin-marker:focus-visible,
+.document-pin-marker:active,
+.document-pin-marker.hovered-document-pin-marker,
+.document-pin-marker.hovered-document-pin-marker:hover,
+.document-pin-marker.hovered-document-pin-marker:focus,
+.document-pin-marker.hovered-document-pin-marker:focus-visible,
+.document-pin-marker.hovered-document-pin-marker:active,
+.document-pin-marker.targeted-document-pin-marker,
+.document-pin-marker.targeted-document-pin-marker:hover,
+.document-pin-marker.targeted-document-pin-marker:focus,
+.document-pin-marker.targeted-document-pin-marker:focus-visible,
+.document-pin-marker.targeted-document-pin-marker:active {
+  width: 24px !important;
+  height: 28px !important;
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: translateY(-50%) !important;
+}
+
+.document-pin-marker::before,
+.document-pin-marker::after {
+  content: none !important;
+  display: none !important;
+}
+
+.document-pin-icon {
+  width: 24px !important;
+  height: 24px !important;
+  color: var(--pin-color, #ef4444) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  stroke-width: 2.2 !important;
+  filter: drop-shadow(0 1px 1px rgba(29,29,27,.18)) !important;
+}
+
+.document-pin-index {
+  position: absolute !important;
+  top: 7px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  z-index: 2 !important;
+}
+
+.document-pin-marker.hovered-document-pin-marker .document-pin-icon,
+.document-pin-marker.targeted-document-pin-marker .document-pin-icon {
+  filter:
+    drop-shadow(0 0 5px color-mix(in srgb, var(--pin-color, #22c55e) 42%, transparent))
+    drop-shadow(0 0 11px color-mix(in srgb, var(--pin-color, #22c55e) 24%, transparent)) !important;
+}
+
+/* === FINAL: DOCUMENT ACTIVE BOOKMARK LIKE JOURNAL BOOKMARK === */
+
+.document-pin-marker.hovered-document-pin-marker,
+.document-pin-marker.hovered-document-pin-marker:hover,
+.document-pin-marker.hovered-document-pin-marker:focus,
+.document-pin-marker.hovered-document-pin-marker:focus-visible,
+.document-pin-marker.hovered-document-pin-marker:active,
+.document-pin-marker.targeted-document-pin-marker,
+.document-pin-marker.targeted-document-pin-marker:hover,
+.document-pin-marker.targeted-document-pin-marker:focus,
+.document-pin-marker.targeted-document-pin-marker:focus-visible,
+.document-pin-marker.targeted-document-pin-marker:active {
+  outline: 2px dashed var(--pin-color, #3b82f6) !important;
+  outline-offset: 4px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: translateY(-50%) !important;
+}
+
+.document-pin-marker.hovered-document-pin-marker .document-pin-icon,
+.document-pin-marker.targeted-document-pin-marker .document-pin-icon {
+  fill: var(--pin-color, #ef4444) !important;
+  stroke: var(--pin-color, #ef4444) !important;
+  color: var(--pin-color, #ef4444) !important;
+  filter: drop-shadow(0 1px 1px rgba(29, 29, 27, 0.18)) !important;
+}
+
+.document-pin-marker.hovered-document-pin-marker .document-pin-index,
+.document-pin-marker.targeted-document-pin-marker .document-pin-index {
+  color: #ffffff !important;
+  filter: none !important;
+}

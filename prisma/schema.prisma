@@ -11,6 +11,8 @@ model Case {
   id         String   @id @default(cuid())
   title      String
   area       String?
+  icon       String   @default("folder")
+  icon_color String   @default("#3b82f6")
   /// Allowed values: draft, active, closed.
   status     String   @default("draft")
   created_at DateTime @default(now())

@@ -203,6 +203,10 @@ export function ChatPanel({
 
         if (isMounted) {
           setAnalysisInsights(data.insights);
+          setExpandedInsightIds(data.insights
+            .filter((insight) => insight.status === "pending")
+            .map((insight) => insight.id)
+          );
         }
       } catch (loadError) {
         if (isMounted) {
@@ -237,7 +241,7 @@ export function ChatPanel({
 
   function getAnalysisInsightColor(type: string) {
     if (type === "risk") return "#f97316";
-    if (type === "question") return "#7c3aed";
+    if (type === "question") return "#eab308";
     if (type === "legal_reference") return "#0f766e";
     if (type === "term") return "#475569";
     return "#22c55e";
@@ -560,47 +564,52 @@ export function ChatPanel({
             {selectedText}
           </button>
 
-          {range.insight.status === "pending" ? (
-            <span className="analysis-inline-insight-quick-actions" aria-label="Rychlé rozhodnutí insightu">
-              <button
-                aria-label="Schválit insight"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void updateAnalysisInsightStatus(range.insight.id, "approved");
-                }}
-                title="Schválit insight"
-                type="button"
-              >
-                <Check aria-hidden="true" />
-              </button>
-              <button
-                aria-label="Schválit a zapsat do zápisníku s bookmarkem"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void journalizeAnalysisInsight(range.insight.id);
-                }}
-                title="Schválit + zapsat do zápisníku + bookmark"
-                type="button"
-              >
-                <BookmarkCheck aria-hidden="true" />
-              </button>
-              <button
-                aria-label="Odmítnout insight"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void updateAnalysisInsightStatus(range.insight.id, "rejected");
-                }}
-                title="Odmítnout insight"
-                type="button"
-              >
-                <Trash2 aria-hidden="true" />
-              </button>
-            </span>
-          ) : null}
-
-          {isExpanded && range.insight.source_text ? (
+          {isExpanded ? (
             <span className="analysis-inline-insight-detail">
-              <span className="analysis-inline-insight-source">{range.insight.source_text}</span>
+              {range.insight.source_text ? (
+                <span className="analysis-inline-insight-source">{range.insight.source_text}</span>
+              ) : null}
+
+              {range.insight.status === "pending" ? (
+                <span className="analysis-inline-insight-detail-actions" aria-label="Rozhodnutí insightu">
+                  <button
+                    aria-label="Schválit insight"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void updateAnalysisInsightStatus(range.insight.id, "approved");
+                    }}
+                    title="Schválit insight"
+                    type="button"
+                  >
+                    <Check aria-hidden="true" />
+                    <span>Potvrdit</span>
+                  </button>
+                  <button
+                    aria-label="Schválit a zapsat do zápisníku s bookmarkem"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void journalizeAnalysisInsight(range.insight.id);
+                    }}
+                    title="Schválit + zapsat do zápisníku + bookmark"
+                    type="button"
+                  >
+                    <BookmarkCheck aria-hidden="true" />
+                    <span>Potvrdit + bookmark</span>
+                  </button>
+                  <button
+                    aria-label="Odmítnout insight"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void updateAnalysisInsightStatus(range.insight.id, "rejected");
+                    }}
+                    title="Odmítnout insight"
+                    type="button"
+                  >
+                    <Trash2 aria-hidden="true" />
+                    <span>Smazat</span>
+                  </button>
+                </span>
+              ) : null}
             </span>
           ) : null}
         </span>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { getCaseById, updateCase } from "@/lib/services/cases";
+import { deleteCase, getCaseById, updateCase } from "@/lib/services/cases";
 import { updateCaseSchema } from "@/lib/validation/cases";
 
 type CaseRouteContext = {
@@ -55,4 +55,16 @@ export async function PATCH(request: Request, context: CaseRouteContext) {
   const updatedCase = await updateCase(caseId, result.data);
 
   return NextResponse.json({ case: updatedCase });
+}
+
+export async function DELETE(request: Request, context: CaseRouteContext) {
+  const { caseId } = await context.params;
+  const deleteUploadedFiles = new URL(request.url).searchParams.get("deleteUploadedFiles") === "true";
+  const deletedCase = await deleteCase(caseId, { deleteUploadedFiles });
+
+  if (!deletedCase) {
+    return notFoundResponse();
+  }
+
+  return NextResponse.json(deletedCase);
 }

@@ -5,12 +5,55 @@ import { useRouter } from "next/navigation";
 import { CASE_STATUS_LABELS } from "@/lib/constants/uiLabels";
 import type { CaseSummary } from "./types";
 import {
+  AlarmClock,
+  Briefcase,
+  Building2,
   Car,
+  Cat,
   FileText,
+  Folder,
+  HandCoins,
+  Handshake,
   Landmark,
-  UsersRound
+  Mail,
+  PenTool,
+  Puzzle,
+  Scale,
+  Section,
+  Shield,
+  Swords,
+  UsersRound,
+  House,
+  MessageSquareWarning
 } from "lucide-react";
 
+
+const CASE_ICON_MAP = {
+  folder: Folder,
+  "file-text": FileText,
+  landmark: Landmark,
+  users: UsersRound,
+  car: Car,
+  scale: Scale,
+  shield: Shield,
+  briefcase: Briefcase,
+  building: Building2,
+  section: Section,
+  swords: Swords,
+  "alarm-clock": AlarmClock,
+  cat: Cat,
+  handshake: Handshake,
+  "pen-tool": PenTool,
+  puzzle: Puzzle,
+  "hand-coins": HandCoins,
+  mail: Mail,
+  house: House,
+  "message-square-warning": MessageSquareWarning
+};
+
+function getCaseIcon(iconKey: string) {
+  return CASE_ICON_MAP[iconKey as keyof typeof CASE_ICON_MAP] ?? Folder;
+}
 
 type CasesResponse = {
   cases?: CaseSummary[];
@@ -147,16 +190,16 @@ return (
 
         {!isLoading && cases.length > 0 ? (
           <div className="title-case-list" role="list">
-            {cases.map((caseItem, index) => {
-  const caseIcons = [UsersRound, Landmark, Car, FileText];
-  const CaseIcon = caseIcons[index % caseIcons.length];
-  const caseMeta = ["8 dokumentů • 3 otázky", "21 dokumentů • 6 poznatků", "2 dokumenty • 1 úkol", "Bez metadat"];
+            {cases.map((caseItem) => {
+  const CaseIcon = getCaseIcon(caseItem.icon);
+  const caseMeta = `${caseItem.document_count} dokumentů • ${caseItem.situation_count} sešitů`;
 
   return (
     <button
       className="title-case-card"
       key={caseItem.id}
       type="button"
+      style={{ "--case-icon-color": caseItem.icon_color } as React.CSSProperties}
       onClick={() => router.push(`/cases/${caseItem.id}`)}
       role="listitem"
     >
@@ -166,7 +209,7 @@ return (
 
       <span className="title-case-main">
         <strong>{caseItem.title}</strong>
-        <small>{caseMeta[index % caseMeta.length]}</small>
+        <small>{caseMeta}</small>
       </span>
 
       <span className="title-status-pill">

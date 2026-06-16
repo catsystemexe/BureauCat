@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 
@@ -25,4 +25,15 @@ export async function storeOriginalDocument(file: File, originalFilename: string
     absolutePath,
     relativePath
   };
+}
+
+export async function removeStoredOriginalDocument(relativePath: string) {
+  const absolutePath = path.resolve(process.cwd(), relativePath);
+  const allowedRoot = path.resolve(uploadDirectory);
+
+  if (!absolutePath.startsWith(`${allowedRoot}${path.sep}`)) {
+    throw new Error("Refusing to delete a file outside the upload directory.");
+  }
+
+  await rm(absolutePath, { force: true });
 }

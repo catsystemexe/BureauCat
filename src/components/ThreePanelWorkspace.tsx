@@ -17,6 +17,28 @@ import {
   ArrowUpTrayIcon,
   FolderIcon
 } from "@heroicons/react/24/outline";
+import {
+  AlarmClock,
+  Briefcase,
+  Building2,
+  Car,
+  Cat,
+  FileText,
+  Folder,
+  HandCoins,
+  Handshake,
+  Landmark,
+  Mail,
+  PenTool,
+  Puzzle,
+  Scale,
+  Section,
+  Shield,
+  Swords,
+  UsersRound,
+  House,
+  MessageSquareWarning
+} from "lucide-react";
 import type { CaseDocument, CaseSummary, DocumentInsight, DocumentPin, JournalItem } from "./types";
 
 type RightPanelMode = "help" | "evidence" | "document";
@@ -26,6 +48,42 @@ type ParsedSourceLinks =
   | { kind: "empty" }
   | { kind: "parsed"; links: unknown[] }
   | { kind: "raw"; rawValue: string };
+
+const CASE_ICON_OPTIONS = [
+  { key: "folder", label: "Složka", Icon: Folder },
+  { key: "file-text", label: "Dokument", Icon: FileText },
+  { key: "landmark", label: "Úřad", Icon: Landmark },
+  { key: "users", label: "Lidé", Icon: UsersRound },
+  { key: "car", label: "Auto", Icon: Car },
+  { key: "scale", label: "Právo", Icon: Scale },
+  { key: "shield", label: "Ochrana", Icon: Shield },
+  { key: "briefcase", label: "Spis", Icon: Briefcase },
+  { key: "building", label: "Instituce", Icon: Building2 },
+  { key: "section", label: "Sekce", Icon: Section },
+  { key: "swords", label: "Spor", Icon: Swords },
+  { key: "alarm-clock", label: "Termín", Icon: AlarmClock },
+  { key: "cat", label: "Kočka", Icon: Cat },
+  { key: "handshake", label: "Dohoda", Icon: Handshake },
+  { key: "pen-tool", label: "Podpis", Icon: PenTool },
+  { key: "puzzle", label: "Souvislosti", Icon: Puzzle },
+  { key: "hand-coins", label: "Finance", Icon: HandCoins },
+  { key: "mail", label: "Pošta", Icon: Mail },
+  { key: "house", label: "Domov", Icon: House },
+  { key: "message-square-warning", label: "Varování", Icon: MessageSquareWarning }
+] as const;
+
+const CASE_COLOR_OPTIONS = [
+  "#3b82f6",
+  "#f59e0b",
+  "#f97316",
+  "#ef4444",
+  "#8b5cf6",
+  "#22c55e"
+] as const;
+
+function getCaseIcon(iconKey: string) {
+  return CASE_ICON_OPTIONS.find((option) => option.key === iconKey)?.Icon ?? Folder;
+}
 
 type DocumentResponse = {
   document?: CaseDocument;
@@ -516,10 +574,17 @@ function RightContextPanel({
 
 export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [currentCaseTitle, setCurrentCaseTitle] = useState(caseItem.title);
+  const [currentCaseIcon, setCurrentCaseIcon] = useState(caseItem.icon);
+  const [currentCaseIconColor, setCurrentCaseIconColor] = useState(caseItem.icon_color);
+  const [isSavingCaseMeta, setIsSavingCaseMeta] = useState(false);
   const [isEditingCaseTitle, setIsEditingCaseTitle] = useState(false);
   const [caseTitleDraft, setCaseTitleDraft] = useState(caseItem.title);
   const [isSavingCaseTitle, setIsSavingCaseTitle] = useState(false);
   const [caseTitleError, setCaseTitleError] = useState<string | null>(null);
+  const [isDeletingCase, setIsDeletingCase] = useState(false);
+  const [caseDeleteError, setCaseDeleteError] = useState<string | null>(null);
+  const [isCaseMenuOpen, setIsCaseMenuOpen] = useState(false);
+  const [isCaseMetaEditorOpen, setIsCaseMetaEditorOpen] = useState(false);
   const [, setJournalRefreshKey] = useState(0);
   const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("help");
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>("documents");
@@ -549,7 +614,9 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   useEffect(() => {
     setCurrentCaseTitle(caseItem.title);
     setCaseTitleDraft(caseItem.title);
-  }, [caseItem.title]);
+    setCurrentCaseIcon(caseItem.icon);
+    setCurrentCaseIconColor(caseItem.icon_color);
+  }, [caseItem.title, caseItem.icon, caseItem.icon_color]);
 
   function openTitleScreen() {
     window.location.href = "/cases";
@@ -558,6 +625,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   function startCaseTitleEdit() {
     setCaseTitleError(null);
     setCaseTitleDraft(currentCaseTitle);
+    setIsCaseMenuOpen(false);
     setIsEditingCaseTitle(true);
   }
 
@@ -618,6 +686,67 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     if (event.key === "Escape") {
       event.preventDefault();
       cancelCaseTitleEdit();
+    }
+  }
+
+  async function saveCaseMetadata(nextIcon: string, nextIconColor: string) {
+    setIsSavingCaseMeta(true);
+    setCaseTitleError(null);
+
+    try {
+      const response = await fetch(`/api/cases/${caseItem.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          icon: nextIcon,
+          icon_color: nextIconColor
+        })
+      });
+
+      const data = (await response.json().catch(() => null)) as { case?: CaseSummary; error?: string } | null;
+
+      if (!response.ok || !data?.case) {
+        throw new Error(data?.error ?? "Metadata případu se nepodařilo uložit.");
+      }
+
+      setCurrentCaseIcon(data.case.icon);
+      setCurrentCaseIconColor(data.case.icon_color);
+    } catch (error) {
+      setCaseTitleError(error instanceof Error ? error.message : "Metadata případu se nepodařilo uložit.");
+    } finally {
+      setIsSavingCaseMeta(false);
+    }
+  }
+
+  async function deleteCurrentCase() {
+    const confirmed = window.confirm(
+      `Smazat případ "${currentCaseTitle}"?\n\nTato operace je nevratná. Budou smazány všechny sešity, poznatky, dokumenty, analýzy, bookmarky, anotace, chat i originální soubory.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeletingCase(true);
+    setCaseDeleteError(null);
+
+    try {
+      const response = await fetch(`/api/cases/${caseItem.id}?deleteUploadedFiles=true`, {
+        method: "DELETE"
+      });
+
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(data?.error ?? "Případ se nepodařilo smazat.");
+      }
+
+      window.location.href = "/cases";
+    } catch (error) {
+      setCaseDeleteError(error instanceof Error ? error.message : "Případ se nepodařilo smazat.");
+      setIsDeletingCase(false);
     }
   }
 
@@ -713,6 +842,16 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         </button>
 
         <div className="app-case-title-block">
+          <span
+            className="app-case-icon-badge"
+            style={{ "--case-icon-color": currentCaseIconColor } as React.CSSProperties}
+            aria-hidden="true"
+          >
+            {(() => {
+              const CurrentCaseIcon = getCaseIcon(currentCaseIcon);
+              return <CurrentCaseIcon className="app-case-icon-svg" />;
+            })()}
+          </span>
           {isEditingCaseTitle ? (
             <div className="app-case-title-edit">
               <input
@@ -741,9 +880,97 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           )}
         </div>
 
-        <span className="status-pill app-status-pill">
-          {CASE_STATUS_LABELS[caseItem.status]}
-        </span>
+        <div className="app-case-header-actions">
+          <span className="status-pill app-status-pill">
+            {CASE_STATUS_LABELS[caseItem.status]}
+          </span>
+
+          <div className="app-case-menu-wrap">
+            <button
+              type="button"
+              className="app-case-menu-button"
+              onClick={() => setIsCaseMenuOpen((isOpen) => !isOpen)}
+              aria-label="Menu případu"
+              aria-expanded={isCaseMenuOpen}
+              title="Menu případu"
+            >
+              ⋮
+            </button>
+
+            {isCaseMenuOpen ? (
+              <div className="app-case-menu" role="menu">
+                <button
+                  type="button"
+                  className="app-case-menu-item"
+                  onClick={startCaseTitleEdit}
+                  role="menuitem"
+                >
+                  Přejmenovat případ
+                </button>
+
+                <button
+                  type="button"
+                  className="app-case-menu-item"
+                  onClick={() => setIsCaseMetaEditorOpen((isOpen) => !isOpen)}
+                  role="menuitem"
+                >
+                  Změnit ikonu
+                </button>
+
+                {isCaseMetaEditorOpen ? (
+                  <div className="app-case-meta-picker" aria-label="Nastavení ikony a barvy případu">
+                    <div className="app-case-menu-label">Ikona</div>
+                    <div className="app-case-icon-options">
+                      {CASE_ICON_OPTIONS.map(({ key, label, Icon }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`app-case-icon-option ${currentCaseIcon === key ? "is-selected" : ""}`}
+                          onClick={() => void saveCaseMetadata(key, currentCaseIconColor)}
+                          disabled={isSavingCaseMeta}
+                          title={label}
+                          aria-label={`Ikona: ${label}`}
+                        >
+                          <Icon className="app-case-icon-option-svg" />
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="app-case-menu-label">Barva</div>
+                    <div className="app-case-color-options">
+                      {CASE_COLOR_OPTIONS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={`app-case-color-option ${currentCaseIconColor === color ? "is-selected" : ""}`}
+                          style={{ "--case-icon-color": color } as React.CSSProperties}
+                          onClick={() => void saveCaseMetadata(currentCaseIcon, color)}
+                          disabled={isSavingCaseMeta}
+                          aria-label={`Barva případu ${color}`}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  className="app-case-menu-item danger"
+                  onClick={deleteCurrentCase}
+                  disabled={isDeletingCase}
+                  role="menuitem"
+                >
+                  {isDeletingCase ? "Mažu…" : "Smazat případ"}
+                </button>
+
+                {caseDeleteError ? (
+                  <p className="app-case-delete-error">{caseDeleteError}</p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </div>
       </header>
       <div className="three-panel-layout" aria-label="Pracovní prostor případu: Zápisník, Konzultace a Dokumenty">
         <JournalPanel

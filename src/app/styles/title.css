@@ -423,3 +423,31 @@
     width: 100% !important;
   }
 }
+
+.title-case-card {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--case-icon-color, #3b82f6) 20%, transparent) 0%,
+      rgba(255, 255, 255, 0.075) 34%,
+      rgba(15, 22, 34, 0.08) 66%,
+      rgba(0, 0, 0, 0.20) 100%
+    ) !important;
+}
+
+.title-case-icon {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--case-icon-color, #3b82f6) 26%, transparent),
+      color-mix(in srgb, var(--case-icon-color, #3b82f6) 8%, transparent)
+    ) !important;
+  border-color: color-mix(in srgb, var(--case-icon-color, #3b82f6) 24%, transparent) !important;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.16),
+    0 8px 24px color-mix(in srgb, var(--case-icon-color, #3b82f6) 18%, transparent) !important;
+}
+
+.title-case-lucide-icon {
+  color: var(--case-icon-color, #3b82f6) !important;
+}
