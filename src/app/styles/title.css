@@ -1,10 +1,15 @@
 /* === CINEMATIC TITLE SCREEN FINAL CLEAN === */
 
 .title-screen {
+  width: 100vw !important;
+  height: 100vh !important;
   min-height: 100vh !important;
-  background: #f4f1eb !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
   overflow: hidden !important;
-  padding: 28px !important;
+  background: #000 !important;
 }
 
 .title-hero {
@@ -450,4 +455,73 @@
 
 .title-case-lucide-icon {
   color: var(--case-icon-color, #3b82f6) !important;
+}
+
+/* === TITLE SCREEN FULLSCREEN + NO CASE PANEL GLASS === */
+
+.title-screen {
+  width: 100vw !important;
+  min-height: 100vh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  background: #000000 !important;
+}
+
+.title-hero {
+  width: 100vw !important;
+  min-height: 100vh !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: clamp(36px, 4vw, 64px) !important;
+}
+
+.title-cases-panel {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.title-cases-panel::before,
+.title-cases-panel::after {
+  content: none !important;
+  display: none !important;
+}
+
+.title-status-pill {
+  display: none !important;
+}
+
+/* === TITLE SCREEN HARD EDGE RESET === */
+
+html,
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body:has(.title-screen) {
+  overflow: hidden !important;
+  background: #000 !important;
+}
+
+body:has(.title-screen) .title-screen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body:has(.title-screen) .title-hero {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
 }
