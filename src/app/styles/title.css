@@ -364,7 +364,7 @@
 
 .title-case-main strong {
   color: #ffffff !important;
-  font-size: 1.08rem !important;
+  font-size: 1.28rem !important;
   font-weight: 850 !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -373,8 +373,8 @@
 
 .title-case-main small {
   color: rgba(255, 255, 255, 0.62) !important;
-  font-size: 0.88rem !important;
-  font-weight: 600 !important;
+  font-size: 0.98rem !important;
+  font-weight: 650 !important;
 }
 
 .title-status-pill {
@@ -524,4 +524,81 @@ body:has(.title-screen) .title-hero {
   height: 100vh !important;
   min-height: 100vh !important;
   margin: 0 !important;
+}
+
+/* === TITLE CASE CARDS SCALE + ICON CLEANUP === */
+
+.title-cases-panel {
+  width: min(620px, 100%) !important;
+}
+
+.title-case-list {
+  gap: 18px !important;
+}
+
+.title-case-card {
+  min-height: 104px !important;
+  grid-template-columns: 72px minmax(0, 1fr) !important;
+  padding: 22px 24px !important;
+  gap: 22px !important;
+}
+
+.title-case-icon {
+  width: 64px !important;
+  height: 64px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.title-case-lucide-icon {
+  width: 40px !important;
+  height: 40px !important;
+  stroke-width: 2.25 !important;
+}
+
+.title-case-main strong {
+  font-size: 1.08rem !important;
+  font-weight: 820 !important;
+}
+
+.title-case-main span {
+  font-size: 0.84rem !important;
+}
+
+/* === TITLE CASE CARD TEXT + ICON SCALE PASS === */
+
+.title-case-card {
+  min-height: 100px !important;
+  grid-template-columns: 84px minmax(0, 1fr) !important;
+  padding: 26px 28px !important;
+  gap: 26px !important;
+}
+
+.title-case-icon {
+  width: 95px !important;
+  height: 95px !important;
+}
+
+.title-case-lucide-icon {
+  width: 65px !important;
+  height: 65px !important;
+  stroke-width: 1.8 !important;
+}
+
+.title-case-main {
+  gap: 8px !important;
+}
+
+.title-case-main strong {
+  font-size: 2.0rem !important;
+  line-height: 1.15 !important;
+  font-weight: 800 !important;
+}
+
+.title-case-main span {
+  font-size: 0.98rem !important;
+  line-height: 1.25 !important;
+  font-weight: 650 !important;
 }
