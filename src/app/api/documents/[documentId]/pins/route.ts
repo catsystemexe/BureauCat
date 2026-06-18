@@ -8,7 +8,7 @@ type Context = {
   params: Promise<{ documentId: string }>;
 };
 
-const allowedPinColors = ["red", "orange", "green", "yellow", "blue", "purple"] as const;
+const allowedPinColors = ["red", "orange", "green", "yellow", "blue", "purple", "gray"] as const;
 
 export async function GET(_request: Request, context: Context) {
   const { documentId } = await context.params;

@@ -92,7 +92,8 @@ const pinColors = [
   { label: "Zelená", value: "green", css: "#22c55e" },
   { label: "Žlutá", value: "yellow", css: "#eab308" },
   { label: "Modrá", value: "blue", css: "#3b82f6" },
-  { label: "Fialová", value: "purple", css: "#8b5cf6" }
+  { label: "Fialová", value: "purple", css: "#8b5cf6" },
+  { label: "Šedá", value: "gray", css: "#6b7280" }
 ];
 
 function getPinCssColor(value: string | null | undefined) {
@@ -104,10 +105,11 @@ function getNoteCssColor(value: string | null | undefined) {
 }
 
 function getInsightLinkColor(type: string) {
-  if (type === "risk") return "#f97316";
+  if (type === "risk" || type === "conflict") return "#f97316";
   if (type === "question") return "#eab308";
-  if (type === "legal_reference") return "#0f766e";
-  if (type === "term") return "#475569";
+  if (type === "legal_reference") return "#8b5cf6";
+  if (type === "term") return "#8b5cf6";
+  if (type === "identifier") return "#6b7280";
   return "#22c55e";
 }
 
@@ -494,9 +496,11 @@ export function DocumentViewPanel({
 
   function getInsightLabel(insightType: string) {
     if (insightType === "risk") return "⚠";
+    if (insightType === "conflict") return "!";
     if (insightType === "question") return "?";
     if (insightType === "legal_reference") return "§";
     if (insightType === "term") return "T";
+    if (insightType === "identifier") return "ID";
     return "F";
   }
 
@@ -1058,7 +1062,7 @@ export function DocumentViewPanel({
     endOffset: number,
     clientX: number,
     clientY: number
-  ) {
+  ): Promise<DocumentPin | null> {
     setIsSaving(true);
     setError(null);
 
@@ -1092,10 +1096,17 @@ export function DocumentViewPanel({
       }
 
       if (data.pin) {
-        openPinEditor(data.pin, clientX, Math.max(12, clientY - 12));
+        if (!isBookmarkLinkMode) {
+          openPinEditor(data.pin, clientX, Math.max(12, clientY - 12));
+        }
+
+        return data.pin;
       }
+
+      return null;
     } catch (pinError) {
       setError(pinError instanceof Error ? pinError.message : "Pin se nepodařilo uložit.");
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -1121,6 +1132,7 @@ export function DocumentViewPanel({
       setPins((current) => current.map((pin) => (pin.id === pinId ? data.pin! : pin)));
     } catch (pinError) {
       setError(pinError instanceof Error ? pinError.message : "Pin se nepodařilo uložit.");
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -1148,7 +1160,7 @@ export function DocumentViewPanel({
   }
 
   async function handleDocumentTextClick(event: React.MouseEvent<HTMLPreElement>) {
-    if (!activeAnnotationTool || isSaving || isEditing) {
+    if (isSaving || isEditing) {
       return;
     }
 
@@ -1167,6 +1179,24 @@ export function DocumentViewPanel({
     const sentenceRange = getSentenceRangeAtOffset(displayText, offset);
 
     if (!sentenceRange) {
+      return;
+    }
+
+    if (isBookmarkLinkMode) {
+      const pin = await createPinAtOffsets(
+        sentenceRange.selectedText,
+        sentenceRange.startOffset,
+        sentenceRange.endOffset,
+        event.clientX,
+        event.clientY
+      );
+      if (pin) {
+        onBookmarkSelectedForLink?.(pin);
+      }
+      return;
+    }
+
+    if (!activeAnnotationTool) {
       return;
     }
 
@@ -1416,7 +1446,7 @@ export function DocumentViewPanel({
   }
 
   async function handleDocumentTextMouseUp() {
-    if (!activeAnnotationTool || isSaving || isEditing) {
+    if (isSaving || isEditing) {
       return;
     }
 
@@ -1433,6 +1463,30 @@ export function DocumentViewPanel({
       selectionOffsets.startOffset === null ||
       selectionOffsets.endOffset === null
     ) {
+      return;
+    }
+
+    if (isBookmarkLinkMode) {
+      const selectionRange = selection.getRangeAt(0);
+      const rect = selectionRange.getBoundingClientRect();
+
+      const pin = await createPinAtOffsets(
+        selectionOffsets.selectedText,
+        selectionOffsets.startOffset,
+        selectionOffsets.endOffset,
+        rect.left,
+        rect.top
+      );
+
+      if (pin) {
+        onBookmarkSelectedForLink?.(pin);
+      }
+
+      selection.removeAllRanges();
+      return;
+    }
+
+    if (!activeAnnotationTool) {
       return;
     }
 

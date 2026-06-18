@@ -225,9 +225,11 @@ export function ChatPanel({
 
   function getAnalysisInsightLabel(type: string) {
     if (type === "risk") return "Riziko";
+    if (type === "conflict") return "Rozpor";
     if (type === "question") return "Otázka";
     if (type === "legal_reference") return "Právní odkaz";
     if (type === "term") return "Termín";
+    if (type === "identifier") return "Identifikátor";
     if (type === "claim") return "Tvrzení";
     return "Poznatek";
   }
@@ -240,10 +242,11 @@ export function ChatPanel({
   }
 
   function getAnalysisInsightColor(type: string) {
-    if (type === "risk") return "#f97316";
+    if (type === "risk" || type === "conflict") return "#f97316";
     if (type === "question") return "#eab308";
-    if (type === "legal_reference") return "#0f766e";
-    if (type === "term") return "#475569";
+    if (type === "legal_reference") return "#8b5cf6";
+    if (type === "term") return "#8b5cf6";
+    if (type === "identifier") return "#6b7280";
     return "#22c55e";
   }
 

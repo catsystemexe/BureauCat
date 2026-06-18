@@ -256,12 +256,16 @@ export async function createMockAnalysisDocument(sourceDocumentId: string) {
   ].filter((range) => range.end > range.start);
 
   const factLine = "- Testovací skutečnost navázaná na začátek dokumentu.";
+  const identifierLine = "- Testovací identifikátor: Jan Novák, č. j. ABC-123.";
+  const legalLine = "- Testovací právní odkaz: § 37 správního řádu.";
   const riskLine = "- Testovací riziko pro ověření AI evidence vrstvy.";
   const questionLine = "- Jaké informace v dokumentu chybí?";
 
   const markdown = `## Identifikace
 
 Mock analýza vytvořená nad dokumentem: **${sourceTitle}**.
+
+${identifierLine}
 
 Zatím mock položka. Skutečná AI extrakce bude doplněna později.
 
@@ -276,7 +280,7 @@ ${factLine}
 
 ## Paragrafy a právní odkazy
 
-- Zatím bez skutečné právní extrakce.
+${legalLine}
 
 ## Rizika a důležité termíny
 
@@ -333,6 +337,24 @@ ${questionLine}
         content: null,
         range: ranges[0],
         analysisRange: findAnalysisRange(factLine)
+      },
+      {
+        insight_type: "identifier",
+        target_section: "description",
+        target_item_type: "CLAIM",
+        title: "Testovací identifikátor",
+        content: "Jan Novák, č. j. ABC-123.",
+        range: ranges[0],
+        analysisRange: findAnalysisRange(identifierLine)
+      },
+      {
+        insight_type: "legal_reference",
+        target_section: "description",
+        target_item_type: "CLAIM",
+        title: "Testovací právní odkaz",
+        content: "§ 37 správního řádu.",
+        range: ranges[1] ?? ranges[0],
+        analysisRange: findAnalysisRange(legalLine)
       },
       {
         insight_type: "risk",

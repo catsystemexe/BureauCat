@@ -26,7 +26,7 @@ const JOURNAL_SECTIONS: Array<{
   itemType: JournalItemType;
   Icon: typeof MagnifyingGlassIcon;
 }> = [
-  { title: "Analýza", message: "Zatím bez analýzy.", section: "description", itemType: "CLAIM", Icon: MagnifyingGlassIcon },
+  { title: "Identifikace", message: "Zatím bez identifikace.", section: "description", itemType: "CLAIM", Icon: MagnifyingGlassIcon },
   { title: "Poznatky", message: "Zatím bez poznatků.", section: "description", itemType: "FACT", Icon: LightBulbIcon },
   { title: "Otázky", message: "Zatím bez otázek.", section: "open_questions", itemType: "QUESTION", Icon: QuestionMarkCircleIcon },
   { title: "Rizika", message: "Zatím bez rizik.", section: "risks", itemType: "RISK", Icon: ExclamationTriangleIcon },

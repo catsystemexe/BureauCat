@@ -11,7 +11,9 @@ export const documentInsightTypeSchema = z.enum([
   "risk",
   "question",
   "legal_reference",
-  "term"
+  "term",
+  "identifier",
+  "conflict"
 ]);
 
 export const documentInsightStatusSchema = z.enum([

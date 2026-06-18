@@ -8,7 +8,7 @@ type Context = {
   params: Promise<{ pinId: string }>;
 };
 
-const allowedPinColors = ["red", "orange", "green", "yellow", "blue"] as const;
+const allowedPinColors = ["red", "orange", "green", "yellow", "blue", "purple", "gray"] as const;
 
 export async function PATCH(request: Request, context: Context) {
   const { pinId } = await context.params;

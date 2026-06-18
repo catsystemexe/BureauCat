@@ -23,8 +23,9 @@ export const documentInsightSelect = {
 };
 
 function getInsightBookmarkColor(insightType: string) {
-  if (insightType === "risk") return "orange";
+  if (insightType === "risk" || insightType === "conflict") return "orange";
   if (insightType === "legal_reference" || insightType === "term") return "purple";
+  if (insightType === "identifier") return "gray";
   if (insightType === "question") return "yellow";
   if (insightType === "fact" || insightType === "claim") return "green";
   return "blue";

@@ -191,7 +191,9 @@ export type DocumentInsightType =
   | "risk"
   | "question"
   | "legal_reference"
-  | "term";
+  | "term"
+  | "identifier"
+  | "conflict";
 
 export type DocumentInsight = {
   id: string;

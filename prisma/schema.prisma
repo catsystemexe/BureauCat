@@ -144,7 +144,7 @@ model DocumentInsight {
   source_document_id String?
   source_pin_id      String?
 
-  /// Allowed values: fact, claim, risk, question, legal_reference, term.
+  /// Allowed values: fact, claim, risk, question, legal_reference, term, identifier, conflict.
   insight_type String
 
   /// Target JournalItem fields.
