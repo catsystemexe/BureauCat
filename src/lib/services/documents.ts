@@ -548,8 +548,8 @@ export async function createAIAnalysisDocument(sourceDocumentId: string) {
 
   function renderLines(items: typeof aiAnalysis.insights) {
     return items.length > 0
-      ? items.map((item) => `- ${item.title}${item.content ? ` — ${item.content}` : ""}`).join("\n")
-      : "- Nenalezeno.";
+      ? items.map((item) => item.title).join("\n\n")
+      : "Nenalezeno.";
   }
 
   const markdown = `## Identifikace
@@ -618,7 +618,7 @@ ${renderLines(grouped.questions)}
           target_section: target.target_section,
           target_item_type: target.target_item_type,
           title: insight.title,
-          content: insight.content ?? null,
+          content: null,
           evidence_state: insight.insight_type === "conflict" ? "conflict" : "inferred",
           status: "pending",
           source_text: sourceRange?.sourceText ?? insight.source_text,

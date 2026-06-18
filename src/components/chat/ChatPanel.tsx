@@ -250,6 +250,102 @@ export function ChatPanel({
     return "#22c55e";
   }
 
+  function getAnalysisSectionKeyForInsight(insight: DocumentInsight) {
+    if (insight.insight_type === "identifier") return "Identifikace";
+    if (insight.insight_type === "legal_reference") return "Paragrafy a úřední jazyk";
+    if (insight.insight_type === "risk" || insight.insight_type === "conflict" || insight.insight_type === "term") return "Rizika, lhůty a rozpory";
+    if (insight.insight_type === "question") return "Otázky";
+    return "Klíčové skutečnosti";
+  }
+
+  function renderAnalysisInsightCard(insight: DocumentInsight) {
+    const isExpanded = expandedInsightIds.includes(insight.id);
+    const isBookmarkHovered =
+      ((hoveredBookmarkPinId !== null && hoveredBookmarkPinId !== undefined) || externalHoveredBookmarkPinId !== null) &&
+      insight.source_pin_id === (hoveredBookmarkPinId ?? externalHoveredBookmarkPinId);
+
+    return (
+      <span
+        className="analysis-inline-insight-wrap"
+        key={insight.id}
+        style={{ "--insight-link-color": getAnalysisInsightColor(insight.insight_type) } as React.CSSProperties}
+      >
+        <button
+          className={`analysis-inline-insight analysis-inline-insight-${insight.insight_type} analysis-inline-insight-status-${insight.status}${isBookmarkHovered || isExpanded ? " analysis-inline-insight-bookmark-hover" : ""}`}
+          onClick={() => toggleExpandedInsight(insight.id)}
+          onMouseEnter={() => {
+            setHoveredInsightId(insight.id);
+            window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-hover", { detail: { insightId: insight.id } }));
+            if (insight.source_pin_id) {
+              window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: insight.source_pin_id } }));
+            }
+          }}
+          onMouseLeave={() => {
+            setHoveredInsightId((currentId) => currentId === insight.id ? null : currentId);
+            window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-leave", { detail: { insightId: insight.id } }));
+            if (insight.source_pin_id) {
+              window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: insight.source_pin_id } }));
+            }
+          }}
+          title={insight.title}
+          type="button"
+        >
+          <span className="analysis-inline-insight-status-dot" aria-hidden="true" />
+          <span className="analysis-inline-insight-text">{insight.title}</span>
+        </button>
+
+        {isExpanded ? (
+          <span className="analysis-inline-insight-detail">
+            {insight.source_text ? (
+              <span className="analysis-inline-insight-source">{insight.source_text}</span>
+            ) : null}
+
+            {insight.status === "pending" ? (
+              <span className="analysis-inline-insight-detail-actions" aria-label="Rozhodnutí insightu">
+                <button
+                  aria-label="Schválit insight"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void updateAnalysisInsightStatus(insight.id, "approved");
+                  }}
+                  title="Schválit insight"
+                  type="button"
+                >
+                  <Check aria-hidden="true" />
+                  <span>Potvrdit</span>
+                </button>
+                <button
+                  aria-label="Schválit a zapsat do zápisníku s bookmarkem"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void journalizeAnalysisInsight(insight.id);
+                  }}
+                  title="Schválit + zapsat do zápisníku + bookmark"
+                  type="button"
+                >
+                  <BookmarkCheck aria-hidden="true" />
+                  <span>Potvrdit + bookmark</span>
+                </button>
+                <button
+                  aria-label="Odmítnout insight"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void deleteAnalysisInsight(insight.id);
+                  }}
+                  title="Odmítnout insight"
+                  type="button"
+                >
+                  <Trash2 aria-hidden="true" />
+                  <span>Smazat</span>
+                </button>
+              </span>
+            ) : null}
+          </span>
+        ) : null}
+      </span>
+    );
+  }
+
   async function updateAnalysisInsightStatus(
     insightId: string,
     status: "approved" | "journalized" | "rejected"
@@ -274,9 +370,36 @@ export function ChatPanel({
           insight.id === insightId ? data.insight! : insight
         )
       );
+      collapseAnalysisInsight(insightId);
     } catch (updateError) {
       setAnalysisInsightsError(
         updateError instanceof Error ? updateError.message : "Insight se nepodařilo upravit."
+      );
+    }
+  }
+
+
+  async function deleteAnalysisInsight(insightId: string) {
+    try {
+      setAnalysisInsightsError(null);
+
+      const response = await fetch(`/api/document-insights/${insightId}`, {
+        method: "DELETE"
+      });
+
+      const data = (await response.json()) as { deleted?: boolean; error?: string };
+
+      if (!response.ok || !data.deleted) {
+        throw new Error(data.error ?? "Insight se nepodařilo smazat.");
+      }
+
+      setAnalysisInsights((currentInsights) =>
+        currentInsights.filter((insight) => insight.id !== insightId)
+      );
+      collapseAnalysisInsight(insightId);
+    } catch (deleteError) {
+      setAnalysisInsightsError(
+        deleteError instanceof Error ? deleteError.message : "Insight se nepodařilo smazat."
       );
     }
   }
@@ -308,6 +431,7 @@ export function ChatPanel({
           insight.id === insightId ? data.insight! : insight
         )
       );
+      collapseAnalysisInsight(insightId);
 
       onJournalRefreshRequested();
       window.dispatchEvent(new CustomEvent("bureaucat:journal-refresh"));
@@ -348,6 +472,10 @@ export function ChatPanel({
     externalHoveredBookmarkPinId,
     onActiveAnalysisInsightsChange
   ]);
+
+  function collapseAnalysisInsight(insightId: string) {
+    setExpandedInsightIds((currentIds) => currentIds.filter((id) => id !== insightId));
+  }
 
   function toggleExpandedInsight(insightId: string) {
     setExpandedInsightIds((currentIds) =>
@@ -459,16 +587,41 @@ export function ChatPanel({
   }
 
   function renderAnalysisStructuredText(text: string) {
+    const sectionTitles = splitAnalysisMarkdownSections(text)
+      .map((section) => section.title)
+      .filter((title) => title !== "Stručné shrnutí");
+
+    const fallbackSectionTitles = [
+      "Identifikace",
+      "Paragrafy a úřední jazyk",
+      "Klíčové skutečnosti",
+      "Rizika, lhůty a rozpory",
+      "Otázky"
+    ];
+
+    const orderedSectionTitles = (sectionTitles.length > 0 ? sectionTitles : fallbackSectionTitles)
+      .filter((title, index, array) => array.indexOf(title) === index);
+
     return (
       <div className="analysis-section-list">
-        {splitAnalysisMarkdownSections(text).map((section) => (
-          <section className="analysis-section-block" key={section.title}>
-            <h4 className="analysis-section-title">{section.title}</h4>
-            <div className="analysis-section-body">
-              {renderAnalysisTextWithInlineInsights(section.body, section.bodyStartOffset)}
-            </div>
-          </section>
-        ))}
+        {orderedSectionTitles.map((sectionTitle) => {
+          const sectionInsights = analysisInsights.filter(
+            (insight) => getAnalysisSectionKeyForInsight(insight) === sectionTitle
+          );
+
+          if (sectionInsights.length === 0) {
+            return null;
+          }
+
+          return (
+            <section className="analysis-section-block" key={sectionTitle}>
+              <h4 className="analysis-section-title">{sectionTitle}</h4>
+              <div className="analysis-section-body">
+                {sectionInsights.map((insight) => renderAnalysisInsightCard(insight))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     );
   }
@@ -527,7 +680,9 @@ export function ChatPanel({
     const parts: React.ReactNode[] = [];
     let cursor = 0;
 
-    for (const range of inlineInsights) {
+    for (let index = 0; index < inlineInsights.length; index += 1) {
+      const range = inlineInsights[index];
+
       if (range.start > cursor) {
         parts.push(...renderAnalysisPlainTextSegment(normalizedAnalysisText.slice(cursor, range.start), `plain-${cursor}`));
       }
@@ -564,7 +719,8 @@ export function ChatPanel({
             title={range.insight.title}
             type="button"
           >
-            {selectedText}
+            <span className="analysis-inline-insight-status-dot" aria-hidden="true" />
+            <span className="analysis-inline-insight-text">{selectedText}</span>
           </button>
 
           {isExpanded ? (
@@ -603,7 +759,7 @@ export function ChatPanel({
                     aria-label="Odmítnout insight"
                     onClick={(event) => {
                       event.stopPropagation();
-                      void updateAnalysisInsightStatus(range.insight.id, "rejected");
+                      void deleteAnalysisInsight(range.insight.id);
                     }}
                     title="Odmítnout insight"
                     type="button"
@@ -618,7 +774,15 @@ export function ChatPanel({
         </span>
       );
 
-      cursor = range.end;
+      const nextRange = inlineInsights[index + 1];
+      const sectionEnd = normalizedAnalysisText.indexOf("\n## ", range.end);
+      const blockEnd = nextRange
+        ? nextRange.start
+        : sectionEnd >= 0
+          ? sectionEnd
+          : normalizedAnalysisText.length;
+
+      cursor = Math.max(range.end, blockEnd);
     }
 
     if (cursor < text.length) {

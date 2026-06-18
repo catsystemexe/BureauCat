@@ -1016,3 +1016,46 @@
   height: 15px !important;
   width: 15px !important;
 }
+
+
+/* === ANALYSIS INSIGHT BLOCK READABILITY PASS === */
+
+.analysis-section-body .analysis-inline-insight-wrap {
+  display: block !important;
+  margin: 8px 0 12px !important;
+}
+
+.analysis-section-body .analysis-inline-insight {
+  align-items: flex-start !important;
+  display: inline-flex !important;
+  gap: 7px !important;
+  line-height: 1.38 !important;
+  padding: 2px 3px !important;
+  white-space: pre-wrap !important;
+}
+
+.analysis-inline-insight-status-dot {
+  border-radius: 999px !important;
+  display: inline-block !important;
+  flex: 0 0 auto !important;
+  height: 7px !important;
+  margin-top: 0.47em !important;
+  width: 7px !important;
+}
+
+.analysis-inline-insight-status-pending .analysis-inline-insight-status-dot {
+  background: #dc2626 !important;
+}
+
+.analysis-inline-insight-status-approved .analysis-inline-insight-status-dot,
+.analysis-inline-insight-status-journalized .analysis-inline-insight-status-dot {
+  background: #9ca3af !important;
+}
+
+.analysis-inline-insight-status-rejected .analysis-inline-insight-status-dot {
+  background: #d1d5db !important;
+}
+
+.analysis-inline-insight-text {
+  display: inline !important;
+}

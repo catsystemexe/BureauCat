@@ -14,7 +14,7 @@ const insightTypeSchema = z.enum([
 const aiInsightSchema = z.object({
   insight_type: insightTypeSchema,
   title: z.string().min(1),
-  content: z.string().nullable().optional(),
+  content: z.union([z.string(), z.null()]).optional(),
   source_text: z.string().min(1)
 });
 
