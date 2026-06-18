@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  createMockAnalysisDocument,
+  createAIAnalysisDocument,
   deleteAnalysisDocument
 } from "@/lib/services/documents";
 
@@ -11,14 +11,27 @@ type Context = {
 };
 
 export async function POST(_request: Request, context: Context) {
+  console.log("[analysis route env]", {
+    hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
+    openAIModel: process.env.OPENAI_MODEL ?? null
+  });
+
   const { documentId } = await context.params;
-  const document = await createMockAnalysisDocument(documentId);
 
-  if (!document) {
-    return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  try {
+    const document = await createAIAnalysisDocument(documentId);
+
+    if (!document) {
+      return NextResponse.json({ error: "Document not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({ document }, { status: 201 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "AI analysis failed." },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({ document }, { status: 201 });
 }
 
 export async function DELETE(_request: Request, context: Context) {

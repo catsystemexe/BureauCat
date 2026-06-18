@@ -1,3 +1,4 @@
+import { analyzeDocumentWithAI } from "@/lib/ai/documentAnalysis";
 import { prisma } from "@/lib/prisma";
 import { extractDocumentText } from "@/lib/documents/extraction";
 import { evidenceStateRecheckForCase } from "@/lib/services/evidenceStateService";
@@ -401,6 +402,237 @@ ${questionLine}
   });
 }
 
+
+
+function mapAIInsightTarget(insightType: string) {
+  if (insightType === "identifier" || insightType === "legal_reference") {
+    return { target_section: "description", target_item_type: "CLAIM" };
+  }
+
+  if (insightType === "risk" || insightType === "conflict" || insightType === "term") {
+    return { target_section: "risks", target_item_type: "RISK" };
+  }
+
+  if (insightType === "question") {
+    return { target_section: "open_questions", target_item_type: "QUESTION" };
+  }
+
+  return { target_section: "description", target_item_type: "FACT" };
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeForRangeMatch(value: string) {
+  return value
+    .replace(/\s+/g, " ")
+    .replace(/[„“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .trim();
+}
+
+function findNormalizedTextRange(sourceText: string, needle: string) {
+  const normalizedNeedle = normalizeForRangeMatch(needle);
+
+  if (!normalizedNeedle) {
+    return null;
+  }
+
+  const pattern = normalizedNeedle
+    .split(" ")
+    .map(escapeRegExp)
+    .join("\\s+");
+
+  const match = new RegExp(pattern, "i").exec(sourceText);
+
+  if (!match || match.index === undefined) {
+    return null;
+  }
+
+  return clampRange(sourceText, match.index, match.index + match[0].length);
+}
+
+function findPartialTextRange(sourceText: string, needle: string) {
+  const normalizedNeedle = normalizeForRangeMatch(needle);
+
+  if (!normalizedNeedle) {
+    return null;
+  }
+
+  const chunks = normalizedNeedle
+    .split(/[.;:\n]/)
+    .map((chunk) => chunk.trim())
+    .filter((chunk) => chunk.length >= 24)
+    .sort((a, b) => b.length - a.length);
+
+  for (const chunk of chunks) {
+    const exactStart = sourceText.indexOf(chunk);
+
+    if (exactStart >= 0) {
+      return clampRange(sourceText, exactStart, exactStart + chunk.length);
+    }
+
+    const normalizedRange = findNormalizedTextRange(sourceText, chunk);
+
+    if (normalizedRange) {
+      return normalizedRange;
+    }
+  }
+
+  return null;
+}
+
+function findTextRange(sourceText: string, needle: string) {
+  const normalizedNeedle = needle.trim();
+
+  if (!normalizedNeedle) {
+    return null;
+  }
+
+  const exactStart = sourceText.indexOf(normalizedNeedle);
+
+  if (exactStart >= 0) {
+    return clampRange(sourceText, exactStart, exactStart + normalizedNeedle.length);
+  }
+
+  return findNormalizedTextRange(sourceText, normalizedNeedle) ?? findPartialTextRange(sourceText, normalizedNeedle);
+}
+
+export async function createAIAnalysisDocument(sourceDocumentId: string) {
+  const sourceDocument = await prisma.document.findUnique({
+    where: { id: sourceDocumentId },
+    select: documentSelect
+  });
+
+  if (!sourceDocument) {
+    return null;
+  }
+
+  const existingAnalysis = await prisma.document.findFirst({
+    where: {
+      parent_document_id: sourceDocument.id,
+      document_type: "analysis"
+    },
+    orderBy: { created_at: "desc" },
+    select: documentSelect
+  });
+
+  if (existingAnalysis) {
+    return existingAnalysis;
+  }
+
+  const sourceText =
+    sourceDocument.processed_markdown ??
+    sourceDocument.processed_text ??
+    sourceDocument.extracted_text ??
+    "";
+
+  if (!sourceText.trim()) {
+    throw new Error("Dokument nemá text pro AI analýzu.");
+  }
+
+  const sourceTitle = getDocumentTitle(sourceDocument);
+  const aiAnalysis = await analyzeDocumentWithAI({
+    documentTitle: sourceTitle,
+    documentText: sourceText
+  });
+
+  const grouped = {
+    identification: aiAnalysis.insights.filter((item) => item.insight_type === "identifier"),
+    legal: aiAnalysis.insights.filter((item) => item.insight_type === "legal_reference"),
+    facts: aiAnalysis.insights.filter((item) => item.insight_type === "fact" || item.insight_type === "claim"),
+    risks: aiAnalysis.insights.filter((item) => item.insight_type === "risk" || item.insight_type === "conflict" || item.insight_type === "term"),
+    questions: aiAnalysis.insights.filter((item) => item.insight_type === "question")
+  };
+
+  function renderLines(items: typeof aiAnalysis.insights) {
+    return items.length > 0
+      ? items.map((item) => `- ${item.title}${item.content ? ` — ${item.content}` : ""}`).join("\n")
+      : "- Nenalezeno.";
+  }
+
+  const markdown = `## Identifikace
+
+${renderLines(grouped.identification)}
+
+## Paragrafy a úřední jazyk
+
+${renderLines(grouped.legal)}
+
+## Stručné shrnutí
+
+${aiAnalysis.summary}
+
+## Klíčové skutečnosti
+
+${renderLines(grouped.facts)}
+
+## Rizika, lhůty a rozpory
+
+${renderLines(grouped.risks)}
+
+## Otázky
+
+${renderLines(grouped.questions)}
+`;
+
+  function findAnalysisRange(title: string) {
+    const start = markdown.indexOf(title);
+    return start >= 0 ? { start, end: start + title.length } : null;
+  }
+
+  return prisma.$transaction(async (transaction) => {
+    const analysisDocument = await transaction.document.create({
+      data: {
+        case_id: sourceDocument.case_id,
+        filename: sourceTitle,
+        display_name: sourceTitle,
+        filetype: "md",
+        original_file: sourceDocument.original_file,
+        document_type: "analysis",
+        analysis_type: "document_analysis_ai_v1",
+        parent_document_id: sourceDocument.id,
+        extracted_text: markdown,
+        processed_text: markdown,
+        processed_markdown: markdown,
+        processing_status: "processed",
+        processing_error: null,
+        markdown_version: 1,
+        validation_status: "pending_validation",
+        ai_summary: aiAnalysis.summary
+      },
+      select: documentSelect
+    });
+
+    for (const insight of aiAnalysis.insights) {
+      const sourceRange = findTextRange(sourceText, insight.source_text);
+      const target = mapAIInsightTarget(insight.insight_type);
+      const analysisRange = findAnalysisRange(insight.title);
+
+      await transaction.documentInsight.create({
+        data: {
+          document_id: analysisDocument.id,
+          source_document_id: sourceDocument.id,
+          insight_type: insight.insight_type,
+          target_section: target.target_section,
+          target_item_type: target.target_item_type,
+          title: insight.title,
+          content: insight.content ?? null,
+          evidence_state: insight.insight_type === "conflict" ? "conflict" : "inferred",
+          status: "pending",
+          source_text: sourceRange?.sourceText ?? insight.source_text,
+          source_start_offset: sourceRange?.start ?? null,
+          source_end_offset: sourceRange?.end ?? null,
+          analysis_start_offset: analysisRange?.start ?? null,
+          analysis_end_offset: analysisRange?.end ?? null
+        }
+      });
+    }
+
+    return analysisDocument;
+  });
+}
 
 
 export async function deleteAnalysisDocument(analysisDocumentId: string) {
