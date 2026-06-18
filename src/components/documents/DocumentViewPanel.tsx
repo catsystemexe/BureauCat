@@ -250,6 +250,35 @@ export function DocumentViewPanel({
   }, [pins, displayText, isEditing, isFullscreen]);
 
   useEffect(() => {
+    function handleScrollToSourceRange(event: Event) {
+      const customEvent = event as CustomEvent<{
+        documentId?: string;
+        startOffset?: number;
+        endOffset?: number;
+      }>;
+
+      if (customEvent.detail?.documentId !== currentDocument.id) {
+        return;
+      }
+
+      if (
+        typeof customEvent.detail.startOffset !== "number" ||
+        typeof customEvent.detail.endOffset !== "number"
+      ) {
+        return;
+      }
+
+      window.requestAnimationFrame(() => {
+        scrollToSourceRange(customEvent.detail.startOffset!, customEvent.detail.endOffset!);
+      });
+    }
+
+    window.addEventListener("bureaucat:scroll-to-source-range", handleScrollToSourceRange);
+    return () => window.removeEventListener("bureaucat:scroll-to-source-range", handleScrollToSourceRange);
+  }, [currentDocument.id, displayText]);
+
+
+  useEffect(() => {
     if (!targetPinId || pins.length === 0) {
       return;
     }
@@ -1007,6 +1036,44 @@ export function DocumentViewPanel({
 
     window.requestAnimationFrame(measurePinPositions);
   }
+
+  function scrollToSourceRange(startOffset: number, endOffset: number) {
+    const root = documentTextRef.current;
+
+    if (!root) {
+      return;
+    }
+
+    const safeStart = Math.max(0, Math.min(startOffset, displayText.length));
+    const safeEnd = Math.max(safeStart, Math.min(endOffset, displayText.length));
+    const target = getTextNodeAtOffset(root, safeStart);
+
+    if (!target) {
+      return;
+    }
+
+    const range = document.createRange();
+    range.setStart(target.node, target.offset);
+
+    const endTarget = getTextNodeAtOffset(root, safeEnd);
+    if (endTarget) {
+      range.setEnd(endTarget.node, endTarget.offset);
+    } else {
+      range.setEnd(target.node, target.offset);
+    }
+
+    const rect = range.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    const targetTopInScroll = root.scrollTop + rect.top - rootRect.top;
+
+    root.scrollTo({
+      top: Math.max(0, targetTopInScroll - root.clientHeight * 0.35),
+      behavior: "smooth"
+    });
+
+    window.requestAnimationFrame(measurePinPositions);
+  }
+
 
   async function movePinToOffset(pinId: string, visualOffset: number) {
     setPins((current) =>

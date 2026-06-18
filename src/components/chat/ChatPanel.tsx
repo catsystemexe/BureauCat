@@ -258,6 +258,28 @@ export function ChatPanel({
     return "Klíčové skutečnosti";
   }
 
+  function dispatchScrollToInsightSource(insight: DocumentInsight) {
+    if (
+      !insight.source_document_id ||
+      insight.source_start_offset === null ||
+      insight.source_end_offset === null
+    ) {
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("bureaucat:scroll-to-source-range", {
+        detail: {
+          documentId: insight.source_document_id,
+          startOffset: insight.source_start_offset,
+          endOffset: insight.source_end_offset,
+          insightId: insight.id
+        }
+      })
+    );
+  }
+
+
   function renderAnalysisInsightCard(insight: DocumentInsight) {
     const isExpanded = expandedInsightIds.includes(insight.id);
     const isBookmarkHovered =
@@ -272,12 +294,25 @@ export function ChatPanel({
       >
         <button
           className={`analysis-inline-insight analysis-inline-insight-${insight.insight_type} analysis-inline-insight-status-${insight.status}${isBookmarkHovered || isExpanded ? " analysis-inline-insight-bookmark-hover" : ""}`}
-          onClick={() => toggleExpandedInsight(insight.id)}
+          onClick={() => {
+            const willExpand = !expandedInsightIds.includes(insight.id);
+            toggleExpandedInsight(insight.id);
+
+            if (willExpand) {
+              dispatchScrollToInsightSource(insight);
+            }
+          }}
           onMouseEnter={() => {
             setHoveredInsightId(insight.id);
             window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-hover", { detail: { insightId: insight.id } }));
             if (insight.source_pin_id) {
               window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: insight.source_pin_id } }));
+            }
+
+            if (isExpanded) {
+              window.setTimeout(() => {
+                dispatchScrollToInsightSource(insight);
+              }, 280);
             }
           }}
           onMouseLeave={() => {
