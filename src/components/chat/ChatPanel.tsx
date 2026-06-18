@@ -78,6 +78,7 @@ export function ChatPanel({
   activeAnalysisDocument = null,
   onActiveAnalysisInsightsChange,
   onCloseAnalysisDocument,
+  onOpenAnalysisSourceDocument,
   onJournalRefreshRequested,
   selectedSituationId,
   hoveredBookmarkPinId
@@ -86,6 +87,7 @@ export function ChatPanel({
   caseItem: CaseSummary;
   onActiveAnalysisInsightsChange?: (insights: DocumentInsight[]) => void;
   onCloseAnalysisDocument?: () => void;
+  onOpenAnalysisSourceDocument?: (documentId: string) => void;
   onJournalRefreshRequested: () => void;
   selectedSituationId: string | null;
   hoveredBookmarkPinId?: string | null;
@@ -1003,12 +1005,22 @@ export function ChatPanel({
             <div className="analysis-floating-title-block">
               <Brain className="analysis-floating-title-icon" aria-hidden="true" />
               <div className="analysis-floating-title-text">
-                <h3>
+                <button
+                  className="analysis-floating-title-button"
+                  disabled={!activeAnalysisDocument.parent_document_id}
+                  onClick={() => {
+                    if (activeAnalysisDocument.parent_document_id) {
+                      onOpenAnalysisSourceDocument?.(activeAnalysisDocument.parent_document_id);
+                    }
+                  }}
+                  title="Otevřít zdrojový dokument"
+                  type="button"
+                >
                   {(
                     activeAnalysisDocument.display_name ??
                     activeAnalysisDocument.filename
                   ).replace(/^Analýza:\s*/i, "")}
-                </h3>
+                </button>
 
               </div>
             </div>

@@ -270,6 +270,9 @@ export function DocumentViewPanel({
 
       window.requestAnimationFrame(() => {
         scrollToSourceRange(customEvent.detail.startOffset!, customEvent.detail.endOffset!);
+
+        const startOffset = customEvent.detail.startOffset!;
+        const endOffset = customEvent.detail.endOffset!;
       });
     }
 

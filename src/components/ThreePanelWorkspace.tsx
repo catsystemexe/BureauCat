@@ -244,6 +244,7 @@ function MiddleChatPanel({
   caseItem,
   onActiveAnalysisInsightsChange,
   onCloseAnalysisDocument,
+  onOpenAnalysisSourceDocument,
   onJournalRefreshRequested,
   selectedSituationId,
   hoveredBookmarkPinId
@@ -252,6 +253,7 @@ function MiddleChatPanel({
   caseItem: CaseSummary;
   onActiveAnalysisInsightsChange: (insights: DocumentInsight[]) => void;
   onCloseAnalysisDocument: () => void;
+  onOpenAnalysisSourceDocument: (documentId: string) => Promise<boolean>;
   onJournalRefreshRequested: () => void;
   selectedSituationId: string | null;
   hoveredBookmarkPinId: string | null;
@@ -262,6 +264,9 @@ function MiddleChatPanel({
       caseItem={caseItem}
       onActiveAnalysisInsightsChange={onActiveAnalysisInsightsChange}
       onCloseAnalysisDocument={onCloseAnalysisDocument}
+      onOpenAnalysisSourceDocument={(documentId) => {
+        void onOpenAnalysisSourceDocument(documentId);
+      }}
       onJournalRefreshRequested={onJournalRefreshRequested}
       selectedSituationId={selectedSituationId}
       hoveredBookmarkPinId={hoveredBookmarkPinId}
@@ -993,6 +998,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
             setActiveAnalysisDocument(null);
             setActiveAnalysisInsights([]);
           }}
+          onOpenAnalysisSourceDocument={openSourceDocument}
           onJournalRefreshRequested={requestJournalRefresh}
           selectedSituationId={selectedSituationId}
           hoveredBookmarkPinId={hoveredBookmarkPinId}

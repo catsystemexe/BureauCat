@@ -1059,3 +1059,48 @@
 .analysis-inline-insight-text {
   display: inline !important;
 }
+
+
+/* === ANALYSIS TITLE SOURCE DOCUMENT BUTTON === */
+
+.analysis-floating-title-button {
+  appearance: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: inherit !important;
+  cursor: pointer !important;
+  display: inline !important;
+  font: inherit !important;
+  font-weight: 820 !important;
+  line-height: 1.2 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+.analysis-floating-title-button:hover,
+.analysis-floating-title-button:focus-visible {
+  color: #0869d7 !important;
+  outline: none !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+
+.analysis-floating-title-button:disabled {
+  cursor: default !important;
+  opacity: 0.7 !important;
+  text-decoration: none !important;
+}
+
+
+/* === ANALYSIS TITLE NO HOVER VISUALS === */
+
+.analysis-floating-title-button:hover,
+.analysis-floating-title-button:focus-visible,
+.analysis-floating-title-button:active {
+  color: inherit !important;
+  text-decoration: none !important;
+  outline: none !important;
+}
+
+
+
