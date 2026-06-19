@@ -653,3 +653,79 @@
   color: #ffffff !important;
   filter: none !important;
 }
+
+/* === PIN EDITOR VERTICAL TOOLBAR FINAL === */
+
+.document-pin-editor-toolbar {
+  align-items: center !important;
+  border-radius: 999px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  height: auto !important;
+  left: 50% !important;
+  padding: 6px 4px !important;
+  top: auto !important;
+  bottom: calc(100% + 8px) !important;
+  transform: translateX(-50%) !important;
+  width: 34px !important;
+}
+
+.document-pin-editor-colors {
+  align-items: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.document-pin-editor-toolbar .document-tool-color-button {
+  flex: 0 0 auto !important;
+  height: 20px !important;
+  width: 20px !important;
+}
+
+.document-pin-delete-button {
+  flex: 0 0 auto !important;
+  height: 24px !important;
+  width: 24px !important;
+}
+
+/* === PIN TOOLBAR ATTACHED TO BOOKMARK === */
+
+.document-pin-editor-toolbar {
+  left: 0 !important;
+  transform: none !important;
+  bottom: calc(100% + 2px) !important;
+}
+
+
+/* === PIN EDITOR TOOLBAR ONLY FINAL === */
+
+.document-pin-floating-content {
+  display: none !important;
+}
+
+.document-pin-floating-editor {
+  background: transparent !important;
+  box-shadow: none !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  width: 34px !important;
+  padding: 0 !important;
+  pointer-events: auto !important;
+}
+
+.document-pin-editor-toolbar {
+  position: static !important;
+  transform: none !important;
+  width: 34px !important;
+}
+
+
+/* === PIN TOOLBAR POSITION TWEAK === */
+
+.document-pin-editor-toolbar {
+  margin-top: 14px !important;
+  margin-left: -6px !important;
+}
+

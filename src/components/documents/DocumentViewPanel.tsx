@@ -2394,7 +2394,11 @@ export function DocumentViewPanel({
 
                   const rect = event.currentTarget.getBoundingClientRect();
                   setHoveredPin(null);
-                  openPinEditor(pin, rect.right + 12, rect.top);
+                  openPinEditor(
+                    pin,
+                    rect.left - 0,
+                    rect.bottom - 260
+                  );
                 }}
                
                
@@ -2431,6 +2435,18 @@ export function DocumentViewPanel({
           } as React.CSSProperties}
         >
           <div className="document-pin-editor-toolbar" aria-label="Akce pinu">
+            
+            <button
+              aria-label="Smazat pin"
+              className="document-pin-delete-button"
+              disabled={isSaving}
+              onClick={() => void deletePin(editingPinId)}
+              title="Smazat pin"
+              type="button"
+            >
+              <Trash2 aria-hidden="true" className="document-mini-icon" />
+            </button>
+            
             <div className="document-pin-editor-colors">
               {pinColors.map((color) => (
                 <button
@@ -2453,16 +2469,7 @@ export function DocumentViewPanel({
               ))}
             </div>
 
-            <button
-              aria-label="Smazat pin"
-              className="document-pin-delete-button"
-              disabled={isSaving}
-              onClick={() => void deletePin(editingPinId)}
-              title="Smazat pin"
-              type="button"
-            >
-              <Trash2 aria-hidden="true" className="document-mini-icon" />
-            </button>
+         
           </div>
 
           <div className="document-pin-floating-content">
