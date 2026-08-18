@@ -65,10 +65,10 @@ if [[ -n "$(git status --porcelain)" ]]; then
   fail "Working tree is not clean. Commit/stash changes before consolidation."
 fi
 
-echo "[1/12] Validate Prisma schema"
+echo "[1/13] Validate Prisma schema"
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma validate
 
-echo "[2/12] Detect schema drift and render alignment SQL"
+echo "[2/13] Detect schema drift and render alignment SQL"
 set +e
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
   --from-schema-datasource "$ROOT_DIR/prisma/schema.prisma" \
@@ -88,7 +88,7 @@ else
   fail "Unexpected prisma migrate diff exit code: $DIFF_STATUS"
 fi
 
-echo "[3/12] Preflight data-integrity checks for target constraints"
+echo "[3/13] Preflight data-integrity checks for target constraints"
 ORPHAN_SITUATIONS=$(sqlite3 "$DB_PATH" 'SELECT COUNT(*) FROM "JournalItem" j LEFT JOIN "Situation" s ON s.id=j.situation_id WHERE j.situation_id IS NOT NULL AND s.id IS NULL;')
 ORPHAN_PARENTS=$(sqlite3 "$DB_PATH" 'SELECT COUNT(*) FROM "Document" d LEFT JOIN "Document" p ON p.id=d.parent_document_id WHERE d.parent_document_id IS NOT NULL AND p.id IS NULL;')
 DUPLICATE_CHILD_KEYS=$(sqlite3 "$DB_PATH" 'SELECT COUNT(*) FROM (SELECT parent_document_id, document_type, analysis_type, COUNT(*) c FROM "Document" WHERE parent_document_id IS NOT NULL AND analysis_type IS NOT NULL GROUP BY parent_document_id, document_type, analysis_type HAVING c > 1);')
@@ -97,18 +97,39 @@ echo "JournalItem orphan situation_id rows: $ORPHAN_SITUATIONS"
 echo "Document orphan parent_document_id rows: $ORPHAN_PARENTS"
 echo "Document duplicate non-null unique-key groups: $DUPLICATE_CHILD_KEYS"
 [[ "$ORPHAN_SITUATIONS" == "0" ]] || fail "Cannot add JournalItem situation FK while orphan rows exist."
-[[ "$ORPHAN_PARENTS" == "0" ]] || fail "Cannot add Document parent FK while orphan rows exist."
 [[ "$DUPLICATE_CHILD_KEYS" == "0" ]] || fail "Cannot add Document composite unique index while duplicate rows exist."
+if [[ "$ORPHAN_PARENTS" != "0" ]]; then
+  echo "Orphan Document parent references will be normalized to NULL after backup, matching the target ON DELETE SET NULL relation."
+fi
 
-echo "[4/12] Snapshot business-row counts"
+echo "[4/13] Snapshot business-row counts"
 count_rows "$COUNTS_BEFORE"
 cat "$COUNTS_BEFORE"
 
-echo "[5/12] Create SQLite safety backup"
+echo "[5/13] Create SQLite safety backup"
 sqlite3 "$DB_PATH" ".backup '$BACKUP_DB'"
 [[ -s "$BACKUP_DB" ]] || fail "Safety backup was not created successfully."
 
-echo "[6/12] Align working DB schema to current prisma/schema.prisma if needed"
+echo "[6/13] Normalize orphan Document parent references to target SetNull semantics"
+if [[ "$ORPHAN_PARENTS" != "0" ]]; then
+  sqlite3 -bail "$DB_PATH" <<'SQL'
+UPDATE "Document"
+SET "parent_document_id" = NULL
+WHERE "parent_document_id" IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1
+    FROM "Document" AS parent
+    WHERE parent."id" = "Document"."parent_document_id"
+  );
+SQL
+fi
+REMAINING_ORPHAN_PARENTS=$(sqlite3 "$DB_PATH" 'SELECT COUNT(*) FROM "Document" d LEFT JOIN "Document" p ON p.id=d.parent_document_id WHERE d.parent_document_id IS NOT NULL AND p.id IS NULL;')
+if [[ "$REMAINING_ORPHAN_PARENTS" != "0" ]]; then
+  restore_backup
+  fail "Orphan Document parent references remain after normalization; working DB restored from backup."
+fi
+
+echo "[7/13] Align working DB schema to current prisma/schema.prisma if needed"
 if [[ $DIFF_STATUS -eq 2 ]]; then
   if ! sqlite3 -bail "$DB_PATH" <"$ALIGN_SQL"; then
     restore_backup
@@ -129,7 +150,7 @@ if ! diff -u "$COUNTS_BEFORE" "$COUNTS_AFTER"; then
   fail "Business row counts changed during schema alignment; working DB restored from backup."
 fi
 
-echo "[7/12] Verify schema drift is now zero"
+echo "[8/13] Verify schema drift is now zero"
 set +e
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
   --from-schema-datasource "$ROOT_DIR/prisma/schema.prisma" \
@@ -143,7 +164,7 @@ if [[ $VERIFY_STATUS -ne 0 ]]; then
   fail "Working DB still differs from prisma/schema.prisma after alignment; DB restored."
 fi
 
-echo "[8/12] Archive legacy migration files and applied-history metadata"
+echo "[9/13] Archive legacy migration files and applied-history metadata"
 mv "$MIGRATIONS_DIR" "$ARCHIVE_DIR"
 mkdir -p "$MIGRATIONS_DIR/$BASELINE_NAME"
 if [[ -f "$ARCHIVE_DIR/migration_lock.toml" ]]; then
@@ -155,7 +176,7 @@ sqlite3 -header -separator $'\t' "$DB_PATH" \
   'SELECT id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count FROM _prisma_migrations ORDER BY started_at;' \
   > "$ARCHIVE_DIR/applied_history.tsv"
 
-echo "[9/12] Generate consolidated baseline SQL from current schema"
+echo "[10/13] Generate consolidated baseline SQL from current schema"
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
   --from-empty \
   --to-schema-datamodel "$ROOT_DIR/prisma/schema.prisma" \
@@ -163,13 +184,13 @@ DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
 [[ -s "$BASELINE_TMP" ]] || fail "Generated baseline migration is empty"
 mv "$BASELINE_TMP" "$MIGRATIONS_DIR/$BASELINE_NAME/migration.sql"
 
-echo "[10/12] Verify new baseline on a fresh scratch database"
+echo "[11/13] Verify new baseline on a fresh scratch database"
 rm -f "$SCRATCH_DB"
 DATABASE_URL="file:./baseline-verify.sqlite" npx prisma migrate deploy
 DATABASE_URL="file:./baseline-verify.sqlite" npx prisma migrate status
 rm -f "$SCRATCH_DB"
 
-echo "[11/12] Rebaseline only Prisma migration metadata in working DB"
+echo "[12/13] Rebaseline only Prisma migration metadata in working DB"
 sqlite3 "$DB_PATH" 'DELETE FROM "_prisma_migrations";'
 if ! DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate resolve --applied "$BASELINE_NAME"; then
   restore_backup
@@ -184,7 +205,7 @@ if ! diff -u "$COUNTS_BEFORE" "$COUNTS_AFTER"; then
   fail "Business row counts changed after migration metadata rebaseline; working DB restored from backup."
 fi
 
-echo "[12/12] Final validation"
+echo "[13/13] Final validation"
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma validate
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate status
 cat "$COUNTS_AFTER"
