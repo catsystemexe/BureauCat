@@ -18,7 +18,7 @@ export async function GET(request: Request, context: CaseContextAuditRouteContex
     return NextResponse.json({ error: "Case not found." }, { status: 404 });
   }
 
-  if ("error" in caseContext && caseContext.error === "SITUATION_NOT_FOUND") {
+  if ("error" in caseContext) {
     return NextResponse.json({ error: "Situation not found." }, { status: 404 });
   }
 
