@@ -13,16 +13,41 @@ BACKUP_DB="$ROOT_DIR/data/bureaucat.pre-baseline-20260818.sqlite"
 COUNTS_BEFORE="$(mktemp)"
 COUNTS_AFTER="$(mktemp)"
 BASELINE_TMP="$(mktemp)"
-DIFF_TMP="$(mktemp)"
+ALIGN_SQL="$(mktemp)"
+VERIFY_DIFF="$(mktemp)"
 
 cleanup() {
-  rm -f "$COUNTS_BEFORE" "$COUNTS_AFTER" "$BASELINE_TMP" "$DIFF_TMP" "$SCRATCH_DB"
+  rm -f "$COUNTS_BEFORE" "$COUNTS_AFTER" "$BASELINE_TMP" "$ALIGN_SQL" "$VERIFY_DIFF" "$SCRATCH_DB"
 }
 trap cleanup EXIT
 
 fail() {
   echo "ERROR: $*" >&2
   exit 1
+}
+
+restore_backup() {
+  if [[ -f "$BACKUP_DB" ]]; then
+    echo "Restoring working DB from safety backup..." >&2
+    cp -f "$BACKUP_DB" "$DB_PATH"
+  fi
+}
+
+count_rows() {
+  local target="$1"
+  sqlite3 "$DB_PATH" >"$target" <<'SQL'
+SELECT 'Case', COUNT(*) FROM "Case";
+SELECT 'Situation', COUNT(*) FROM "Situation";
+SELECT 'Goal', COUNT(*) FROM "Goal";
+SELECT 'Document', COUNT(*) FROM "Document";
+SELECT 'DocumentAnnotation', COUNT(*) FROM "DocumentAnnotation";
+SELECT 'DocumentPin', COUNT(*) FROM "DocumentPin";
+SELECT 'DocumentInsight', COUNT(*) FROM "DocumentInsight";
+SELECT 'SituationDocument', COUNT(*) FROM "SituationDocument";
+SELECT 'JournalItem', COUNT(*) FROM "JournalItem";
+SELECT 'ChatMessage', COUNT(*) FROM "ChatMessage";
+SELECT 'AISuggestion', COUNT(*) FROM "AISuggestion";
+SQL
 }
 
 echo "== BureauCat Prisma baseline consolidation =="
@@ -40,45 +65,85 @@ if [[ -n "$(git status --porcelain)" ]]; then
   fail "Working tree is not clean. Commit/stash changes before consolidation."
 fi
 
-echo "[1/10] Validate Prisma schema"
+echo "[1/12] Validate Prisma schema"
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma validate
 
-echo "[2/10] Verify working DB matches current Prisma schema"
+echo "[2/12] Detect schema drift and render alignment SQL"
 set +e
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
   --from-schema-datasource "$ROOT_DIR/prisma/schema.prisma" \
   --to-schema-datamodel "$ROOT_DIR/prisma/schema.prisma" \
-  --exit-code >"$DIFF_TMP" 2>&1
+  --script --exit-code >"$ALIGN_SQL" 2>&1
 DIFF_STATUS=$?
 set -e
-if [[ $DIFF_STATUS -ne 0 ]]; then
-  cat "$DIFF_TMP" >&2 || true
-  if [[ $DIFF_STATUS -eq 2 ]]; then
-    fail "Working DB schema differs from prisma/schema.prisma. Consolidation aborted."
-  fi
-  fail "Unable to compare working DB with Prisma schema. Consolidation aborted."
+if [[ $DIFF_STATUS -eq 1 ]]; then
+  cat "$ALIGN_SQL" >&2 || true
+  fail "Unable to compute working DB/schema diff."
+fi
+if [[ $DIFF_STATUS -eq 0 ]]; then
+  echo "No structural drift detected."
+elif [[ $DIFF_STATUS -eq 2 ]]; then
+  echo "Structural drift detected; controlled schema alignment is required before baselining."
+else
+  fail "Unexpected prisma migrate diff exit code: $DIFF_STATUS"
 fi
 
-echo "[3/10] Snapshot business-row counts"
-sqlite3 "$DB_PATH" >"$COUNTS_BEFORE" <<'SQL'
-SELECT 'Case', COUNT(*) FROM "Case";
-SELECT 'Situation', COUNT(*) FROM "Situation";
-SELECT 'Goal', COUNT(*) FROM "Goal";
-SELECT 'Document', COUNT(*) FROM "Document";
-SELECT 'DocumentAnnotation', COUNT(*) FROM "DocumentAnnotation";
-SELECT 'DocumentPin', COUNT(*) FROM "DocumentPin";
-SELECT 'DocumentInsight', COUNT(*) FROM "DocumentInsight";
-SELECT 'SituationDocument', COUNT(*) FROM "SituationDocument";
-SELECT 'JournalItem', COUNT(*) FROM "JournalItem";
-SELECT 'ChatMessage', COUNT(*) FROM "ChatMessage";
-SELECT 'AISuggestion', COUNT(*) FROM "AISuggestion";
-SQL
+echo "[3/12] Preflight data-integrity checks for target constraints"
+ORPHAN_SITUATIONS=$(sqlite3 "$DB_PATH" 'SELECT COUNT(*) FROM "JournalItem" j LEFT JOIN "Situation" s ON s.id=j.situation_id WHERE j.situation_id IS NOT NULL AND s.id IS NULL;')
+ORPHAN_PARENTS=$(sqlite3 "$DB_PATH" 'SELECT COUNT(*) FROM "Document" d LEFT JOIN "Document" p ON p.id=d.parent_document_id WHERE d.parent_document_id IS NOT NULL AND p.id IS NULL;')
+DUPLICATE_CHILD_KEYS=$(sqlite3 "$DB_PATH" 'SELECT COUNT(*) FROM (SELECT parent_document_id, document_type, analysis_type, COUNT(*) c FROM "Document" WHERE parent_document_id IS NOT NULL AND analysis_type IS NOT NULL GROUP BY parent_document_id, document_type, analysis_type HAVING c > 1);')
+
+echo "JournalItem orphan situation_id rows: $ORPHAN_SITUATIONS"
+echo "Document orphan parent_document_id rows: $ORPHAN_PARENTS"
+echo "Document duplicate non-null unique-key groups: $DUPLICATE_CHILD_KEYS"
+[[ "$ORPHAN_SITUATIONS" == "0" ]] || fail "Cannot add JournalItem situation FK while orphan rows exist."
+[[ "$ORPHAN_PARENTS" == "0" ]] || fail "Cannot add Document parent FK while orphan rows exist."
+[[ "$DUPLICATE_CHILD_KEYS" == "0" ]] || fail "Cannot add Document composite unique index while duplicate rows exist."
+
+echo "[4/12] Snapshot business-row counts"
+count_rows "$COUNTS_BEFORE"
 cat "$COUNTS_BEFORE"
 
-echo "[4/10] Create byte-for-byte safety backup"
-cp -p "$DB_PATH" "$BACKUP_DB"
+echo "[5/12] Create SQLite safety backup"
+sqlite3 "$DB_PATH" ".backup '$BACKUP_DB'"
+[[ -s "$BACKUP_DB" ]] || fail "Safety backup was not created successfully."
 
-echo "[5/10] Archive legacy migration files and applied-history metadata"
+echo "[6/12] Align working DB schema to current prisma/schema.prisma if needed"
+if [[ $DIFF_STATUS -eq 2 ]]; then
+  if ! sqlite3 -bail "$DB_PATH" <"$ALIGN_SQL"; then
+    restore_backup
+    fail "Schema alignment failed; working DB restored from backup."
+  fi
+fi
+
+FK_ERRORS=$(sqlite3 "$DB_PATH" 'PRAGMA foreign_key_check;' || true)
+if [[ -n "$FK_ERRORS" ]]; then
+  echo "$FK_ERRORS" >&2
+  restore_backup
+  fail "Foreign-key check failed after schema alignment; working DB restored from backup."
+fi
+
+count_rows "$COUNTS_AFTER"
+if ! diff -u "$COUNTS_BEFORE" "$COUNTS_AFTER"; then
+  restore_backup
+  fail "Business row counts changed during schema alignment; working DB restored from backup."
+fi
+
+echo "[7/12] Verify schema drift is now zero"
+set +e
+DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
+  --from-schema-datasource "$ROOT_DIR/prisma/schema.prisma" \
+  --to-schema-datamodel "$ROOT_DIR/prisma/schema.prisma" \
+  --exit-code >"$VERIFY_DIFF" 2>&1
+VERIFY_STATUS=$?
+set -e
+if [[ $VERIFY_STATUS -ne 0 ]]; then
+  cat "$VERIFY_DIFF" >&2 || true
+  restore_backup
+  fail "Working DB still differs from prisma/schema.prisma after alignment; DB restored."
+fi
+
+echo "[8/12] Archive legacy migration files and applied-history metadata"
 mv "$MIGRATIONS_DIR" "$ARCHIVE_DIR"
 mkdir -p "$MIGRATIONS_DIR/$BASELINE_NAME"
 if [[ -f "$ARCHIVE_DIR/migration_lock.toml" ]]; then
@@ -86,12 +151,11 @@ if [[ -f "$ARCHIVE_DIR/migration_lock.toml" ]]; then
 else
   printf 'provider = "sqlite"\n' > "$MIGRATIONS_DIR/migration_lock.toml"
 fi
-
 sqlite3 -header -separator $'\t' "$DB_PATH" \
   'SELECT id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count FROM _prisma_migrations ORDER BY started_at;' \
   > "$ARCHIVE_DIR/applied_history.tsv"
 
-echo "[6/10] Generate consolidated baseline SQL from current schema"
+echo "[9/12] Generate consolidated baseline SQL from current schema"
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
   --from-empty \
   --to-schema-datamodel "$ROOT_DIR/prisma/schema.prisma" \
@@ -99,43 +163,31 @@ DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
 [[ -s "$BASELINE_TMP" ]] || fail "Generated baseline migration is empty"
 mv "$BASELINE_TMP" "$MIGRATIONS_DIR/$BASELINE_NAME/migration.sql"
 
-echo "[7/10] Verify new migration history on a fresh scratch database"
+echo "[10/12] Verify new baseline on a fresh scratch database"
 rm -f "$SCRATCH_DB"
 DATABASE_URL="file:./baseline-verify.sqlite" npx prisma migrate deploy
 DATABASE_URL="file:./baseline-verify.sqlite" npx prisma migrate status
 rm -f "$SCRATCH_DB"
 
-echo "[8/10] Rebaseline only Prisma migration metadata in the working DB"
-sqlite3 "$DB_PATH" <<'SQL'
-BEGIN IMMEDIATE;
-DELETE FROM "_prisma_migrations";
-COMMIT;
-SQL
-DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate resolve --applied "$BASELINE_NAME"
+echo "[11/12] Rebaseline only Prisma migration metadata in working DB"
+sqlite3 "$DB_PATH" 'DELETE FROM "_prisma_migrations";'
+if ! DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate resolve --applied "$BASELINE_NAME"; then
+  restore_backup
+  fail "Unable to mark consolidated baseline as applied; working DB restored from backup."
+fi
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate status
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate deploy
 
-echo "[9/10] Verify business-row counts are unchanged"
-sqlite3 "$DB_PATH" >"$COUNTS_AFTER" <<'SQL'
-SELECT 'Case', COUNT(*) FROM "Case";
-SELECT 'Situation', COUNT(*) FROM "Situation";
-SELECT 'Goal', COUNT(*) FROM "Goal";
-SELECT 'Document', COUNT(*) FROM "Document";
-SELECT 'DocumentAnnotation', COUNT(*) FROM "DocumentAnnotation";
-SELECT 'DocumentPin', COUNT(*) FROM "DocumentPin";
-SELECT 'DocumentInsight', COUNT(*) FROM "DocumentInsight";
-SELECT 'SituationDocument', COUNT(*) FROM "SituationDocument";
-SELECT 'JournalItem', COUNT(*) FROM "JournalItem";
-SELECT 'ChatMessage', COUNT(*) FROM "ChatMessage";
-SELECT 'AISuggestion', COUNT(*) FROM "AISuggestion";
-SQL
+count_rows "$COUNTS_AFTER"
 if ! diff -u "$COUNTS_BEFORE" "$COUNTS_AFTER"; then
-  fail "Business row counts changed. Restore from $BACKUP_DB before continuing."
+  restore_backup
+  fail "Business row counts changed after migration metadata rebaseline; working DB restored from backup."
 fi
-cat "$COUNTS_AFTER"
 
-echo "[10/10] Final validation"
+echo "[12/12] Final validation"
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma validate
+DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate status
+cat "$COUNTS_AFTER"
 
 echo
 echo "SUCCESS: Prisma baseline consolidation completed locally."
