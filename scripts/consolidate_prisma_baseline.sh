@@ -47,7 +47,7 @@ echo "[2/10] Verify working DB matches current Prisma schema"
 set +e
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
   --from-schema-datasource "$ROOT_DIR/prisma/schema.prisma" \
-  --to-schema "$ROOT_DIR/prisma/schema.prisma" \
+  --to-schema-datamodel "$ROOT_DIR/prisma/schema.prisma" \
   --exit-code >"$DIFF_TMP" 2>&1
 DIFF_STATUS=$?
 set -e
@@ -94,7 +94,7 @@ sqlite3 -header -separator $'\t' "$DB_PATH" \
 echo "[6/10] Generate consolidated baseline SQL from current schema"
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
   --from-empty \
-  --to-schema "$ROOT_DIR/prisma/schema.prisma" \
+  --to-schema-datamodel "$ROOT_DIR/prisma/schema.prisma" \
   --script >"$BASELINE_TMP"
 [[ -s "$BASELINE_TMP" ]] || fail "Generated baseline migration is empty"
 mv "$BASELINE_TMP" "$MIGRATIONS_DIR/$BASELINE_NAME/migration.sql"
