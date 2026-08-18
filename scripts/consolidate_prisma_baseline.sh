@@ -13,9 +13,10 @@ BACKUP_DB="$ROOT_DIR/data/bureaucat.pre-baseline-20260818.sqlite"
 COUNTS_BEFORE="$(mktemp)"
 COUNTS_AFTER="$(mktemp)"
 BASELINE_TMP="$(mktemp)"
+DIFF_TMP="$(mktemp)"
 
 cleanup() {
-  rm -f "$COUNTS_BEFORE" "$COUNTS_AFTER" "$BASELINE_TMP" "$SCRATCH_DB"
+  rm -f "$COUNTS_BEFORE" "$COUNTS_AFTER" "$BASELINE_TMP" "$DIFF_TMP" "$SCRATCH_DB"
 }
 trap cleanup EXIT
 
@@ -45,19 +46,18 @@ DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma validate
 echo "[2/10] Verify working DB matches current Prisma schema"
 set +e
 DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
-  --from-schema-datasource \
+  --from-schema-datasource "$ROOT_DIR/prisma/schema.prisma" \
   --to-schema "$ROOT_DIR/prisma/schema.prisma" \
-  --exit-code >/tmp/bureaucat-prisma-diff.txt 2>&1
+  --exit-code >"$DIFF_TMP" 2>&1
 DIFF_STATUS=$?
 set -e
 if [[ $DIFF_STATUS -ne 0 ]]; then
-  cat /tmp/bureaucat-prisma-diff.txt >&2 || true
+  cat "$DIFF_TMP" >&2 || true
   if [[ $DIFF_STATUS -eq 2 ]]; then
     fail "Working DB schema differs from prisma/schema.prisma. Consolidation aborted."
   fi
   fail "Unable to compare working DB with Prisma schema. Consolidation aborted."
 fi
-rm -f /tmp/bureaucat-prisma-diff.txt
 
 echo "[3/10] Snapshot business-row counts"
 sqlite3 "$DB_PATH" >"$COUNTS_BEFORE" <<'SQL'
@@ -78,7 +78,7 @@ cat "$COUNTS_BEFORE"
 echo "[4/10] Create byte-for-byte safety backup"
 cp -p "$DB_PATH" "$BACKUP_DB"
 
-echo "[5/10] Archive legacy migration files and create new baseline directory"
+echo "[5/10] Archive legacy migration files and applied-history metadata"
 mv "$MIGRATIONS_DIR" "$ARCHIVE_DIR"
 mkdir -p "$MIGRATIONS_DIR/$BASELINE_NAME"
 if [[ -f "$ARCHIVE_DIR/migration_lock.toml" ]]; then
@@ -87,19 +87,15 @@ else
   printf 'provider = "sqlite"\n' > "$MIGRATIONS_DIR/migration_lock.toml"
 fi
 
+sqlite3 -header -separator $'\t' "$DB_PATH" \
+  'SELECT id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count FROM _prisma_migrations ORDER BY started_at;' \
+  > "$ARCHIVE_DIR/applied_history.tsv"
+
 echo "[6/10] Generate consolidated baseline SQL from current schema"
-if DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
+DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
   --from-empty \
   --to-schema "$ROOT_DIR/prisma/schema.prisma" \
-  --script >"$BASELINE_TMP"; then
-  :
-else
-  echo "Primary migrate diff syntax failed; trying Prisma 6 compatibility syntax." >&2
-  DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma migrate diff \
-    --from-empty \
-    --to-schema-datamodel "$ROOT_DIR/prisma/schema.prisma" \
-    --script >"$BASELINE_TMP"
-fi
+  --script >"$BASELINE_TMP"
 [[ -s "$BASELINE_TMP" ]] || fail "Generated baseline migration is empty"
 mv "$BASELINE_TMP" "$MIGRATIONS_DIR/$BASELINE_NAME/migration.sql"
 
@@ -109,14 +105,9 @@ DATABASE_URL="file:./baseline-verify.sqlite" npx prisma migrate deploy
 DATABASE_URL="file:./baseline-verify.sqlite" npx prisma migrate status
 rm -f "$SCRATCH_DB"
 
-echo "[8/10] Preserve legacy Prisma migration metadata and rebaseline working DB"
-if sqlite3 "$DB_PATH" "SELECT 1 FROM sqlite_master WHERE type='table' AND name='_prisma_migrations_legacy_20260818';" | grep -q 1; then
-  fail "Legacy migration metadata archive table already exists; refusing to overwrite it."
-fi
+echo "[8/10] Rebaseline only Prisma migration metadata in the working DB"
 sqlite3 "$DB_PATH" <<'SQL'
 BEGIN IMMEDIATE;
-CREATE TABLE "_prisma_migrations_legacy_20260818" AS
-  SELECT * FROM "_prisma_migrations";
 DELETE FROM "_prisma_migrations";
 COMMIT;
 SQL
@@ -149,9 +140,9 @@ DATABASE_URL="file:../data/bureaucat.sqlite" npx prisma validate
 echo
 echo "SUCCESS: Prisma baseline consolidation completed locally."
 echo "Legacy migrations: $ARCHIVE_DIR"
+echo "Legacy applied history: $ARCHIVE_DIR/applied_history.tsv"
 echo "New baseline: $MIGRATIONS_DIR/$BASELINE_NAME/migration.sql"
 echo "Safety DB backup: $BACKUP_DB"
-echo "Legacy migration metadata preserved in table: _prisma_migrations_legacy_20260818"
 echo
 echo "Review with: git status --short && git diff --stat"
 echo "Do not delete the DB backup until the new baseline has been committed and re-verified."
