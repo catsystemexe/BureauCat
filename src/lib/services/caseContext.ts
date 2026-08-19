@@ -115,73 +115,93 @@ export async function buildCaseContext(caseId: string, situationId: string | nul
     };
   }
 
-  const journalItems = await prisma.journalItem.findMany({
-    where: {
-      case_id: caseId,
-      ...(situationId ? { situation_id: situationId } : {})
-    },
-    orderBy: [{ section: "asc" }, { display_order: "asc" }, { created_at: "asc" }],
-    select: {
-      id: true,
-      case_id: true,
-      situation_id: true,
-      section: true,
-      item_type: true,
-      title: true,
-      value: true,
-      explanation: true,
-      evidence_state: true,
-      status: true,
-      display_order: true,
-      source_links_json: true,
-      created_at: true,
-      updated_at: true
-    }
-  });
-
-  const documents = await prisma.document.findMany({
-    where: {
-      case_id: caseId,
-      ...(situationId
-        ? {
-            OR: [
-              {
-                situation_documents: {
-                  some: { situation_id: situationId }
-                }
-              },
-              {
-                document_type: "analysis",
-                parent_document: {
+  const [journalItems, documents, goals] = await Promise.all([
+    prisma.journalItem.findMany({
+      where: {
+        case_id: caseId,
+        ...(situationId ? { situation_id: situationId } : {})
+      },
+      orderBy: [{ section: "asc" }, { display_order: "asc" }, { created_at: "asc" }],
+      select: {
+        id: true,
+        case_id: true,
+        situation_id: true,
+        section: true,
+        item_type: true,
+        title: true,
+        value: true,
+        explanation: true,
+        evidence_state: true,
+        status: true,
+        display_order: true,
+        source_links_json: true,
+        created_at: true,
+        updated_at: true
+      }
+    }),
+    prisma.document.findMany({
+      where: {
+        case_id: caseId,
+        ...(situationId
+          ? {
+              OR: [
+                {
                   situation_documents: {
                     some: { situation_id: situationId }
                   }
+                },
+                {
+                  document_type: "analysis",
+                  parent_document: {
+                    situation_documents: {
+                      some: { situation_id: situationId }
+                    }
+                  }
                 }
-              }
-            ]
-          }
-        : {})
-    },
-    orderBy: { created_at: "desc" },
-    select: {
-      id: true,
-      case_id: true,
-      filename: true,
-      display_name: true,
-      filetype: true,
-      document_type: true,
-      analysis_type: true,
-      parent_document_id: true,
-      processed_markdown: true,
-      processed_text: true,
-      extracted_text: true,
-      processing_status: true,
-      processing_error: true,
-      validation_status: true,
-      ai_summary: true,
-      created_at: true
-    }
-  });
+              ]
+            }
+          : {})
+      },
+      orderBy: { created_at: "desc" },
+      select: {
+        id: true,
+        case_id: true,
+        filename: true,
+        display_name: true,
+        filetype: true,
+        document_type: true,
+        analysis_type: true,
+        parent_document_id: true,
+        processed_markdown: true,
+        processed_text: true,
+        extracted_text: true,
+        processing_status: true,
+        processing_error: true,
+        validation_status: true,
+        ai_summary: true,
+        created_at: true
+      }
+    }),
+    prisma.goal.findMany({
+      where: situationId
+        ? { situation_id: situationId }
+        : {
+            situation: {
+              case_id: caseId
+            }
+          },
+      orderBy: [{ display_order: "asc" }, { created_at: "asc" }],
+      select: {
+        id: true,
+        situation_id: true,
+        title: true,
+        status: true,
+        display_order: true,
+        created_at: true,
+        updated_at: true
+      }
+    })
+  ]);
 
   const documentIds = documents.map((document) => document.id);
 
@@ -246,6 +266,93 @@ export async function buildCaseContext(caseId: string, situationId: string | nul
     }
   });
 
+  const workflow = situationId
+    ? await (async () => {
+        const [steps, requiredInputs, tasks, overrides] = await Promise.all([
+          prisma.workflowStep.findMany({
+            where: { situation_id: situationId },
+            orderBy: [{ display_order: "asc" }, { created_at: "asc" }],
+            select: {
+              id: true,
+              situation_id: true,
+              step_key: true,
+              status: true,
+              display_order: true,
+              created_at: true,
+              updated_at: true
+            }
+          }),
+          prisma.requiredInput.findMany({
+            where: { situation_id: situationId },
+            orderBy: [{ display_order: "asc" }, { created_at: "asc" }],
+            select: {
+              id: true,
+              situation_id: true,
+              title: true,
+              description: true,
+              status: true,
+              display_order: true,
+              source_refs_json: true,
+              created_at: true,
+              updated_at: true,
+              criteria: {
+                orderBy: [{ display_order: "asc" }, { created_at: "asc" }],
+                select: {
+                  id: true,
+                  required_input_id: true,
+                  requirement_text: true,
+                  status: true,
+                  matched_value: true,
+                  evidence_refs_json: true,
+                  display_order: true,
+                  created_at: true,
+                  updated_at: true
+                }
+              }
+            }
+          }),
+          prisma.workflowTask.findMany({
+            where: { situation_id: situationId },
+            orderBy: [{ display_order: "asc" }, { created_at: "asc" }],
+            select: {
+              id: true,
+              situation_id: true,
+              workflow_step_id: true,
+              required_input_id: true,
+              title: true,
+              description: true,
+              status: true,
+              display_order: true,
+              created_at: true,
+              updated_at: true
+            }
+          }),
+          prisma.workflowOverride.findMany({
+            where: { situation_id: situationId, revoked_at: null },
+            orderBy: { created_at: "asc" },
+            select: {
+              id: true,
+              situation_id: true,
+              workflow_step_id: true,
+              required_input_id: true,
+              override_type: true,
+              reason: true,
+              created_at: true,
+              revoked_at: true
+            }
+          })
+        ]);
+
+        return {
+          current_step: steps.find((step) => step.status === "ACTIVE") ?? null,
+          steps,
+          required_inputs: requiredInputs,
+          tasks,
+          overrides
+        };
+      })()
+    : null;
+
   const documentById = new Map(documents.map((document) => [document.id, document]));
   const pinById = new Map(pins.map((pin) => [pin.id, pin]));
 
@@ -270,11 +377,18 @@ export async function buildCaseContext(caseId: string, situationId: string | nul
     };
   });
 
+  const authoritativeGoal = situationId
+    ? goals.find((goal) => goal.status === "active") ?? null
+    : null;
+
   const context = {
     generated_at: new Date().toISOString(),
     case: caseItem,
     situation: selectedSituation,
     situations,
+    authoritative_goal: authoritativeGoal,
+    goals,
+    workflow,
     documents: documents.map((document) => ({
       id: document.id,
       case_id: document.case_id,
@@ -302,7 +416,7 @@ export async function buildCaseContext(caseId: string, situationId: string | nul
     risks: journalWithAnchors.filter(
       (item) => item.status === "active" && item.item_type === "RISK"
     ),
-    goals: journalWithAnchors.filter(
+    journal_goal_items: journalWithAnchors.filter(
       (item) => item.status === "active" && item.item_type === "GOAL"
     )
   };
