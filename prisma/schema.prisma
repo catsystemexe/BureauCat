@@ -36,10 +36,15 @@ model Situation {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  case                Case                @relation(fields: [case_id], references: [id], onDelete: Cascade)
-  goals               Goal[]
+  case               Case               @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  goals              Goal[]
   situation_documents SituationDocument[]
-  journal_items       JournalItem[]
+  journal_items      JournalItem[]
+  workflow_steps     WorkflowStep[]
+  required_inputs    RequiredInput[]
+  workflow_tasks     WorkflowTask[]
+  workflow_overrides WorkflowOverride[]
+  workflow_events    WorkflowEvent[]
 
   @@index([case_id])
   @@index([case_id, display_order])
@@ -59,6 +64,130 @@ model Goal {
 
   @@index([situation_id])
   @@index([situation_id, display_order])
+}
+
+model WorkflowStep {
+  id            String   @id @default(cuid())
+  situation_id  String
+  /// Allowed values: ANALYSIS, PLAN, COLLECTION, INPUT_VALIDATION, PRODUCTION, OUTPUT_REVIEW, EXECUTION.
+  step_key      String
+  /// Allowed values: INACTIVE, ACTIVE, COMPLETED.
+  status        String   @default("INACTIVE")
+  display_order Int      @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  situation Situation @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  tasks     WorkflowTask[]
+  overrides WorkflowOverride[]
+  events    WorkflowEvent[]
+
+  @@unique([situation_id, step_key])
+  @@index([situation_id])
+  @@index([situation_id, display_order])
+  @@index([situation_id, status])
+}
+
+model RequiredInput {
+  id               String   @id @default(cuid())
+  situation_id     String
+  title            String
+  description      String?
+  /// Allowed values: MISSING, INCOMPLETE, SATISFIED.
+  status           String   @default("MISSING")
+  display_order    Int      @default(0)
+  source_refs_json String   @default("[]")
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  situation Situation               @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  criteria  RequiredInputCriterion[]
+  tasks     WorkflowTask[]
+  overrides WorkflowOverride[]
+
+  @@index([situation_id])
+  @@index([situation_id, display_order])
+  @@index([situation_id, status])
+}
+
+model RequiredInputCriterion {
+  id                String   @id @default(cuid())
+  required_input_id String
+  requirement_text  String
+  /// Allowed values: MISSING, SATISFIED.
+  status            String   @default("MISSING")
+  matched_value     String?
+  evidence_refs_json String  @default("[]")
+  display_order     Int      @default(0)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  required_input RequiredInput @relation(fields: [required_input_id], references: [id], onDelete: Cascade)
+
+  @@index([required_input_id])
+  @@index([required_input_id, display_order])
+  @@index([required_input_id, status])
+}
+
+model WorkflowTask {
+  id                String   @id @default(cuid())
+  situation_id      String
+  workflow_step_id  String
+  required_input_id String?
+  title             String
+  description       String?
+  /// Allowed values: PENDING, ACTIVE, COMPLETED.
+  status            String   @default("PENDING")
+  display_order     Int      @default(0)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  situation     Situation      @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  workflow_step WorkflowStep   @relation(fields: [workflow_step_id], references: [id], onDelete: Cascade)
+  required_input RequiredInput? @relation(fields: [required_input_id], references: [id], onDelete: SetNull)
+
+  @@index([situation_id])
+  @@index([workflow_step_id])
+  @@index([required_input_id])
+  @@index([situation_id, status])
+}
+
+model WorkflowOverride {
+  id                String   @id @default(cuid())
+  situation_id      String
+  workflow_step_id  String?
+  required_input_id String?
+  /// Prototype value: CONTINUE_WITHOUT_INPUT. Additional override types require an explicit design decision.
+  override_type     String   @default("CONTINUE_WITHOUT_INPUT")
+  reason            String?
+  created_at        DateTime @default(now())
+  revoked_at        DateTime?
+
+  situation     Situation      @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  workflow_step WorkflowStep?  @relation(fields: [workflow_step_id], references: [id], onDelete: SetNull)
+  required_input RequiredInput? @relation(fields: [required_input_id], references: [id], onDelete: SetNull)
+
+  @@index([situation_id])
+  @@index([workflow_step_id])
+  @@index([required_input_id])
+  @@index([situation_id, revoked_at])
+}
+
+model WorkflowEvent {
+  id               String   @id @default(cuid())
+  situation_id     String
+  workflow_step_id String?
+  /// Examples: STEP_ACTIVATED, STEP_COMPLETED, STEP_REOPENED, REQUIRED_INPUT_STATUS_CHANGED, OVERRIDE_GRANTED.
+  event_type       String
+  payload_json     String   @default("{}")
+  created_at       DateTime @default(now())
+
+  situation     Situation     @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  workflow_step WorkflowStep? @relation(fields: [workflow_step_id], references: [id], onDelete: SetNull)
+
+  @@index([situation_id, created_at])
+  @@index([workflow_step_id])
+  @@index([event_type])
 }
 
 model Document {
