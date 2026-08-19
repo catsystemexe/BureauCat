@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { WORKFLOW_STEP_DEFINITIONS } from "@/lib/workflow/constants";
 import type {
   CreateSituationInput,
   UpdateSituationInput
@@ -45,7 +46,7 @@ export function createSituation(caseId: string, input: CreateSituationInput) {
       select: { display_order: true }
     });
 
-    return transaction.situation.create({
+    const situation = await transaction.situation.create({
       data: {
         case_id: caseId,
         title: input.title,
@@ -55,6 +56,17 @@ export function createSituation(caseId: string, input: CreateSituationInput) {
       },
       select: situationSelect
     });
+
+    await transaction.workflowStep.createMany({
+      data: WORKFLOW_STEP_DEFINITIONS.map(({ key, order }) => ({
+        situation_id: situation.id,
+        step_key: key,
+        status: key === "ANALYSIS" ? "ACTIVE" : "INACTIVE",
+        display_order: order
+      }))
+    });
+
+    return situation;
   });
 }
 
