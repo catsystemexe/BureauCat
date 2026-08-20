@@ -38,6 +38,89 @@ export type Goal = {
   updated_at: string;
 };
 
+export type WorkflowStepKey =
+  | "ANALYSIS"
+  | "PLAN"
+  | "COLLECTION"
+  | "INPUT_VALIDATION"
+  | "PRODUCTION"
+  | "OUTPUT_REVIEW"
+  | "EXECUTION";
+
+export type WorkflowStepStatus = "INACTIVE" | "ACTIVE" | "COMPLETED";
+
+export type WorkflowStep = {
+  id: string;
+  situation_id: string;
+  step_key: WorkflowStepKey;
+  status: WorkflowStepStatus;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RequiredInputStatus = "MISSING" | "INCOMPLETE" | "SATISFIED";
+
+export type RequiredInputCriterion = {
+  id: string;
+  required_input_id: string;
+  requirement_text: string;
+  status: "MISSING" | "SATISFIED";
+  matched_value: string | null;
+  evidence_refs_json: string;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RequiredInput = {
+  id: string;
+  situation_id: string;
+  title: string;
+  description: string | null;
+  status: RequiredInputStatus;
+  display_order: number;
+  source_refs_json: string;
+  created_at: string;
+  updated_at: string;
+  criteria: RequiredInputCriterion[];
+};
+
+export type WorkflowTaskStatus = "PENDING" | "ACTIVE" | "COMPLETED";
+
+export type WorkflowTask = {
+  id: string;
+  situation_id: string;
+  workflow_step_id: string;
+  required_input_id: string | null;
+  title: string;
+  description: string | null;
+  status: WorkflowTaskStatus;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WorkflowOverride = {
+  id: string;
+  situation_id: string;
+  workflow_step_id: string | null;
+  required_input_id: string | null;
+  override_type: string;
+  reason: string | null;
+  created_at: string;
+  revoked_at: string | null;
+};
+
+export type SituationWorkflow = {
+  id: string;
+  goals: Goal[];
+  workflow_steps: WorkflowStep[];
+  required_inputs: RequiredInput[];
+  workflow_tasks: WorkflowTask[];
+  workflow_overrides: WorkflowOverride[];
+};
+
 export type JournalSectionKey =
   | "description"
   | "goals"
