@@ -6,6 +6,8 @@ import { DocumentList } from "@/components/documents/DocumentList";
 import { DocumentUpload, type DocumentUploadHandle } from "@/components/documents/DocumentUpload";
 import { DocumentViewPanel } from "@/components/documents/DocumentViewPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
+import { StepWorkspace } from "@/components/workflow/StepWorkspace";
+import { WorkflowRail } from "@/components/workflow/WorkflowRail";
 import {
   CASE_STATUS_LABELS,
   EVIDENCE_STATE_LABELS,
@@ -39,7 +41,14 @@ import {
   House,
   MessageSquareWarning
 } from "lucide-react";
-import type { CaseDocument, CaseSummary, DocumentInsight, DocumentPin, JournalItem } from "./types";
+import type {
+  CaseDocument,
+  CaseSummary,
+  DocumentInsight,
+  DocumentPin,
+  JournalItem,
+  WorkflowStepKey
+} from "./types";
 
 type RightPanelMode = "help" | "evidence" | "document";
 type RightPanelTab = "documents" | "analysis" | "procedure";
@@ -601,15 +610,22 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [documentListRefreshKey, setDocumentListRefreshKey] = useState(0);
   const [situationDocumentListRefreshKey, setSituationDocumentListRefreshKey] = useState(0);
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null);
+  const [selectedStepKey, setSelectedStepKey] = useState<WorkflowStepKey | null>(null);
   const [pendingBookmarkTargetJournalItemId, setPendingBookmarkTargetJournalItemId] = useState<string | null>(null);
   const [targetDocumentPinId, setTargetDocumentPinId] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedSituationId(null);
+    setSelectedStepKey(null);
   }, [caseItem.id]);
 
   const selectSituation = useCallback((situationId: string | null) => {
     setSelectedSituationId(situationId);
+    setSelectedStepKey(null);
+  }, []);
+
+  const selectStep = useCallback((stepKey: WorkflowStepKey) => {
+    setSelectedStepKey(stepKey);
   }, []);
 
   function requestJournalRefresh() {
@@ -755,13 +771,12 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     }
   }
 
-  
   function openDocument(document: CaseDocument, pinId: string | null = null) {
     setSelectedDocument(document);
     setTargetDocumentPinId(pinId);
-      window.setTimeout(() => {
-        setTargetDocumentPinId((currentPinId) => currentPinId === pinId ? null : currentPinId);
-      }, 1600);
+    window.setTimeout(() => {
+      setTargetDocumentPinId((currentPinId) => currentPinId === pinId ? null : currentPinId);
+    }, 1600);
     setRightPanelMode("document");
     setRightPanelTab("documents");
   }
@@ -831,7 +846,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
 
   return (
     <div className="workspace-shell">
-            <header className="workspace-header app-case-header">
+      <header className="workspace-header app-case-header">
         <button
           type="button"
           className="app-logo-button"
@@ -977,31 +992,35 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           </div>
         </div>
       </header>
-      <div className="three-panel-layout" aria-label="Pracovní prostor případu: Zápisník, Konzultace a Dokumenty">
-        <JournalPanel
-          caseItem={caseItem}
-          documentListRefreshKey={situationDocumentListRefreshKey}
-          onOpenDocument={openDocument}
+      <div className="three-panel-layout workflow-shell-layout" aria-label="Pracovní prostor případu: Workflow, aktivní krok a dokumenty">
+        <WorkflowRail
+          caseId={caseItem.id}
           onSelectSituation={selectSituation}
-          onOpenBookmark={handleOpenJournalBookmark}
-          onStartBookmarkLink={setPendingBookmarkTargetJournalItemId}
-          pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
+          onSelectStep={selectStep}
           selectedSituationId={selectedSituationId}
-          onBookmarkHover={setHoveredBookmarkPinId}
-          onBookmarkLeave={() => setHoveredBookmarkPinId(null)}
+          selectedStepKey={selectedStepKey}
         />
-        <MiddleChatPanel
+        <StepWorkspace
           activeAnalysisDocument={activeAnalysisDocument}
           caseItem={caseItem}
+          documentListRefreshKey={situationDocumentListRefreshKey}
+          hoveredBookmarkPinId={hoveredBookmarkPinId}
           onActiveAnalysisInsightsChange={setActiveAnalysisInsights}
+          onBookmarkHover={setHoveredBookmarkPinId}
+          onBookmarkLeave={() => setHoveredBookmarkPinId(null)}
           onCloseAnalysisDocument={() => {
             setActiveAnalysisDocument(null);
             setActiveAnalysisInsights([]);
           }}
-          onOpenAnalysisSourceDocument={openSourceDocument}
           onJournalRefreshRequested={requestJournalRefresh}
+          onOpenAnalysisSourceDocument={openSourceDocument}
+          onOpenBookmark={handleOpenJournalBookmark}
+          onOpenDocument={openDocument}
+          onSelectSituation={selectSituation}
+          onStartBookmarkLink={setPendingBookmarkTargetJournalItemId}
+          pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
           selectedSituationId={selectedSituationId}
-          hoveredBookmarkPinId={hoveredBookmarkPinId}
+          selectedStepKey={selectedStepKey}
         />
         <RightContextPanel
           caseId={caseItem.id}
@@ -1014,6 +1033,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           onActiveTabChange={setRightPanelTab}
           onAnalysisCreated={(document) => {
             setActiveAnalysisDocument(document);
+            setSelectedStepKey("ANALYSIS");
             setDocumentListRefreshKey((currentKey) => currentKey + 1);
           }}
           onBookmarkSelectedForLink={handleBookmarkSelectedForLink}
