@@ -4,6 +4,8 @@
 
 Canonical project-state document under D-022. GitHub `docs/project/` is the normative, versioned documentation location. Google Drive mirrors these documents for reading, sharing, and ChatGPT Project access.
 
+The canonical documentation bootstrap, operating-rule consolidation and first manual GitHub → Drive mirror synchronization are complete. The mirror mapping/procedure is maintained in `09-drive-sync.md`.
+
 ## Product identity
 
 BureauCat is a case-management and analytical application for relatively bounded administrative matters. It maintains a working model of a Case, bounded Situations, Goals / Steps / Tasks, documents/evidence, events and deadlines, while using AI as an assistant rather than authority.
@@ -70,6 +72,7 @@ Active development branch: `work/workflow-foundation-v01`.
   - Step navigation;
   - center Step workspace;
   - existing right Document/Analysis panel preserved.
+- Canonical project documentation under `docs/project/` with manual one-way Drive mirror workflow.
 
 Runtime verification on Replit Free confirmed the new workflow rail loads after regenerating Prisma Client and Step selection changes only UI selection, not persisted active workflow state.
 
@@ -86,6 +89,7 @@ Runtime verification on Replit Free confirmed the new workflow rail loads after 
 - Timeline persistence/UI.
 - Final production assistant/chat interaction model.
 - Automated test suite / CI.
+- Automated GitHub → Drive documentation synchronization (manual sync is operational; automation is intentionally deferred).
 
 ## Important current implementation gaps
 
@@ -99,11 +103,11 @@ Do not introduce generic workflow-engine complexity unless implementation eviden
 
 ## Current priorities
 
-1. Complete documentation consolidation and canonical GitHub → Drive mirror workflow.
-2. Continue BC-012 vertical workflow slice from the verified persistence/context/UX foundation.
-3. Implement BC-013 Input Validation after the preceding workflow slice is coherent.
-4. Define Timeline product/deadline model before Timeline persistence.
-5. Add Production / Output Review incrementally after earlier Steps work in practice.
+1. Continue BC-012 vertical workflow slice from the verified persistence/context/UX foundation.
+2. Implement BC-013 Input Validation after the preceding workflow slice is coherent.
+3. Define Timeline product/deadline model before Timeline persistence.
+4. Add Production / Output Review incrementally after earlier Steps work in practice.
+5. Add minimal automated tests/CI when they provide leverage without blocking product learning.
 
 ## Authority
 
