@@ -1,22 +1,22 @@
 # BureauCat
 
-BureauCat MVP v1.2 is a desktop-first workspace for building and maintaining a working case model. The Journal is the authoritative model of the case, documents are evidence, and AI-created Journal changes remain suggestions until the user approves them.
+BureauCat is a case-management and analytical workspace for relatively bounded administrative matters. The current product direction has evolved beyond the historical MVP v1.2 specification.
 
-The authoritative product specification is [`docs/bureaucat-mvp-v1.2.md`](docs/bureaucat-mvp-v1.2.md).
+> **Documentation note:** [`docs/bureaucat-mvp-v1.2.md`](docs/bureaucat-mvp-v1.2.md) is a historical specification and is not the current product authority. Current project documentation is being consolidated into versioned repository documentation under `docs/project/`.
 
 ## Current app state
 
 The repository currently includes:
 
 - A case list with draft case creation and case detail workspaces.
-- A desktop-first three-panel workspace for Journal, Chat, and contextual evidence/document views.
-- Journal-related situations, goals, linked documents, Journal item APIs, and evidence-state handling.
+- A desktop-first three-panel workspace evolving toward a Situation/workflow rail, Step workspace, and contextual evidence/document views.
+- Journal-related situations, persisted Goals, linked documents, Journal item APIs, and evidence-state handling.
+- Situation workflow persistence for ordered Steps, Required Inputs and criteria, Tasks, overrides, and workflow events.
 - Case document upload, local file storage, normalized document text, original-file access, annotations, highlights, notes, and pins.
-- Chat message persistence, a deterministic mock AI response, validated AI suggestions, and approve/reject flows.
-- Meeting preparation generated through the existing case workflow rather than a separate database entity.
+- Document Analysis / Document Insight capabilities and Case Context assembly.
 - Prisma + SQLite persistence, App Router API routes, and Zod validation at domain boundaries.
 
-The current AI integration is a local deterministic mock. It exercises chat and suggestion workflows but is not a production model provider.
+The current AI/chat integration is not yet the final production interaction model. Current workflow and context foundations are being implemented incrementally.
 
 ## Stack
 
@@ -111,11 +111,20 @@ npm run typecheck
 npm run build
 ```
 
-## MVP boundaries
+## Current product direction
 
-- Journal is the authoritative working case model; Chat is a workspace, not memory.
-- Documents provide evidence and may reveal conflicts with the Journal.
-- AI never writes directly to the Journal. AI-created changes go through `AISuggestion` approval.
-- Description is represented by Journal items in the `description` section, not by a Case description field.
-- Intake is stored as chat messages, and meeting preparation is not a database entity.
-- Mobile optimization remains outside MVP v1.2.
+- Situation is the final bounded working unit inside Case; the proposed List concept is retired.
+- Target structure is `Case → Situation → Goal / Steps / Tasks` alongside Journal, Documents/Evidence, Case Context, and Case Timeline.
+- The standard Situation workflow is `Analysis → Plan → Collection → Input Validation → Production → Output Review → Execution / Completion` and remains adaptive rather than a rigid state machine.
+- Journal is the user-visible working model; Documents are evidence.
+- Source-grounded document analysis may project compact traceable findings into Journal under current project decisions, while user-authored Journal content must not be silently overwritten or deleted.
+- AI assists with analysis and orchestration but is not authoritative for consequential user decisions.
+
+## Historical material
+
+The following material is retained for implementation history and comparison only:
+
+- [`docs/bureaucat-mvp-v1.2.md`](docs/bureaucat-mvp-v1.2.md)
+- older repository audits and snapshots that describe superseded product assumptions
+
+Historical material must not override current Project State, Architecture, active Decisions, or newer repository documentation.
