@@ -49,10 +49,10 @@ Canonical versioned project documentation now exists under `docs/project/` as do
 
 ## BC-006 — GitHub → Drive documentation sync
 
-**Status:** In Progress  
+**Status:** Done  
 **Priority:** P0
 
-Establish deterministic one-way synchronization from canonical GitHub Markdown to the existing Drive project documents while preserving stable Drive IDs where practical. Start with a manual/operator-triggered procedure; no Replit Agent dependency or CI credential complexity.
+Established `docs/project/09-drive-sync.md` with stable mappings from canonical GitHub Markdown `00`–`08` to the existing Drive document IDs, one-way GitHub → Drive authority, conflict policy, manual sync procedure and deferred automation policy. Performed the first full manual mirror synchronization into the existing Drive documents while preserving their IDs/titles and verified key mirrors (`00`, `03`, `06`, `08`) against canonical content. No Replit Agent, paid API, CI credential or runtime verification was required.
 
 **Dependency:** BC-005.
 
