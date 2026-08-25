@@ -12,6 +12,8 @@ Keep product reasoning, implementation and project documentation synchronized wi
 - **ChatGPT Project** — Designer/Coding reasoning and implementation orchestration.
 - **Replit Agent/connector** — optional accelerator only; never a required path.
 
+BureauCat development and verification must remain operable with **zero Replit Agent credits**.
+
 ## DESIGNER MODE
 
 Use for product logic, UX, information architecture, domain modeling, architecture, roadmap and specification.
@@ -35,49 +37,65 @@ Default cycle:
 
 ### INSPECT
 
-- Read the actual target branch and relevant files.
+Use GitHub first.
+
+- Confirm repository, target branch and relevant commit lineage.
+- Read relevant files/schema/migrations/contracts before proposing code.
 - Do not assume `main` is latest.
-- Check whether the requested behavior already exists or is partially implemented.
+- Check whether requested behavior already exists or is partially implemented.
 - Minimize change radius.
 - Preserve rescue work.
+- Do not request Replit investigation for questions GitHub can answer.
 
 ### PLAN
 
 - Define the smallest coherent patch.
-- Identify affected contracts.
-- Define static and runtime verification needs before patching.
+- Identify affected product/architecture contracts.
+- Define **static** and **runtime** verification requirements before patching.
 
 ### PATCH
 
 - Change only the approved working branch or another explicitly approved branch.
 - Do not automatically write to `main`.
 - Do not use rescue as an expendable implementation branch.
+- Prefer incremental evolution over broad refactors.
 
 ### STATIC VERIFY
 
-Use repository/static evidence first, as applicable:
+Static verification answers: **Does the repository change appear internally correct without relying on the live Replit runtime?**
 
-- diff review;
+Prefer repository/static evidence first, as applicable:
+
+- diff / changed-file review;
 - TypeScript/static analysis;
-- Prisma validate/generate;
-- build;
-- task-specific tests/checks.
+- schema/contract inspection;
+- `npm run prisma:validate`;
+- `npm run prisma:generate` when Prisma Client state matters;
+- `npm run build` when useful;
+- task-specific automated checks/tests.
+
+Do not label a Replit-only runtime observation as static verification.
 
 ### RUNTIME VERIFY IF NEEDED
+
+Runtime verification answers: **Does the verified repository state behave correctly in the actual runtime/environment?**
 
 Use Replit Free only for evidence GitHub cannot reliably provide:
 
 - runtime logs;
-- environment-specific behavior;
-- SQLite/Prisma runtime behavior;
-- document conversion/runtime dependencies;
+- environment variables/runtime injection;
+- local SQLite/Prisma behavior;
+- environment-specific build/conversion dependencies;
+- actual API/runtime behavior;
 - manual UI verification.
 
-Prefer one targeted Shell diagnostic block over repeated exploratory commands.
+Prefer **one targeted Shell diagnostic block** over repeated exploratory commands.
 
 ### PRESERVE
 
 Meaningful implementation is incomplete until the verified change is preserved in GitHub.
+
+Runtime-only edits are not implementation truth until preserved in GitHub and reconciled with the intended branch.
 
 ### DOC UPDATE / SYNC
 
@@ -91,6 +109,47 @@ After canonical GitHub documentation changes, synchronize the corresponding Driv
 - Active development currently uses `work/workflow-foundation-v01`.
 - Before syncing/running Replit, verify branch and git status.
 - If Replit and GitHub disagree, inspect divergence before pull/reset/merge.
+- Never erase uncommitted/rescue work as a shortcut to synchronization.
+
+## Replit Free post-branch-switch bootstrap
+
+After switching Replit to another branch, or after substantial schema/dependency changes, do not assume generated/runtime state is current.
+
+Use this sequence as applicable:
+
+1. `git branch --show-current`
+2. `git status --short`
+3. confirm expected upstream/commit when material
+4. install dependencies only if lockfile/dependency state requires it (`npm ci` preferred for a clean reproducible install)
+5. run `npm run prisma:generate` after Prisma schema/client-affecting branch changes
+6. run/inspect migrations when persistence changed (`npm run db:deploy` / appropriate migration checks)
+7. start via repository scripts (`npm run dev`)
+8. perform the targeted API/runtime/UI verification
+
+Do not blindly run expensive setup when the branch change did not affect that layer.
+
+## Environment / Prisma rule
+
+Repository npm scripts explicitly bind BureauCat to its SQLite URL. Bare commands such as `npx prisma ...` may inherit runtime-provided environment variables (including Replit-managed `DATABASE_URL`).
+
+Therefore:
+
+- prefer repository scripts such as `npm run prisma:validate`, `npm run prisma:generate`, `npm run db:deploy`, `npm run dev`;
+- if a bare Prisma command is necessary, explicitly provide the intended SQLite `DATABASE_URL`;
+- do not change Prisma provider/database architecture merely to accommodate an unrelated injected runtime variable.
+
+## Connector fallback rule
+
+Replit Agent/connector is **not** a reliability dependency.
+
+If the connector fails or times out once in a way that blocks progress:
+
+1. stop retrying the same connector operation unless there is evidence a retry will help;
+2. continue repository inspection/implementation through GitHub;
+3. use a deterministic Replit Free Shell command only for the runtime fact that is actually missing;
+4. use manual UI verification when needed.
+
+This fallback is the standard zero-credit path, not an exceptional downgrade.
 
 ## Designer → Coding handoff
 
@@ -109,4 +168,4 @@ A design item becomes Coding work when its contract is stable enough for a Ready
 
 ## Completion standard
 
-A feature is not Done merely because code was edited. Done means implementation is preserved in GitHub, appropriate verification passes, runtime behavior is verified where relevant, and affected canonical documentation is current.
+A feature is not Done merely because code was edited. Done means implementation is preserved in GitHub, appropriate static verification passes, runtime behavior is verified where relevant, and affected canonical documentation is current/synchronized according to the documentation workflow.
