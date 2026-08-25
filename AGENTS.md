@@ -38,6 +38,33 @@ If intended documentation and implementation disagree materially, surface the mi
 - Development must remain operable with zero Replit Agent credits.
 - Replit Agent/connector is optional only.
 
+## Coding verification rules
+
+Use the cycle:
+
+`INSPECT → PLAN → PATCH → STATIC VERIFY → RUNTIME VERIFY IF NEEDED → PRESERVE → DOC UPDATE/SYNC`
+
+- **Static verify** uses repository evidence first: diff, typecheck/static analysis, schema/contract inspection, Prisma validation/generation, build, tests where applicable.
+- **Runtime verify** is only for evidence requiring the actual environment: logs, env injection, SQLite/Prisma runtime behavior, conversion dependencies, API behavior, manual UI.
+- Do not ask for Replit runtime investigation when GitHub can answer the question.
+
+## Replit Free fallback / bootstrap
+
+After a branch switch or schema/dependency-affecting change, verify generated/runtime state before diagnosing product code:
+
+1. `git branch --show-current`
+2. `git status --short`
+3. confirm expected upstream/commit when material
+4. install dependencies only if dependency/lockfile state requires it
+5. run `npm run prisma:generate` after Prisma schema/client-affecting changes
+6. inspect/apply migrations when persistence changed
+7. start via repository scripts
+8. perform the targeted runtime/UI check
+
+Prefer repository npm scripts for Prisma/runtime commands because they bind BureauCat to the intended SQLite URL. Bare `npx prisma ...` commands may inherit Replit-managed environment variables; if used, explicitly provide the intended SQLite `DATABASE_URL`.
+
+If Replit Agent/connector fails or times out once in a way that blocks progress, stop relying on it for that step. Continue through GitHub and use deterministic Replit Free Shell/UI only for the missing runtime evidence. Do not enter repeated connector retry loops.
+
 ## Technical expectations
 
 - Prefer TypeScript.
