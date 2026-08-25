@@ -49,7 +49,7 @@ Canonical versioned project documentation now exists under `docs/project/` as do
 
 ## BC-006 — GitHub → Drive documentation sync
 
-**Status:** Ready  
+**Status:** In Progress  
 **Priority:** P0
 
 Establish deterministic one-way synchronization from canonical GitHub Markdown to the existing Drive project documents while preserving stable Drive IDs where practical. Start with a manual/operator-triggered procedure; no Replit Agent dependency or CI credential complexity.
@@ -58,10 +58,10 @@ Establish deterministic one-way synchronization from canonical GitHub Markdown t
 
 ## BC-007 — Development workflow consolidation
 
-**Status:** In Progress  
+**Status:** Done  
 **Priority:** P0
 
-Consolidate repository/project operating instructions around GitHub-first inspection/preservation, Replit Free runtime verification, deterministic fallback after connector failure, post-branch-switch bootstrap including Prisma generate when relevant, and explicit STATIC VERIFY vs RUNTIME VERIFY boundaries.
+Consolidated repository/project operating instructions around GitHub-first inspection/preservation, Replit Free runtime verification, deterministic fallback after connector failure, post-branch-switch bootstrap including Prisma generate when relevant, repository npm scripts for SQLite/env invariants, and explicit STATIC VERIFY vs RUNTIME VERIFY boundaries. Static compare from the BC-005 closeout state confirms exactly three documentation/instruction files changed: `AGENTS.md`, `docs/project/05-workflow.md`, and `docs/project/06-gpt-project-instructions.md`. No runtime verification required.
 
 **Dependency:** Audit 2, D-021, D-022.
 
