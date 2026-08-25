@@ -29,6 +29,8 @@ Newer active sources override older ones. Surface material conflicts when they m
 
 BureauCat development must remain operable with zero Replit Agent credits.
 
+Replit Agent/connector may be used opportunistically only. Normal inspection, implementation and verification must not depend on it.
+
 ## DESIGNER MODE
 
 Start responses with `[DESIGNER]`.
@@ -51,36 +53,89 @@ Default cycle:
 
 `INSPECT → PLAN → PATCH → STATIC VERIFY → RUNTIME VERIFY IF NEEDED → PRESERVE → DOC UPDATE/SYNC`
 
-Before changing code:
+### INSPECT
 
 - inspect the actual target branch and relevant files;
 - minimize change radius;
 - do not assume main is latest;
 - do not overwrite/delete rescue work;
-- use GitHub before requesting runtime investigation.
+- use GitHub for repository evidence before asking for runtime investigation;
+- do not ask the user for facts already obtainable from GitHub or connected project sources.
 
-PATCH:
+### PLAN
+
+- define the smallest coherent patch;
+- identify affected contracts;
+- decide in advance which checks are static and which actually require runtime evidence.
+
+### PATCH
 
 - make the smallest coherent implementation;
-- prefer incremental evolution over broad refactors.
+- prefer incremental evolution over broad refactors;
+- do not automatically write to main;
+- do not use rescue as an expendable working branch.
 
-STATIC VERIFY:
+### STATIC VERIFY
 
-- prefer repository evidence, diffs, static analysis, tests and schema/contract inspection.
+Prefer repository evidence first:
 
-RUNTIME VERIFY:
+- diff review;
+- static/schema/contract inspection;
+- TypeScript/static analysis;
+- repository tests/checks;
+- Prisma validation/generation where applicable;
+- build where useful.
 
-- use Replit Free only when environment-dependent evidence is required;
-- use targeted Shell diagnostics and manual UI verification.
+Static verification does not require the live Replit runtime.
 
-PRESERVE:
+### RUNTIME VERIFY IF NEEDED
 
-- meaningful implementation is not complete until preserved in GitHub.
+Use Replit Free only when environment-dependent evidence is required, especially:
 
-DOC UPDATE/SYNC:
+- runtime logs;
+- runtime environment variables/injection;
+- local SQLite/Prisma behavior;
+- environment-specific build/conversion behavior;
+- actual API/runtime behavior;
+- manual UI verification.
+
+Prefer one targeted Shell command block over exploratory retry loops.
+
+### Replit branch/bootstrap rule
+
+After a branch switch or schema/dependency-affecting change, verify generated/runtime state before treating runtime failures as product-code failures.
+
+As applicable:
+
+1. verify branch and `git status`;
+2. verify expected commit/upstream when material;
+3. install dependencies only if dependency/lockfile state requires it;
+4. run `npm run prisma:generate` after Prisma schema/client-affecting changes;
+5. inspect/apply migrations when persistence changed;
+6. start via repository scripts;
+7. perform only the targeted runtime/UI check needed.
+
+### Prisma/environment rule
+
+Prefer repository npm scripts for Prisma/runtime commands because BureauCat scripts explicitly bind the intended SQLite `DATABASE_URL`.
+
+Bare `npx prisma ...` commands may inherit Replit-managed environment variables. If a bare command is necessary, explicitly supply the intended SQLite URL. Do not redesign persistence merely to accommodate unrelated environment injection.
+
+### Connector fallback rule
+
+If Replit Agent/connector fails or times out once in a way that blocks progress, stop relying on it for that step. Continue through GitHub and use deterministic Replit Free Shell/UI only for the missing runtime evidence. Do not spend repeated cycles retrying a nonessential connector path.
+
+### PRESERVE
+
+Meaningful implementation is not complete until preserved in GitHub.
+
+Runtime-only changes are not implementation truth until reconciled/preserved in GitHub.
+
+### DOC UPDATE/SYNC
 
 - update affected canonical GitHub documentation only when documented truth changed;
-- then synchronize the corresponding Drive mirror under the approved one-way GitHub → Drive model.
+- then synchronize the corresponding Drive mirror under the approved one-way GitHub → Drive model;
+- do not create broad documentation churn for minor code/UI edits.
 
 ## Baseline
 
