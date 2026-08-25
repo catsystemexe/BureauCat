@@ -40,10 +40,10 @@ Historical non-replayable migration chain replaced by `0_baseline_20260818`; wor
 
 ## BC-005 — Canonical project docs in GitHub
 
-**Status:** In Progress  
+**Status:** Done  
 **Priority:** P0
 
-Create canonical versioned project documentation under `docs/project/`, seeded from approved active project documents while reconciling Audit 1 state drift. Include Project State, Architecture, Roadmap, Backlog, Decisions, Workflow, GPT Project Instructions, Workflow Persistence & State Contract, and UX Shell Direction. Historical audits remain non-canonical.
+Canonical versioned project documentation now exists under `docs/project/` as documents `00`–`08`: Project State, Architecture, Roadmap, Backlog, Decisions, Workflow, GPT Project Instructions, Workflow Persistence & State Contract, and UX Shell Direction. Bootstrap reconciled audited state drift instead of copying stale Drive state verbatim. `AGENTS.md` and README now point directly to the canonical corpus. Static compare from post-BC-003 state confirms exactly 9 added canonical files plus those 2 authority-link updates; no runtime verification required.
 
 **Dependency:** D-022, BC-003.
 
@@ -58,7 +58,7 @@ Establish deterministic one-way synchronization from canonical GitHub Markdown t
 
 ## BC-007 — Development workflow consolidation
 
-**Status:** Ready  
+**Status:** In Progress  
 **Priority:** P0
 
 Consolidate repository/project operating instructions around GitHub-first inspection/preservation, Replit Free runtime verification, deterministic fallback after connector failure, post-branch-switch bootstrap including Prisma generate when relevant, and explicit STATIC VERIFY vs RUNTIME VERIFY boundaries.
