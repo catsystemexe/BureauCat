@@ -556,6 +556,7 @@ function RightContextPanel({
               isBookmarkLinkMode={isBookmarkLinkMode}
               onAnalysisCreated={onAnalysisCreated}
               onBookmarkSelectedForLink={onBookmarkSelectedForLink}
+              selectedSituationId={selectedSituationId}
               targetPinId={targetPinId}
             />
           ) : (
