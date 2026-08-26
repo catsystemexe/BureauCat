@@ -6,7 +6,7 @@ Statuses: `Proposed`, `Ready`, `In Progress`, `Blocked`, `Done`, `Superseded`.
 
 Priorities: `P0` critical baseline, `P1` next product foundation, `P2` important follow-up, `P3` later improvement.
 
-A backlog item becomes Ready only after its product decision is sufficiently clear for Coding Mode. Coding Mode marks an item Done only after implementation is preserved, appropriate verification passes, and affected documentation is current.
+A backlog item becomes Ready only after its product decision is sufficiently clear for IMPLEMENTATION. Meaningful implementation is Done only after the change is preserved, appropriate verification passes, and affected documentation is current.
 
 # P0 — Baseline / documentation authority
 
@@ -64,6 +64,17 @@ Established `docs/project/09-drive-sync.md` with stable mappings from canonical 
 Consolidated repository/project operating instructions around GitHub-first inspection/preservation, Replit Free runtime verification, deterministic fallback after connector failure, post-branch-switch bootstrap including Prisma generate when relevant, repository npm scripts for SQLite/env invariants, and explicit STATIC VERIFY vs RUNTIME VERIFY boundaries. Static compare from the BC-005 closeout state confirms exactly three documentation/instruction files changed: `AGENTS.md`, `docs/project/05-workflow.md`, and `docs/project/06-gpt-project-instructions.md`. No runtime verification required.
 
 **Dependency:** Audit 2, D-021, D-022.
+
+## BC-008 — Three-role instruction consolidation
+
+**Status:** In Progress  
+**Priority:** P0
+
+Replace the obsolete Designer/Coding two-mode terminology with D-023: DESIGNER → INSTRUCTIONS → IMPLEMENTATION, with Code mode as a separate repository process/safety overlay. Align canonical workflow/project instructions, repo-local executor guidance and Drive mirrors without changing application functionality.
+
+Done when: canonical GitHub project docs, `AGENTS.md`/README where affected, GPT Project instructions and Drive mirrors resolve to one role model and one GitHub-first/Replit-Free workflow; cross-source verification passes.
+
+**Dependency:** D-023, D-021, D-022.
 
 # P1 — Situation workflow
 
@@ -219,4 +230,4 @@ Reduce handwritten response typing and inconsistent validation.
 
 ## Maintenance rule
 
-Designer decisions create/revise backlog items. Coding completion updates status and only the project documents affected by the change. Minor visual patches do not trigger broad documentation churn.
+Designer decisions create or revise backlog items. IMPLEMENTATION completion updates status and only the project documents affected by the change. Minor visual patches do not trigger broad documentation churn.
