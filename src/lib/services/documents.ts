@@ -2,6 +2,7 @@ import { analyzeDocumentWithAI } from "@/lib/ai/documentAnalysis";
 import { prisma } from "@/lib/prisma";
 import { extractDocumentText } from "@/lib/documents/extraction";
 import { evidenceStateRecheckForCase } from "@/lib/services/evidenceStateService";
+import { journalizeDocumentInsight } from "@/lib/services/documentInsights";
 import { storeOriginalDocument } from "@/lib/documents/storage";
 import type { ValidatedDocumentFile } from "@/lib/validation/documents";
 import { convertDocumentWithMarkItDown } from "@/lib/documents/markitdown";
@@ -499,7 +500,19 @@ function findTextRange(sourceText: string, needle: string) {
   return findNormalizedTextRange(sourceText, normalizedNeedle) ?? findPartialTextRange(sourceText, normalizedNeedle);
 }
 
-export async function createAIAnalysisDocument(sourceDocumentId: string) {
+async function projectAnalysisInsightsToJournal(analysisDocumentId: string, situationId: string) {
+  const insights = await prisma.documentInsight.findMany({
+    where: { document_id: analysisDocumentId },
+    orderBy: { created_at: "asc" },
+    select: { id: true }
+  });
+
+  for (const insight of insights) {
+    await journalizeDocumentInsight(insight.id, situationId);
+  }
+}
+
+export async function createAIAnalysisDocument(sourceDocumentId: string, situationId: string) {
   const sourceDocument = await prisma.document.findUnique({
     where: { id: sourceDocumentId },
     select: documentSelect
@@ -507,6 +520,15 @@ export async function createAIAnalysisDocument(sourceDocumentId: string) {
 
   if (!sourceDocument) {
     return null;
+  }
+
+  const situation = await prisma.situation.findUnique({
+    where: { id: situationId },
+    select: { id: true, case_id: true }
+  });
+
+  if (!situation || situation.case_id !== sourceDocument.case_id) {
+    throw new Error("Situace nepatří ke stejnému případu.");
   }
 
   const existingAnalysis = await prisma.document.findFirst({
@@ -519,6 +541,7 @@ export async function createAIAnalysisDocument(sourceDocumentId: string) {
   });
 
   if (existingAnalysis) {
+    await projectAnalysisInsightsToJournal(existingAnalysis.id, situationId);
     return existingAnalysis;
   }
 
@@ -582,8 +605,8 @@ ${renderLines(grouped.questions)}
     return start >= 0 ? { start, end: start + title.length } : null;
   }
 
-  return prisma.$transaction(async (transaction) => {
-    const analysisDocument = await transaction.document.create({
+  const analysisDocument = await prisma.$transaction(async (transaction) => {
+    const createdAnalysisDocument = await transaction.document.create({
       data: {
         case_id: sourceDocument.case_id,
         filename: sourceTitle,
@@ -612,7 +635,7 @@ ${renderLines(grouped.questions)}
 
       await transaction.documentInsight.create({
         data: {
-          document_id: analysisDocument.id,
+          document_id: createdAnalysisDocument.id,
           source_document_id: sourceDocument.id,
           insight_type: insight.insight_type,
           target_section: target.target_section,
@@ -630,8 +653,11 @@ ${renderLines(grouped.questions)}
       });
     }
 
-    return analysisDocument;
+    return createdAnalysisDocument;
   });
+
+  await projectAnalysisInsightsToJournal(analysisDocument.id, situationId);
+  return analysisDocument;
 }
 
 
