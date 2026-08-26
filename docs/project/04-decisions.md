@@ -60,9 +60,9 @@ Case Context is a strong candidate for canonical context assembly used by AI, au
 
 ## D-010 — Two primary work modes
 
-**Status:** Active
+**Status:** Superseded by D-023
 
-Use Designer Mode for product/UX/architecture decisions and Coding Mode for implementation/debugging/testing. Designer may inspect code read-only; Coding starts from actual repository state.
+The former Designer Mode / Coding Mode split is replaced by three communication/work roles plus a separate Code mode process/safety overlay.
 
 ## D-011 — Situation is the bounded working unit
 
@@ -151,3 +151,21 @@ GitHub `docs/project/` is the canonical, versioned location for normative Bureau
 Synchronization of normative documents is one-way by default: **GitHub canonical → Drive mirror**. Drive-only edits to mirrored normative documents are uncommitted working changes until intentionally promoted into GitHub. Initial synchronization is manual/operator-triggered; automation is deferred until the contract is stable.
 
 Implementation remains source of truth for **what exists**; canonical project documents define **intended product direction**. Material mismatch must be surfaced rather than silently resolved.
+
+## D-023 — Three work roles with Code mode overlay
+
+**Status:** Active
+
+BureauCat uses three communication/work roles: **DESIGNER**, **INSTRUCTIONS**, and **IMPLEMENTATION**.
+
+- DESIGNER decides what should change and why; repository inspection may be read-only when implementation reality affects the decision.
+- INSTRUCTIONS converts approved design into bounded executor-ready implementation work with explicit scope, acceptance criteria, change radius, verification and environment guidance.
+- IMPLEMENTATION executes an approved batch against actual project state, minimizes change radius, verifies the result, preserves meaningful work and updates affected project documentation.
+
+**Code mode** is a separate repository process/safety overlay for repository-changing work. It is not a fourth peer role and does not replace IMPLEMENTATION. Code mode may overlay INSTRUCTIONS or IMPLEMENTATION when repository safety/authorization rules are relevant.
+
+Default implementation cycle:
+
+`INSPECT → PLAN → PATCH → STATIC VERIFY → RUNTIME VERIFY (when required) → PRESERVE → DOC UPDATE`
+
+Runtime verification is conditional. Replit Free is used only for runtime/environment/Prisma/log/manual UI evidence unavailable from GitHub. Merge, deploy, force-push, branch deletion, destructive reset and history rewrite require explicit authorization.
