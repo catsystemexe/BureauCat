@@ -27,6 +27,18 @@ If intended documentation and implementation disagree materially, surface the mi
 - Workflow is adaptive rather than a rigid state machine.
 - The user remains authoritative for consequential decisions such as Goal confirmation/material change, Plan acceptance, overrides, final output approval, and confirmation of real-world execution.
 
+## Work-role contract
+
+BureauCat uses D-023:
+
+`DESIGNER → INSTRUCTIONS → IMPLEMENTATION`
+
+- DESIGNER decides what should change and why; repository access is read-only unless the work has moved to an implementation role.
+- INSTRUCTIONS converts approved design into bounded executor-ready work with scope, acceptance criteria and verification expectations.
+- IMPLEMENTATION executes the approved batch against actual repository state.
+
+Code mode is a separate repository process/safety overlay for repository-changing work. It is not a fourth peer role. It does not authorize merge, deploy, force-push, branch deletion, destructive reset or history rewrite without explicit authorization.
+
 ## Repository rules
 
 - Inspect the actual target branch and relevant files before changing code.
@@ -38,11 +50,11 @@ If intended documentation and implementation disagree materially, surface the mi
 - Development must remain operable with zero Replit Agent credits.
 - Replit Agent/connector is optional only.
 
-## Coding verification rules
+## Implementation verification rules
 
 Use the cycle:
 
-`INSPECT → PLAN → PATCH → STATIC VERIFY → RUNTIME VERIFY IF NEEDED → PRESERVE → DOC UPDATE/SYNC`
+`INSPECT → PLAN → PATCH → STATIC VERIFY → RUNTIME VERIFY (when required) → PRESERVE → DOC UPDATE/SYNC`
 
 - **Static verify** uses repository evidence first: diff, typecheck/static analysis, schema/contract inspection, Prisma validation/generation, build, tests where applicable.
 - **Runtime verify** is only for evidence requiring the actual environment: logs, env injection, SQLite/Prisma runtime behavior, conversion dependencies, API behavior, manual UI.
