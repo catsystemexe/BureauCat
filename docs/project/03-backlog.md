@@ -67,12 +67,10 @@ Consolidated repository/project operating instructions around GitHub-first inspe
 
 ## BC-008 — Three-role instruction consolidation
 
-**Status:** In Progress  
+**Status:** Done  
 **Priority:** P0
 
-Replace the obsolete Designer/Coding two-mode terminology with D-023: DESIGNER → INSTRUCTIONS → IMPLEMENTATION, with Code mode as a separate repository process/safety overlay. Align canonical workflow/project instructions, repo-local executor guidance and Drive mirrors without changing application functionality.
-
-Done when: canonical GitHub project docs, `AGENTS.md`/README where affected, GPT Project instructions and Drive mirrors resolve to one role model and one GitHub-first/Replit-Free workflow; cross-source verification passes.
+Replaced the obsolete Designer/Coding two-mode terminology with D-023: DESIGNER → INSTRUCTIONS → IMPLEMENTATION, with Code mode as a separate repository process/safety overlay. Canonical Workflow/GPT Project Instructions, repo-local `AGENTS.md`, Drive mirrors and the actual GPT Project instruction field now resolve to the same role model, GitHub-first authority and conditional Replit-Free runtime workflow. Cross-source Phase 6 verification passed; no application functionality changed.
 
 **Dependency:** D-023, D-021, D-022.
 
