@@ -130,10 +130,30 @@ export async function journalizeDocumentInsight(insightId: string, situationId: 
 
     if (insight.journal_item_id) {
       const existingJournalItem = await transaction.journalItem.findUnique({
-        where: { id: insight.journal_item_id }
+        where: { id: insight.journal_item_id },
+        select: {
+          id: true,
+          case_id: true,
+          situation_id: true,
+          section: true,
+          item_type: true,
+          title: true,
+          value: true,
+          explanation: true,
+          evidence_state: true,
+          status: true,
+          display_order: true,
+          source_links_json: true,
+          created_at: true,
+          updated_at: true
+        }
       });
 
       if (existingJournalItem) {
+        if (existingJournalItem.situation_id !== situationId) {
+          throw new Error("Insight je už zapsán v jiné situaci.");
+        }
+
         const existingPin = insight.source_pin_id
           ? await transaction.documentPin.findUnique({ where: { id: insight.source_pin_id } })
           : null;
