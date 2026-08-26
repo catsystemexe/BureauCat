@@ -119,6 +119,7 @@ export function DocumentViewPanel({
   isBookmarkLinkMode = false,
   onBookmarkSelectedForLink,
   onAnalysisCreated,
+  selectedSituationId,
   targetPinId = null,
   hoveredBookmarkPinId = null
 }: {
@@ -127,6 +128,7 @@ export function DocumentViewPanel({
   isBookmarkLinkMode?: boolean;
   onBookmarkSelectedForLink?: (pin: DocumentPin) => void;
   onAnalysisCreated?: (document: CaseDocument) => void;
+  selectedSituationId: string | null;
   targetPinId?: string | null;
   hoveredBookmarkPinId?: string | null;
 }) {
@@ -1674,12 +1676,19 @@ export function DocumentViewPanel({
   }
 
   async function handleAnalyzeDocument() {
+    if (!selectedSituationId) {
+      setError("Nejdřív vyber situaci.");
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
 
     try {
       const response = await fetch(`/api/documents/${currentDocument.id}/analysis`, {
-        method: "POST"
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ situation_id: selectedSituationId })
       });
 
       const data = (await response.json()) as DocumentResponse;
@@ -1689,6 +1698,8 @@ export function DocumentViewPanel({
       }
 
       onAnalysisCreated?.(data.document);
+      window.dispatchEvent(new CustomEvent("bureaucat:journal-refresh"));
+      window.dispatchEvent(new CustomEvent("bureaucat:document-pins-refresh"));
     } catch (analysisError) {
       setError(analysisError instanceof Error ? analysisError.message : "Analýzu se nepodařilo vytvořit.");
     } finally {
