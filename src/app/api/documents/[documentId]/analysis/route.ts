@@ -10,16 +10,21 @@ type Context = {
   params: Promise<{ documentId: string }>;
 };
 
-export async function POST(_request: Request, context: Context) {
+export async function POST(request: Request, context: Context) {
   console.log("[analysis route env]", {
     hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
     openAIModel: process.env.OPENAI_MODEL ?? null
   });
 
   const { documentId } = await context.params;
+  const body = (await request.json().catch(() => null)) as { situation_id?: unknown } | null;
+
+  if (!body || typeof body.situation_id !== "string" || body.situation_id.trim().length === 0) {
+    return NextResponse.json({ error: "Situation id is required." }, { status: 400 });
+  }
 
   try {
-    const document = await createAIAnalysisDocument(documentId);
+    const document = await createAIAnalysisDocument(documentId, body.situation_id.trim());
 
     if (!document) {
       return NextResponse.json({ error: "Document not found." }, { status: 404 });
