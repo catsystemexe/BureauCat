@@ -124,8 +124,22 @@ export async function journalizeDocumentInsight(insightId: string, situationId: 
       throw new Error("Insight not found.");
     }
 
-    if (!insight.source_document_id || insight.source_start_offset === null || insight.source_end_offset === null) {
-      throw new Error("Insight nemá zdrojový rozsah v dokumentu.");
+    if (!insight.source_document_id) {
+      throw new Error("Insight nemá zdrojový dokument.");
+    }
+
+    if (insight.journal_item_id) {
+      const existingJournalItem = await transaction.journalItem.findUnique({
+        where: { id: insight.journal_item_id }
+      });
+
+      if (existingJournalItem) {
+        const existingPin = insight.source_pin_id
+          ? await transaction.documentPin.findUnique({ where: { id: insight.source_pin_id } })
+          : null;
+
+        return { insight, journalItem: existingJournalItem, pin: existingPin };
+      }
     }
 
     const sourceDocument = await transaction.document.findUnique({
@@ -146,33 +160,46 @@ export async function journalizeDocumentInsight(insightId: string, situationId: 
       throw new Error("Situace nepatří ke stejnému případu.");
     }
 
-    const maxCaseBookmarkNumber = await transaction.documentPin.aggregate({
-      where: {
-        document: {
-          case_id: sourceDocument.case_id
-        }
-      },
-      _max: {
-        case_bookmark_number: true
-      }
-    });
+    const hasReliableSourceRange =
+      insight.source_start_offset !== null &&
+      insight.source_end_offset !== null &&
+      insight.source_end_offset > insight.source_start_offset;
 
-    const pin = await transaction.documentPin.create({
-      data: {
-        document_id: sourceDocument.id,
-        selected_text: insight.source_text ?? "",
-        start_offset: insight.source_start_offset,
-        end_offset: insight.source_end_offset,
-        case_bookmark_number: (maxCaseBookmarkNumber._max.case_bookmark_number ?? 0) + 1,
-        color: getInsightBookmarkColor(insight.insight_type),
-        note_text: insight.title
-      },
-      select: {
-        id: true,
-        case_bookmark_number: true,
-        color: true
-      }
-    });
+    let pin: {
+      id: string;
+      case_bookmark_number: number | null;
+      color: string;
+    } | null = null;
+
+    if (hasReliableSourceRange) {
+      const maxCaseBookmarkNumber = await transaction.documentPin.aggregate({
+        where: {
+          document: {
+            case_id: sourceDocument.case_id
+          }
+        },
+        _max: {
+          case_bookmark_number: true
+        }
+      });
+
+      pin = await transaction.documentPin.create({
+        data: {
+          document_id: sourceDocument.id,
+          selected_text: insight.source_text ?? "",
+          start_offset: insight.source_start_offset!,
+          end_offset: insight.source_end_offset!,
+          case_bookmark_number: (maxCaseBookmarkNumber._max.case_bookmark_number ?? 0) + 1,
+          color: getInsightBookmarkColor(insight.insight_type),
+          note_text: insight.title
+        },
+        select: {
+          id: true,
+          case_bookmark_number: true,
+          color: true
+        }
+      });
+    }
 
     const maxDisplayOrder = await transaction.journalItem.aggregate({
       where: {
@@ -184,6 +211,26 @@ export async function journalizeDocumentInsight(insightId: string, situationId: 
         display_order: true
       }
     });
+
+    const sourceLink = pin
+      ? {
+          type: "bookmark",
+          pinId: pin.id,
+          documentId: sourceDocument.id,
+          caseBookmarkNumber: pin.case_bookmark_number,
+          color: pin.color,
+          insightId: insight.id,
+          analysisDocumentId: insight.document_id,
+          sourceDocumentName: sourceDocument.display_name ?? sourceDocument.filename
+        }
+      : {
+          type: "document_insight",
+          documentId: sourceDocument.id,
+          insightId: insight.id,
+          analysisDocumentId: insight.document_id,
+          sourceDocumentName: sourceDocument.display_name ?? sourceDocument.filename,
+          sourceText: insight.source_text
+        };
 
     const journalItem = await transaction.journalItem.create({
       data: {
@@ -197,18 +244,7 @@ export async function journalizeDocumentInsight(insightId: string, situationId: 
         evidence_state: insight.evidence_state,
         status: "active",
         display_order: (maxDisplayOrder._max.display_order ?? 0) + 1,
-        source_links_json: JSON.stringify([
-          {
-            type: "bookmark",
-            pinId: pin.id,
-            documentId: sourceDocument.id,
-            caseBookmarkNumber: pin.case_bookmark_number,
-            color: pin.color,
-            insightId: insight.id,
-            analysisDocumentId: insight.document_id,
-            sourceDocumentName: sourceDocument.display_name ?? sourceDocument.filename
-          }
-        ])
+        source_links_json: JSON.stringify([sourceLink])
       }
     });
 
@@ -216,7 +252,7 @@ export async function journalizeDocumentInsight(insightId: string, situationId: 
       where: { id: insight.id },
       data: {
         status: "journalized",
-        source_pin_id: pin.id,
+        source_pin_id: pin?.id ?? null,
         journal_item_id: journalItem.id
       },
       select: documentInsightSelect
