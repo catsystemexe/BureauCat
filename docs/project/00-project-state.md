@@ -48,7 +48,12 @@ Active development branch: `work/workflow-foundation-v01`.
 
 `main` is not assumed to represent the latest working implementation.
 
-Local portability batch: `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`. Under D-024, ChatGPT handles planning/instructions, Codex code/versioned docs/static verification, and VS agent local runtime/environment/API/UI checks. This supersedes the former Replit workflow. The original no-push restriction was superseded by explicit user authorization: commit `07761fb8e31263b3a4b7605742d2e2ee0252ea40` is preserved on GitHub in draft [PR #37](https://github.com/catsystemexe/BureauCat/pull/37) against `work/workflow-foundation-v01`. Windows runtime/UI verification and Drive synchronization remain pending. The follow-up `fix/situation-workflow-initialization` repair starts from that commit and is authorized for a local commit only, without push, merge or deployment.
+Local portability batch: `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`. Under D-024, ChatGPT handles planning/instructions, Codex code/versioned docs/static verification, and VS agent local runtime/environment/API/UI checks. This supersedes the former Replit workflow. Subsequent explicit user authorization superseded the original push restrictions for both published commits:
+
+- Bootstrap `07761fb8e31263b3a4b7605742d2e2ee0252ea40`: draft [PR #37](https://github.com/catsystemexe/BureauCat/pull/37), base `work/workflow-foundation-v01`.
+- Workflow-initialization repair `4d9a07a002f3e1a1abdcc99a28f1c69c9cc947ad` on `fix/situation-workflow-initialization`: draft [PR #38](https://github.com/catsystemexe/BureauCat/pull/38), base `chore/windows-local-bootstrap`.
+
+The documentation-only Windows report update is prepared for review on the repair branch. BC-009 remains In Progress; documentation closeout and Drive synchronization are pending. Neither PR has been merged or deployed by this work.
 
 ## Implemented on the active working branch
 
@@ -76,7 +81,25 @@ Local portability batch: `chore/windows-local-bootstrap`, based on verified `wor
   - existing right Document/Analysis panel preserved.
 - Canonical project documentation under `docs/project/` with manual one-way Drive mirror workflow.
 
-Runtime verification on Replit Free confirmed the new workflow rail loads after regenerating Prisma Client and Step selection changes only UI selection, not persisted active workflow state.
+Historical Replit Free verification confirmed the workflow rail loads after regenerating Prisma Client and Step selection changes only UI selection, not persisted active workflow state. It does not establish current Windows verification or Drive mirror parity.
+
+## Windows verification reported by VS agent
+
+These results are taken from VS agent reports supplied for the documentation update, not from new Windows checks run by Codex:
+
+- Lockfile-based Windows installation, Prisma Client generation and typecheck without incremental cache passed.
+- Both Situation creation paths initialize seven Steps; only `ANALYSIS` is `ACTIVE`.
+- Ordinary mouse selection passed at 1440×900. Keyboard activation via focus and Enter passed at 544×234, where pointer interaction was blocked by layout clipping. Neither selection changed the persisted active Step.
+- Python `3.12.10` in an isolated venv outside the repository converted TXT, MD, DOCX and text-based PDF fixtures successfully.
+- The actual `convertDocumentWithMarkItDown()` was verified from Node through `MARKITDOWN_PYTHON`: `ok=true`, expected marker present, `error=null`, exit `0`. The test environment setting was not persisted; normal startup must supply it to the process launching the application.
+
+Evidence limits and open items:
+
+- OCR is unavailable because `rapidocr_onnxruntime` is missing. Short PDFs can attempt OCR fallback and suppress its exception; this does not prove OCR works.
+- Open UX issue: at `544×234`, navigation has zero height. No CSS change is included; tracked under BC-009/BC-015.
+- Literal `Ctrl+C` was not verified.
+- Existing Replit data was not imported.
+- End-to-end document upload through the application was not tested.
 
 ## Incomplete / not yet implemented
 
