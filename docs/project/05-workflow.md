@@ -6,13 +6,13 @@ Keep product reasoning, implementation and project documentation synchronized wi
 
 ## System roles
 
-- **GitHub** — implementation source of truth and canonical versioned project documentation under `docs/project/`.
-- **Google Drive** — synchronized human-readable/project-source mirror plus non-canonical audits/working materials.
-- **Replit Free** — runtime, Shell and manual UI verification environment.
-- **ChatGPT Project** — design, instruction preparation, implementation orchestration and project-source synthesis.
-- **Replit Agent/connector** — optional accelerator only; never a required path.
+- **ChatGPT** — planning, product reasoning and bounded implementation instructions.
+- **Codex** — code, versioned documentation and static verification against the actual repository state.
+- **VS agent** — local runtime, environment setup and runtime/API/UI verification on Windows or Linux.
+- **GitHub** — implementation source of truth and canonical versioned documentation under `docs/project/`.
+- **Google Drive** — human-readable/project-source mirror; synchronization of this batch is pending.
 
-BureauCat development and verification must remain operable with **zero Replit Agent credits**.
+This allocation under D-024 supersedes the former Replit runtime workflow. Replit is historical context, not a required development environment. The D-023 work roles remain; they describe stages, while D-024 assigns execution responsibilities.
 
 ## Work roles
 
@@ -78,7 +78,7 @@ Use GitHub first.
 - Check whether requested behavior already exists or is partially implemented.
 - Minimize change radius.
 - Preserve rescue and unknown work.
-- Do not request Replit investigation for questions GitHub can answer.
+- Resolve repository/static questions before requesting VS agent runtime investigation.
 
 ### PLAN
 
@@ -96,7 +96,7 @@ Use GitHub first.
 
 ### STATIC VERIFY
 
-Static verification answers: **Does the repository change appear internally correct without relying on the live Replit runtime?**
+Static verification answers: **Does the repository change appear internally correct without relying on the local application runtime?**
 
 Prefer repository/static evidence first, as applicable:
 
@@ -108,13 +108,13 @@ Prefer repository/static evidence first, as applicable:
 - `npm run build` when useful;
 - task-specific automated checks/tests.
 
-Do not label a Replit-only runtime observation as static verification.
+Do not label a runtime-only observation as static verification.
 
 ### RUNTIME VERIFY (WHEN REQUIRED)
 
 Runtime verification answers: **Does the verified repository state behave correctly in the actual runtime/environment?**
 
-Use Replit Free only for evidence GitHub cannot reliably provide:
+VS agent owns environment-dependent evidence that repository/static inspection cannot provide:
 
 - runtime logs;
 - environment variables/runtime injection;
@@ -123,11 +123,11 @@ Use Replit Free only for evidence GitHub cannot reliably provide:
 - actual API/runtime behavior;
 - manual UI verification.
 
-Prefer **one targeted Shell diagnostic block** over repeated exploratory commands.
+Codex provides a concrete handoff with branch/baseline, changed behavior, static results/exit codes, blockers and targeted runtime checks. VS agent reports the local OS, tool versions, logs and observed API/UI behavior.
 
 ### PRESERVE
 
-Meaningful implementation is incomplete until the verified change is preserved in GitHub.
+Preserve meaningful implementation in Git according to authorization. If push is prohibited, retain the local branch and reviewable diff; report GitHub preservation as pending rather than pushing or declaring the batch fully Done.
 
 Runtime-only edits are not implementation truth until preserved in GitHub and reconciled with the intended branch.
 
@@ -135,7 +135,7 @@ Runtime-only edits are not implementation truth until preserved in GitHub and re
 
 Update canonical documentation only when the change modifies documented truth. Do not create documentation churn for minor visual/implementation changes.
 
-After canonical GitHub documentation changes, synchronize the corresponding Drive mirror according to BC-006 and D-022.
+After canonical documentation changes, synchronize the corresponding Drive mirror according to BC-006 and D-022 when authorized. For this local-only batch, Drive synchronization is pending; do not update mirrors or claim parity.
 
 ## Code mode overlay
 
@@ -168,49 +168,22 @@ Code mode requires:
 
 - `rescue/replit-2026-08-18` is preserved history/baseline.
 - Active development currently uses `work/workflow-foundation-v01`.
-- Before syncing/running Replit, verify branch and git status.
-- If Replit and GitHub disagree, inspect divergence before pull/reset/merge.
+- Before local runtime verification, verify branch, commit and git status.
+- If local and GitHub state disagree, inspect divergence before pull/reset/merge.
 - Never erase uncommitted/rescue work as a shortcut to synchronization.
 
-## Replit Free post-branch-switch bootstrap
+## Local post-branch-switch bootstrap
 
-After switching Replit to another branch, or after substantial schema/dependency changes, do not assume generated/runtime state is current.
+After a branch switch or schema/dependency-affecting change, verify generated state before diagnosing product code:
 
-Use this sequence as applicable:
+1. Verify branch, commit/upstream and `git status`; preserve unknown work.
+2. Use `npm ci` when dependency/lockfile state requires a clean reproducible install.
+3. Run `npm run prisma:validate` and `npm run prisma:generate` when Prisma state matters.
+4. Codex runs static checks and records exact diagnostics/exit codes. Product-code fixes outside the approved batch require a separate task.
+5. VS agent prepares the local environment and performs targeted runtime/API/UI checks; see README for local prerequisites and commands.
+6. Inspect database/migration state before starting: `dev` and `start` still run `db:deploy` automatically. Do not run migration or startup commands in a batch that prohibits database changes.
 
-1. `git branch --show-current`
-2. `git status --short`
-3. confirm expected upstream/commit when material
-4. install dependencies only if lockfile/dependency state requires it (`npm ci` preferred for a clean reproducible install)
-5. run `npm run prisma:generate` after Prisma schema/client-affecting branch changes
-6. run/inspect migrations when persistence changed (`npm run db:deploy` / appropriate migration checks)
-7. start via repository scripts (`npm run dev`)
-8. perform the targeted API/runtime/UI verification
-
-Do not blindly run expensive setup when the branch change did not affect that layer.
-
-## Environment / Prisma rule
-
-Repository npm scripts explicitly bind BureauCat to its SQLite URL. Bare commands such as `npx prisma ...` may inherit runtime-provided environment variables (including Replit-managed `DATABASE_URL`).
-
-Therefore:
-
-- prefer repository scripts such as `npm run prisma:validate`, `npm run prisma:generate`, `npm run db:deploy`, `npm run dev`;
-- if a bare Prisma command is necessary, explicitly provide the intended SQLite `DATABASE_URL`;
-- do not change Prisma provider/database architecture merely to accommodate an unrelated injected runtime variable.
-
-## Connector fallback rule
-
-Replit Agent/connector is **not** a reliability dependency.
-
-If the connector fails or times out once in a way that blocks progress:
-
-1. stop retrying the same connector operation unless there is evidence a retry will help;
-2. continue repository inspection/implementation through GitHub;
-3. use a deterministic Replit Free Shell command only for the runtime fact that is actually missing;
-4. use manual UI verification when needed.
-
-This fallback is the standard zero-credit path, not an exceptional downgrade.
+Repository npm scripts use `scripts/with-database.cjs` to force `DATABASE_URL=file:../data/bureaucat.sqlite` on Windows and Linux. Prisma resolves that URL relative to `prisma/schema.prisma`, keeping the database at `data/bureaucat.sqlite`. The launcher invokes the installed Next/Prisma JavaScript CLI with Node, preserves arguments/environment and child exit codes, and adds no dependency. Bare Prisma/Next commands do not receive this override.
 
 ## Handoff rule
 
@@ -224,7 +197,7 @@ For material implementation batches, use when useful:
 
 ```text
 IMPLEMENTATION PROFILE
-Execution environment: <ChatGPT + GitHub | Codex + GitHub | Replit Free verification | ordered combination>
+Execution environment: <ChatGPT planning/instructions | Codex code/docs/static verification | VS agent local runtime verification>
 Recommended model: <model or N/A>
 Reasoning effort: <effort or N/A>
 Change radius: R0 | R1 | R2 | R3 | R4
@@ -259,4 +232,4 @@ BureauCat interpretation:
 
 ## Completion standard
 
-A feature or material documentation/workflow change is not Done merely because files were edited. Done means the change is preserved in GitHub, appropriate static verification passes, runtime behavior is verified where relevant, and affected canonical documentation is current/synchronized according to the documentation workflow.
+A feature or material documentation/workflow change is not Done merely because files were edited. Done means the change is preserved in GitHub, appropriate static verification passes, runtime behavior is verified where relevant, and affected canonical documentation is current/synchronized according to the documentation workflow. A local-only handoff must explicitly list pending remote preservation, static blockers, VS agent runtime verification and Drive synchronization; it is not a full Done claim.

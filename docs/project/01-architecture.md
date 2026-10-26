@@ -142,4 +142,4 @@ BureauCat must remain usable for core case/workflow/evidence navigation without 
 - Add automated tests around domain services and migrations before structural changes.
 - GitHub is implementation truth for what exists.
 - `docs/project/` is canonical product/project documentation for intended direction.
-- Replit is runtime/Shell/manual UI verification only.
+- Execution allocation follows D-024: ChatGPT planning/instructions, Codex code/versioned docs/static verification, VS agent local runtime/environment/API/UI verification. This changes development operations, not product architecture.

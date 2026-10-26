@@ -74,6 +74,24 @@ Replaced the obsolete Designer/Coding two-mode terminology with D-023: DESIGNER 
 
 **Dependency:** D-023, D-021, D-022.
 
+## BC-009 — Portable local development bootstrap
+
+**Status:** In Progress
+
+**Priority:** P0
+
+Local implementation on `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`:
+
+- Changed only the two internal Replit tarball URLs to public npm URLs; package versions, integrity and dependency graph are unchanged.
+- Renamed `ma:validate` to `ma-validate.log` byte-for-byte; remaining tracked paths have no Windows-invalid names or case collisions.
+- Replaced POSIX environment assignments with a dependency-free Node launcher; preserved SQLite URL, CLI arguments and startup migration behavior.
+- Updated operating instructions to D-024: ChatGPT planning/instructions, Codex code/versioned docs/static verification, VS agent local runtime/environment/UI verification.
+- Linux static checks with Node `24.19.0` / npm `11.9.0`: clean `npm ci`, installed version inspection, Prisma validate/generate, typecheck and build all exit `0`. Actual Prisma/client `6.19.3`, Next `16.2.7`, React `19.2.7`, TypeScript `6.0.3`. Build retains one Turbopack/NFT warning about unexpected tracing through `next.config.ts` / document conversion. No product TypeScript repair was required or applied.
+
+Pending: VS agent Windows/Linux runtime/API/UI verification, authorized GitHub preservation, and Drive synchronization. No database/migration/product changes, Replit data transfer, push, merge or deployment were performed. Prior BC-007/BC-008 closeouts are historical; D-024 supersedes their Replit execution allocation.
+
+**Dependency:** D-024; runtime handoff must preserve the existing database and stop if migration/schema changes would be required.
+
 # P1 — Situation workflow
 
 ## BC-010 — Situation domain model
