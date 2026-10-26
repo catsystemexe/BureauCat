@@ -6,7 +6,7 @@ Record only decisions that materially affect product architecture, workflow, inf
 
 ## D-001 — GitHub / Replit / Drive roles
 
-**Status:** Superseded by D-022 for documentation ownership; runtime/implementation role remains active.
+**Status:** Superseded by D-022 for documentation ownership and D-024 for execution/runtime allocation.
 
 GitHub is implementation source of truth. Replit is runtime/manual verification. Historically Drive was project-documentation authority; D-022 changes canonical documentation ownership to GitHub.
 
@@ -138,7 +138,7 @@ Keep three-region visual language. Left becomes narrow Situation/workflow rail; 
 
 ## D-021 — Replit Free-tier operating constraint
 
-**Status:** Active
+**Status:** Superseded by D-024
 
 Development and verification must remain operable with zero Replit Agent credits. GitHub is primary for inspection/diffs/branch state/preservation. Replit Free is runtime/Shell/manual UI verification for evidence GitHub cannot provide. Agent/connector is optional only. Prefer targeted diagnostics over exploratory retry loops.
 
@@ -168,4 +168,18 @@ Default implementation cycle:
 
 `INSPECT → PLAN → PATCH → STATIC VERIFY → RUNTIME VERIFY (when required) → PRESERVE → DOC UPDATE`
 
-Runtime verification is conditional. Replit Free is used only for runtime/environment/Prisma/log/manual UI evidence unavailable from GitHub. Merge, deploy, force-push, branch deletion, destructive reset and history rewrite require explicit authorization.
+Runtime verification is conditional. The original Replit Free allocation is superseded by D-024: VS agent owns local runtime/environment/Prisma/log/manual UI evidence unavailable from repository/static checks. Merge, deploy, force-push, branch deletion, destructive reset and history rewrite require explicit authorization.
+
+## D-024 — Local development execution allocation
+
+**Status:** Active — approved for the Windows/local bootstrap batch (2026-10-26)
+
+- ChatGPT owns planning and instructions.
+- Codex owns code changes, versioned documentation and static verification.
+- VS agent owns local runtime, environment setup and runtime/API/UI verification on Windows/Linux.
+
+This newer allocation supersedes the Replit runtime workflow in D-001/D-021 and the environment allocation originally described under D-023. D-023 work stages and the product architecture remain unchanged. Replit is not required; no data transfer from Replit is implied.
+
+Repository scripts must preserve `DATABASE_URL=file:../data/bureaucat.sqlite`, command arguments and existing startup migration behavior across Windows/Linux without adding a dependency unless necessary. Codex records failed static checks exactly and describes out-of-scope product fixes without applying them.
+
+For this batch, no database/migration/data/product changes, push, merge or deployment are authorized. Preserve the local diff and hand off runtime verification to VS agent. GitHub preservation and Drive synchronization remain pending.

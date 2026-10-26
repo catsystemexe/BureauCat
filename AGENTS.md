@@ -29,13 +29,15 @@ If intended documentation and implementation disagree materially, surface the mi
 
 ## Work-role contract
 
-BureauCat uses D-023:
+BureauCat uses D-023 work stages and the D-024 execution allocation:
 
 `DESIGNER → INSTRUCTIONS → IMPLEMENTATION`
 
 - DESIGNER decides what should change and why; repository access is read-only unless the work has moved to an implementation role.
 - INSTRUCTIONS converts approved design into bounded executor-ready work with scope, acceptance criteria and verification expectations.
 - IMPLEMENTATION executes the approved batch against actual repository state.
+
+ChatGPT owns planning/instructions. Codex owns code, versioned documentation and static verification. VS agent owns local runtime, environment setup and runtime/API/UI verification. This newer D-024 allocation supersedes the former Replit workflow.
 
 Code mode is a separate repository process/safety overlay for repository-changing work. It is not a fourth peer role. It does not authorize merge, deploy, force-push, branch deletion, destructive reset or history rewrite without explicit authorization.
 
@@ -46,9 +48,8 @@ Code mode is a separate repository process/safety overlay for repository-changin
 - Preserve rescue work; do not overwrite/delete rescue branches without explicit confirmation.
 - Prefer incremental changes with the smallest coherent change radius.
 - GitHub is the implementation source of truth.
-- Replit is a runtime/Shell/manual UI verification environment, not an implementation authority.
-- Development must remain operable with zero Replit Agent credits.
-- Replit Agent/connector is optional only.
+- Local Windows/Linux runtime verification belongs to VS agent.
+- Development does not depend on Replit or Replit Agent credits.
 
 ## Implementation verification rules
 
@@ -58,24 +59,22 @@ Use the cycle:
 
 - **Static verify** uses repository evidence first: diff, typecheck/static analysis, schema/contract inspection, Prisma validation/generation, build, tests where applicable.
 - **Runtime verify** is only for evidence requiring the actual environment: logs, env injection, SQLite/Prisma runtime behavior, conversion dependencies, API behavior, manual UI.
-- Do not ask for Replit runtime investigation when GitHub can answer the question.
+- Codex resolves repository/static questions before handing environment-dependent verification to VS agent.
 
-## Replit Free fallback / bootstrap
+## Local bootstrap / handoff
 
-After a branch switch or schema/dependency-affecting change, verify generated/runtime state before diagnosing product code:
+After a branch switch or schema/dependency-affecting change, verify generated state before diagnosing product code:
 
-1. `git branch --show-current`
-2. `git status --short`
-3. confirm expected upstream/commit when material
-4. install dependencies only if dependency/lockfile state requires it
-5. run `npm run prisma:generate` after Prisma schema/client-affecting changes
-6. inspect/apply migrations when persistence changed
-7. start via repository scripts
-8. perform the targeted runtime/UI check
+1. Verify branch, commit/upstream and `git status`; preserve unknown work.
+2. Use `npm ci` when dependency/lockfile state requires a clean reproducible install.
+3. Run `npm run prisma:validate` and `npm run prisma:generate` when Prisma state matters.
+4. Codex runs static checks and records exact diagnostics/exit codes. Product-code fixes outside the approved batch require a separate task.
+5. VS agent prepares the local environment and performs targeted runtime/API/UI checks; see README for local prerequisites and commands.
+6. Inspect database/migration state before starting: `dev` and `start` still run `db:deploy` automatically. Do not run migration or startup commands in a batch that prohibits database changes.
 
-Prefer repository npm scripts for Prisma/runtime commands because they bind BureauCat to the intended SQLite URL. Bare `npx prisma ...` commands may inherit Replit-managed environment variables; if used, explicitly provide the intended SQLite `DATABASE_URL`.
+Repository npm scripts use `scripts/with-database.cjs` to force `DATABASE_URL=file:../data/bureaucat.sqlite` on Windows and Linux. Prisma resolves that URL relative to `prisma/schema.prisma`, keeping the database at `data/bureaucat.sqlite`. The launcher invokes the installed Next/Prisma JavaScript CLI with Node, preserves arguments/environment and child exit codes, and adds no dependency. Bare Prisma/Next commands do not receive this override.
 
-If Replit Agent/connector fails or times out once in a way that blocks progress, stop relying on it for that step. Continue through GitHub and use deterministic Replit Free Shell/UI only for the missing runtime evidence. Do not enter repeated connector retry loops.
+Update only affected canonical documents. Mark Drive synchronization pending when it is outside the authorized batch; do not claim mirrors are current. Preserve locally when push is prohibited and report remote preservation as pending.
 
 ## Technical expectations
 

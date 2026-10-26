@@ -23,14 +23,13 @@ Newer active sources override older ones. Surface material conflicts when they m
 
 ## Tool roles
 
-- GitHub = implementation source of truth + canonical versioned project documentation.
-- Google Drive `___BureauCat` = synchronized project-documentation mirror / ChatGPT Project source + working/audit material.
-- Replit BureauCat = runtime, Shell and manual UI verification environment.
-- ChatGPT Project = reasoning, design, instruction preparation and implementation orchestration.
+- **ChatGPT** — planning, product reasoning and bounded implementation instructions.
+- **Codex** — code, versioned documentation and static verification against the actual repository state.
+- **VS agent** — local runtime, environment setup and runtime/API/UI verification on Windows or Linux.
+- **GitHub** — implementation source of truth and canonical versioned documentation under `docs/project/`.
+- **Google Drive** — human-readable/project-source mirror; synchronization of this batch is pending.
 
-BureauCat development must remain operable with zero Replit Agent credits.
-
-Replit Agent/connector may be used opportunistically only. Normal inspection, implementation and verification must not depend on it.
+This allocation under D-024 supersedes the former Replit runtime workflow. Replit is historical context, not a required development environment. The D-023 work roles remain; they describe stages, while D-024 assigns execution responsibilities.
 
 ## Work roles
 
@@ -118,11 +117,11 @@ Prefer repository evidence first:
 - Prisma validation/generation where applicable;
 - build where useful.
 
-Static verification does not require the live Replit runtime.
+Static verification belongs to Codex and does not require the live application runtime.
 
 ### RUNTIME VERIFY (WHEN REQUIRED)
 
-Use Replit Free only when environment-dependent evidence is required, especially:
+VS agent performs local verification when environment-dependent evidence is required, especially:
 
 - runtime logs;
 - runtime environment variables/injection;
@@ -131,42 +130,31 @@ Use Replit Free only when environment-dependent evidence is required, especially
 - actual API/runtime behavior;
 - manual UI verification.
 
-Prefer one targeted Shell command block over exploratory retry loops.
+Codex supplies branch/baseline, static diagnostics with exit codes and concrete runtime checks. VS agent reports OS/tool versions, logs and observed API/UI behavior.
 
-### Replit branch/bootstrap rule
+### Local branch/bootstrap rule
 
-After a branch switch or schema/dependency-affecting change, verify generated/runtime state before treating runtime failures as product-code failures.
+After a branch switch or schema/dependency-affecting change, verify generated state before diagnosing product code:
 
-As applicable:
+1. Verify branch, commit/upstream and `git status`; preserve unknown work.
+2. Use `npm ci` when dependency/lockfile state requires a clean reproducible install.
+3. Run `npm run prisma:validate` and `npm run prisma:generate` when Prisma state matters.
+4. Codex runs static checks and records exact diagnostics/exit codes. Product-code fixes outside the approved batch require a separate task.
+5. VS agent prepares the local environment and performs targeted runtime/API/UI checks; see README for local prerequisites and commands.
+6. Inspect database/migration state before starting: `dev` and `start` still run `db:deploy` automatically. Do not run migration or startup commands in a batch that prohibits database changes.
 
-1. verify branch and `git status`;
-2. verify expected commit/upstream when material;
-3. install dependencies only if dependency/lockfile state requires it;
-4. run `npm run prisma:generate` after Prisma schema/client-affecting changes;
-5. inspect/apply migrations when persistence changed;
-6. start via repository scripts;
-7. perform only the targeted runtime/UI check needed.
-
-### Prisma/environment rule
-
-Prefer repository npm scripts for Prisma/runtime commands because BureauCat scripts explicitly bind the intended SQLite `DATABASE_URL`.
-
-Bare `npx prisma ...` commands may inherit Replit-managed environment variables. If a bare command is necessary, explicitly supply the intended SQLite URL. Do not redesign persistence merely to accommodate unrelated environment injection.
-
-### Connector fallback rule
-
-If Replit Agent/connector fails or times out once in a way that blocks progress, stop relying on it for that step. Continue through GitHub and use deterministic Replit Free Shell/UI only for the missing runtime evidence. Do not spend repeated cycles retrying a nonessential connector path.
+Repository npm scripts use `scripts/with-database.cjs` to force `DATABASE_URL=file:../data/bureaucat.sqlite` on Windows and Linux. Prisma resolves that URL relative to `prisma/schema.prisma`, keeping the database at `data/bureaucat.sqlite`. The launcher invokes the installed Next/Prisma JavaScript CLI with Node, preserves arguments/environment and child exit codes, and adds no dependency. Bare Prisma/Next commands do not receive this override.
 
 ### PRESERVE
 
-Meaningful implementation is not complete until preserved in GitHub.
+Preserve meaningful implementation in Git according to authorization. When push is prohibited, retain the local branch/diff and report remote preservation as pending; do not push or claim full completion.
 
 Runtime-only changes are not implementation truth until reconciled/preserved in GitHub.
 
 ### DOC UPDATE/SYNC
 
 - update affected canonical GitHub documentation only when documented truth changed;
-- then synchronize the corresponding Drive mirror under the approved one-way GitHub → Drive model;
+- then synchronize the corresponding Drive mirror under the approved one-way GitHub → Drive model when authorized; this local-only batch leaves Drive synchronization pending;
 - do not create broad documentation churn for minor code/UI edits.
 
 ## Code mode overlay
@@ -191,7 +179,7 @@ For material implementation batches, use when useful:
 
 ```text
 IMPLEMENTATION PROFILE
-Execution environment: <ChatGPT + GitHub | Codex + GitHub | Replit Free verification | ordered combination>
+Execution environment: <ChatGPT planning/instructions | Codex code/docs/static verification | VS agent local runtime verification>
 Recommended model: <model or N/A>
 Reasoning effort: <effort or N/A>
 Change radius: R0 | R1 | R2 | R3 | R4
@@ -268,7 +256,7 @@ Case Context is the candidate canonical assembly layer for AI, audit, briefing, 
 - Do not turn every design discussion into implementation.
 - Do not require broad documentation updates for minor changes.
 - Prefer direct tool inspection over asking the user for information obtainable from connected project sources.
-- Do not request Replit runtime investigation for questions GitHub can answer.
+- Resolve repository/static questions in Codex before handing local runtime/environment/UI investigation to VS agent.
 
 ## Backlog discipline
 

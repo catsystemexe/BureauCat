@@ -4,7 +4,7 @@
 
 Canonical project-state document under D-022. GitHub `docs/project/` is the normative, versioned documentation location. Google Drive mirrors these documents for reading, sharing, and ChatGPT Project access.
 
-The canonical documentation bootstrap, operating-rule consolidation and first manual GitHub → Drive mirror synchronization are complete. The mirror mapping/procedure is maintained in `09-drive-sync.md`.
+The canonical documentation bootstrap, operating-rule consolidation and first manual GitHub → Drive mirror synchronization are complete. The mirror mapping/procedure is maintained in `09-drive-sync.md`. Synchronization of the current local-development changes is **pending**; the historical first sync does not establish parity for this batch.
 
 ## Product identity
 
@@ -47,6 +47,8 @@ Preserved technical baseline: `rescue/replit-2026-08-18` at the verified rescue 
 Active development branch: `work/workflow-foundation-v01`.
 
 `main` is not assumed to represent the latest working implementation.
+
+Local portability batch: `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`. Under D-024, ChatGPT handles planning/instructions, Codex code/versioned docs/static verification, and VS agent local runtime/environment/API/UI checks. This supersedes the former Replit workflow. Remote preservation, VS agent runtime verification and Drive synchronization are pending; no database or product-architecture changes belong to this batch.
 
 ## Implemented on the active working branch
 

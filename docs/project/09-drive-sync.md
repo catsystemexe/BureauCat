@@ -4,6 +4,8 @@
 
 Operational contract for BC-006. GitHub `docs/project/` is canonical under D-022. Google Drive project documents are mirrors for human reading/sharing and ChatGPT Project source access.
 
+Current local portability batch (`chore/windows-local-bootstrap`, 2026-10-26): **Drive synchronization pending**. No Drive mirror was changed or verified for this batch. After authorized GitHub preservation, synchronize affected mapped documents `00`–`06`; `07`/`08` contracts are unchanged. This status document `09` has no mapped mirror in the table below.
+
 ## Direction
 
 Synchronization is one-way by default:

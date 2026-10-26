@@ -50,24 +50,56 @@ Detailed contracts:
 
 ### Prerequisites
 
-- Node.js and npm
+- Node.js compatible with the locked Next.js/Prisma versions and npm (this batch statically checked with Node 24.19.0 / npm 11.9.0)
 - Python 3 for document conversion
 - Runtime Python packages required by `scripts/convert_with_markitdown.py` for the formats you use
 - Poppler when PDF rasterization/OCR is required
 
-### Run locally
+### Roles and local bootstrap
 
-```bash
-npm install
-cp .env.example .env
+ChatGPT owns planning/instructions, Codex owns code/versioned docs/static verification, and VS agent owns local runtime/environment/API/UI verification (D-024). This supersedes the former Replit workflow. GitHub remains canonical; Drive synchronization for this batch is pending.
+
+Check branch, commit and working-tree state before setup. Use `chore/windows-local-bootstrap` based on `1a2de452581104f48b87d2193465785e00f12853` for this batch. Preserve existing local files. If needed, create `.env` from `.env.example` in your editor without overwriting local settings.
+
+These setup/static commands work in PowerShell, cmd.exe and Linux shells:
+
+```text
+npm ci
+npm run prisma:validate
 npm run prisma:generate
-npm run db:deploy
+npm run typecheck
+npm run build
+```
+
+The lockfile is authoritative; do not use an install/update to repair a failed check. Report the exact command, exit code and diagnostic. Product TypeScript fixes are a separate batch.
+
+VS agent then confirms that an existing authorized local database is present and all repository migrations are already applied before running the application. If the database is missing or migrations are pending, stop and report the blocker; database initialization/migration changes need a separate task:
+
+```text
 npm run dev
 ```
 
-The development server is configured by the repository scripts. The root route redirects to the case list.
+`dev` still runs `db:deploy` first and serves `http://localhost:3002` via webpack on `0.0.0.0`. `start` also runs `db:deploy` first, then `next start` with its existing default port/`PORT` behavior. Both may create/change the local database through existing migrations. Codex must not run them in this database-read-only batch. A migration mismatch requires a separate authorized task; do not reset a database.
 
-`MARKITDOWN_PYTHON` can select a Python executable other than `python3`.
+All database-aware npm scripts invoke `scripts/with-database.cjs`, which sets `DATABASE_URL=file:../data/bureaucat.sqlite` even if the caller supplies another value. Prisma resolves it relative to `prisma/schema.prisma`, so the path remains `<repo>/data/bureaucat.sqlite`. No dependency was added. `prisma:migrate` remains an explicit developer migration command; it is not part of static verification.
+
+`MARKITDOWN_PYTHON` selects a Python executable other than the default `python3`. VS agent should choose an installed interpreter with the conversion packages (including `markitdown`, `striprtf`, and, for OCR, `rapidocr_onnxruntime`/`pdf2image`); Poppler executables must be on PATH for PDF rasterization. This batch does not install or verify that runtime stack.
+
+For example, in PowerShell, before starting the app:
+
+```powershell
+$env:MARKITDOWN_PYTHON = 'C:\path\to\python.exe'
+```
+
+On Linux:
+
+```bash
+export MARKITDOWN_PYTHON=/path/to/python3
+```
+
+Legacy `scripts/consolidate_prisma_baseline.sh` requires Bash/Unix tools and changes databases; it is a historical maintenance tool, not a Windows bootstrap prerequisite. The renamed `ma-validate.log` preserves the original `ma:validate` bytes as a historical artifact, not as evidence of a passing Prisma check. Tracked filenames were checked for Windows-invalid characters, device names, trailing spaces/dots and case collisions; use a short checkout path to leave room for generated dependency/build paths.
+
+VS agent should verify the case list, an existing Case/Situation, the seven-Step rail and Step selection without changing persisted active state, the right Document/Analysis panel, and conversion of temporary local fixtures via the Python helper without uploading or changing case data. Report OS, Node/npm/Python versions, startup/runtime logs, the resolved SQLite path and observed API/UI behavior. Do not transfer Replit data. See `docs/project/05-workflow.md` for the full handoff contract.
 
 ## MarkItDown support matrix
 

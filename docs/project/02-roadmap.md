@@ -10,7 +10,7 @@ This roadmap describes product direction and sequencing. Concrete actionable wor
 - Use `work/workflow-foundation-v01` as the active development lineage unless a newer Project State explicitly replaces it.
 - Make `docs/project/` the canonical versioned project-documentation set under D-022.
 - Keep Google Drive as a synchronized mirror/project-source surface, not an independent normative authority.
-- Retain the GitHub-first / Replit-Free operating model.
+- Use the D-024 local-development allocation: ChatGPT planning/instructions, Codex code/docs/static verification, VS agent local runtime/environment/UI verification; GitHub remains canonical.
 - Keep Situation as the final bounded working unit; the proposed List concept is retired.
 - Treat Situation Workflow Contract v1 as the minimum workflow contract.
 
