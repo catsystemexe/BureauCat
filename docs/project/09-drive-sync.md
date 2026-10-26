@@ -4,7 +4,7 @@
 
 Operational contract for BC-006. GitHub `docs/project/` is canonical under D-022. Google Drive project documents are mirrors for human reading/sharing and ChatGPT Project source access.
 
-Current local portability batch (`chore/windows-local-bootstrap`, 2026-10-26): **Drive synchronization pending**. No Drive mirror was changed or verified for this batch. After authorized GitHub preservation, synchronize affected mapped documents `00`–`06`; `07`/`08` contracts are unchanged. This status document `09` has no mapped mirror in the table below.
+Current local portability batch (`chore/windows-local-bootstrap`, 2026-10-26): **Drive synchronization pending**. No Drive mirror was changed or verified for this batch. The bootstrap commit `07761fb8e31263b3a4b7605742d2e2ee0252ea40` is already preserved in draft [PR #37](https://github.com/catsystemexe/BureauCat/pull/37) after explicit push authorization; Drive synchronization is still pending. The follow-up workflow-initialization repair and its local documentation updates are not authorized for push or Drive sync. When synchronization is authorized, include affected mapped documents `00`–`06`; `07`/`08` contracts are unchanged. This status document `09` has no mapped mirror in the table below.
 
 ## Direction
 

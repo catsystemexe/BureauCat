@@ -48,7 +48,7 @@ Active development branch: `work/workflow-foundation-v01`.
 
 `main` is not assumed to represent the latest working implementation.
 
-Local portability batch: `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`. Under D-024, ChatGPT handles planning/instructions, Codex code/versioned docs/static verification, and VS agent local runtime/environment/API/UI checks. This supersedes the former Replit workflow. Remote preservation, VS agent runtime verification and Drive synchronization are pending; no database or product-architecture changes belong to this batch.
+Local portability batch: `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`. Under D-024, ChatGPT handles planning/instructions, Codex code/versioned docs/static verification, and VS agent local runtime/environment/API/UI checks. This supersedes the former Replit workflow. The original no-push restriction was superseded by explicit user authorization: commit `07761fb8e31263b3a4b7605742d2e2ee0252ea40` is preserved on GitHub in draft [PR #37](https://github.com/catsystemexe/BureauCat/pull/37) against `work/workflow-foundation-v01`. Windows runtime/UI verification and Drive synchronization remain pending. The follow-up `fix/situation-workflow-initialization` repair starts from that commit and is authorized for a local commit only, without push, merge or deployment.
 
 ## Implemented on the active working branch
 
@@ -65,7 +65,7 @@ Local portability batch: `chore/windows-local-bootstrap`, based on verified `wor
   - `WorkflowTask`;
   - `WorkflowOverride`;
   - append-only `WorkflowEvent`.
-- Seven canonical workflow Steps initialized for Situations.
+- Seven canonical workflow Steps initialized atomically for new Situations through both Case creation and standalone Situation creation. The shared helper uses the caller's Prisma transaction; existing Situations are not repaired on read.
 - Situation workflow read service/API.
 - Case Context expanded with authoritative Goal and workflow state.
 - UX shell foundation:
@@ -90,7 +90,7 @@ Runtime verification on Replit Free confirmed the new workflow rail loads after 
 - Execution / completion lifecycle.
 - Timeline persistence/UI.
 - Final production assistant/chat interaction model.
-- Automated test suite / CI.
+- Broad automated test suite / CI (a focused temporary-SQLite regression check is available via `node --test scripts/workflow-initialization.test.cjs`).
 - Automated GitHub → Drive documentation synchronization (manual sync is operational; automation is intentionally deferred).
 
 ## Important current implementation gaps

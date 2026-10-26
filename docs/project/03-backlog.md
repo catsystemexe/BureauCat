@@ -80,7 +80,7 @@ Replaced the obsolete Designer/Coding two-mode terminology with D-023: DESIGNER 
 
 **Priority:** P0
 
-Local implementation on `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`:
+Bootstrap implementation on `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`, is preserved on GitHub at `07761fb8e31263b3a4b7605742d2e2ee0252ea40` in draft [PR #37](https://github.com/catsystemexe/BureauCat/pull/37). Its original no-push restriction was superseded by explicit user authorization for that exact commit/branch and draft PR:
 
 - Changed only the two internal Replit tarball URLs to public npm URLs; package versions, integrity and dependency graph are unchanged.
 - Renamed `ma:validate` to `ma-validate.log` byte-for-byte; remaining tracked paths have no Windows-invalid names or case collisions.
@@ -88,7 +88,15 @@ Local implementation on `chore/windows-local-bootstrap`, based on verified `work
 - Updated operating instructions to D-024: ChatGPT planning/instructions, Codex code/versioned docs/static verification, VS agent local runtime/environment/UI verification.
 - Linux static checks with Node `24.19.0` / npm `11.9.0`: clean `npm ci`, installed version inspection, Prisma validate/generate, typecheck and build all exit `0`. Actual Prisma/client `6.19.3`, Next `16.2.7`, React `19.2.7`, TypeScript `6.0.3`. Build retains one Turbopack/NFT warning about unexpected tracing through `next.config.ts` / document conversion. No product TypeScript repair was required or applied.
 
-Pending: VS agent Windows/Linux runtime/API/UI verification, authorized GitHub preservation, and Drive synchronization. No database/migration/product changes, Replit data transfer, push, merge or deployment were performed. Prior BC-007/BC-008 closeouts are historical; D-024 supersedes their Replit execution allocation.
+Follow-up repair on `fix/situation-workflow-initialization`, baseline `07761fb8e31263b3a4b7605742d2e2ee0252ea40`:
+
+- Fixed the default `Situace 1` creation path in `createCase()`, which previously created no workflow Steps after the historical backfill migration.
+- Both creation paths now call a shared `initializeSituationWorkflow(transaction, situationId)` helper using `WORKFLOW_STEP_DEFINITIONS` within the caller's existing transaction: exactly seven Steps, canonical keys/order, only `ANALYSIS` active.
+- No read-time ensure/backfill: GET workflow remains read-only, and existing Situations, Steps and active state are preserved.
+- Regression command: `node --test scripts/workflow-initialization.test.cjs`. It applies the unchanged migrations only to a temporary SQLite DB, exercises both real services and the actual GET handler, and injects a Step-insert failure to verify full rollback of both creation paths. Before the fix it reproduced the missing Steps and missing rejection in `createCase()`; after the fix all six subtests pass (seven tests including the parent).
+- Linux validation with Node `24.19.0` / npm `11.9.0`: lockfile-based `npm ci`, Prisma validate/generate, typecheck and build all exit `0`; the build retains the existing Turbopack/NFT tracing warning. Initial temporary-DB setup failed with `Schema engine error` (exit `1`); explicitly creating its empty SQLite file before applying the unchanged migrations resolved test setup. Regression against the unfixed baseline exits `1` as expected; the fixed regression exits `0`. No dependency, schema, migration, UI or existing-data repair is included.
+
+BC-009 remains **In Progress**. Pending: VS agent Windows runtime/environment/API/UI verification of the bootstrap and this repair, remote preservation of the repair (currently local-commit-only), and Drive synchronization. No merge, deployment or Replit data transfer was performed. Prior BC-007/BC-008 closeouts are historical; D-024 supersedes their Replit execution allocation.
 
 **Dependency:** D-024; runtime handoff must preserve the existing database and stop if migration/schema changes would be required.
 

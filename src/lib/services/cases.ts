@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { removeStoredOriginalDocument } from "@/lib/documents/storage";
 import type { CreateCaseInput, UpdateCaseInput } from "@/lib/validation/cases";
+import { initializeSituationWorkflow } from "@/lib/workflow/initialize";
 
 const caseSelect = {
   id: true,
@@ -71,7 +72,7 @@ export async function createCase(input: CreateCaseInput) {
       select: caseSelect
     });
 
-    await transaction.situation.create({
+    const situation = await transaction.situation.create({
       data: {
         case_id: createdCase.id,
         title: "Situace 1",
@@ -80,6 +81,8 @@ export async function createCase(input: CreateCaseInput) {
         display_order: 0
       }
     });
+
+    await initializeSituationWorkflow(transaction, situation.id);
 
     const refreshedCase = await transaction.case.findUniqueOrThrow({
       where: { id: createdCase.id },
