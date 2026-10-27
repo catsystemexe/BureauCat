@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Brain,
   Check,
@@ -163,6 +163,9 @@ export function DocumentViewPanel({
   const [insights, setInsights] = useState<DocumentInsight[]>([]);
   const [isInsightEvidenceVisible, setIsInsightEvidenceVisible] = useState(false);
   const [pins, setPins] = useState<DocumentPin[]>([]);
+  const pinsRef = useRef<DocumentPin[]>([]);
+  const documentIdRef = useRef(initialDocument.id);
+  const pinMeasurementFrameRef = useRef<number | null>(null);
   const [pinPositions, setPinPositions] = useState<Record<string, number>>({});
   const [isPinDragging, setIsPinDragging] = useState(false);
   const [selectedText, setSelectedText] = useState("");
@@ -209,8 +212,8 @@ export function DocumentViewPanel({
     currentDocument.processed_markdown ?? currentDocument.processed_text ?? currentDocument.extracted_text ?? "";
   const isValidated = currentDocument.validation_status === "validated";
   const orderedPins = useMemo(
-    () => [...pins].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
-    [pins]
+    () => pins.filter((pin) => pin.document_id === currentDocument.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+    [pins, currentDocument.id]
   );
   const pinNumberById = useMemo(
     () => new Map(orderedPins.map((pin, index) => [pin.id, index + 1])),
@@ -220,6 +223,66 @@ export function DocumentViewPanel({
     () => renderDisplayTextWithHighlights(displayText),
     [annotations, insights, activeAnalysisInsights, isInsightEvidenceVisible, displayText, isAnnotationNoteOpen]
   );
+
+  const measurePinPositions = useCallback(() => {
+    const root = documentTextRef.current;
+
+    if (!root) {
+      return;
+    }
+
+    const nextPositions: Record<string, number> = {};
+    const shell = documentTextShellRef.current;
+    const shellRect = shell?.getBoundingClientRect() ?? root.getBoundingClientRect();
+    // Pin layer is outside the scrolling <pre>, so use visible viewport position, not document-scroll position.
+
+    const currentPins = pinsRef.current;
+    for (const pin of currentPins) {
+      if (dragPinRef.current.pinId === pin.id) {
+        continue;
+      }
+
+      const effectiveOffset = pin.visual_offset ?? pin.start_offset;
+      const target = getTextNodeAtOffset(root, effectiveOffset);
+
+      if (!target) {
+        continue;
+      }
+
+      const range = document.createRange();
+      range.setStart(target.node, target.offset);
+      range.setEnd(target.node, target.offset);
+
+      const rect = range.getBoundingClientRect();
+      if (rect.height === 0 && rect.width === 0) continue;
+      const lineHeight = Number.parseFloat(window.getComputedStyle(root).lineHeight) || rect.height || 22;
+      nextPositions[pin.id] = rect.top - shellRect.top + lineHeight / 2;
+    }
+
+    setPinPositions((currentPositions) => {
+      // Keep the last good position while a pin is dragged or temporarily
+      // unmeasurable; only pins absent from the committed list are removed.
+      for (const pin of currentPins) {
+        if (!(pin.id in nextPositions) && Number.isFinite(currentPositions[pin.id])) {
+          nextPositions[pin.id] = currentPositions[pin.id];
+        }
+      }
+      const nextPinIds = Object.keys(nextPositions);
+      const positionsAreEqual =
+        nextPinIds.length === Object.keys(currentPositions).length &&
+        nextPinIds.every((pinId) => currentPositions[pinId] === nextPositions[pinId]);
+
+      return positionsAreEqual ? currentPositions : nextPositions;
+    });
+  }, []);
+
+  const schedulePinMeasurement = useCallback(() => {
+    if (pinMeasurementFrameRef.current !== null) return;
+    pinMeasurementFrameRef.current = window.requestAnimationFrame(() => {
+      pinMeasurementFrameRef.current = null;
+      measurePinPositions();
+    });
+  }, [measurePinPositions]);
 
   useEffect(() => {
     setCurrentDocument(initialDocument);
@@ -249,11 +312,32 @@ export function DocumentViewPanel({
     void loadAnnotations();
   }, [initialDocument.id]);
 
-  useEffect(() => {
-    window.requestAnimationFrame(measurePinPositions);
-  }, [pins, displayText, isEditing, isFullscreen]);
+  useLayoutEffect(() => {
+    // Long-lived listeners and queued frames must read the committed pin list,
+    // not the empty list captured before the first fetch completed.
+    documentIdRef.current = initialDocument.id;
+    pinsRef.current = currentDocument.id === initialDocument.id
+      ? pins.filter((pin) => pin.document_id === currentDocument.id)
+      : [];
+    schedulePinMeasurement();
+  }, [pins, currentDocument.id, initialDocument.id, renderedDisplayText, isEditing, isFullscreen, schedulePinMeasurement]);
+
+  useLayoutEffect(() => {
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedulePinMeasurement);
+    if (documentTextRef.current) observer?.observe(documentTextRef.current);
+    if (documentTextShellRef.current) observer?.observe(documentTextShellRef.current);
+    schedulePinMeasurement();
+    return () => {
+      observer?.disconnect();
+      if (pinMeasurementFrameRef.current !== null) {
+        window.cancelAnimationFrame(pinMeasurementFrameRef.current);
+        pinMeasurementFrameRef.current = null;
+      }
+    };
+  }, [initialDocument.id, isEditing, displayText, schedulePinMeasurement]);
 
   useEffect(() => {
+    let frame: number | null = null;
     function handleScrollToSourceRange(event: Event) {
       const customEvent = event as CustomEvent<{
         documentId?: string;
@@ -261,7 +345,10 @@ export function DocumentViewPanel({
         endOffset?: number;
       }>;
 
-      if (customEvent.detail?.documentId !== currentDocument.id) {
+      if (
+        customEvent.detail?.documentId !== currentDocument.id ||
+        customEvent.detail.documentId !== documentIdRef.current
+      ) {
         return;
       }
 
@@ -272,16 +359,19 @@ export function DocumentViewPanel({
         return;
       }
 
-      window.requestAnimationFrame(() => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        if (customEvent.detail.documentId !== documentIdRef.current) return;
         scrollToSourceRange(customEvent.detail.startOffset!, customEvent.detail.endOffset!);
-
-        const startOffset = customEvent.detail.startOffset!;
-        const endOffset = customEvent.detail.endOffset!;
       });
     }
 
     window.addEventListener("bureaucat:scroll-to-source-range", handleScrollToSourceRange);
-    return () => window.removeEventListener("bureaucat:scroll-to-source-range", handleScrollToSourceRange);
+    return () => {
+      window.removeEventListener("bureaucat:scroll-to-source-range", handleScrollToSourceRange);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
   }, [currentDocument.id, displayText]);
 
 
@@ -294,10 +384,12 @@ export function DocumentViewPanel({
       return;
     }
 
-    window.requestAnimationFrame(() => {
+    const frame = window.requestAnimationFrame(() => {
+      if (currentDocument.id !== documentIdRef.current) return;
       scrollToPin(targetPinId);
       lastScrolledTargetPinRef.current = `${currentDocument.id}:${targetPinId}`;
     });
+    return () => window.cancelAnimationFrame(frame);
   }, [currentDocument.id, displayText, pins, targetPinId]);
 
 
@@ -319,10 +411,16 @@ export function DocumentViewPanel({
   }, [initialDocument.id]);
 
   useEffect(() => {
+    let active = true;
+    let requestVersion = 0;
+    setPins([]);
+    setPinPositions({});
     async function loadPins() {
+      const version = ++requestVersion;
       try {
         const response = await fetch(`/api/documents/${initialDocument.id}/pins`);
         const data = (await response.json()) as PinListResponse;
+        if (!active || version !== requestVersion) return;
 
         if (response.ok && data.pins) {
           setPins(data.pins);
@@ -359,10 +457,10 @@ export function DocumentViewPanel({
 
             return nextPositions;
           });
-
-          window.requestAnimationFrame(measurePinPositions);
+          // The committed pins effect measures after their DOM has rendered.
         }
       } catch {
+        if (!active || version !== requestVersion) return;
         setPins([]);
         setIsPinEditorOpen(false);
         setEditingPinId(null);
@@ -380,6 +478,7 @@ export function DocumentViewPanel({
     window.addEventListener("bureaucat:document-pins-refresh", handleDocumentPinsRefresh);
 
     return () => {
+      active = false;
       window.removeEventListener("bureaucat:document-pins-refresh", handleDocumentPinsRefresh);
     };
   }, [initialDocument.id]);
@@ -966,56 +1065,13 @@ export function DocumentViewPanel({
     return null;
   }
 
-  function measurePinPositions() {
-    const root = documentTextRef.current;
-
-    if (!root) {
-      return;
-    }
-
-    const nextPositions: Record<string, number> = {};
-    const shell = documentTextShellRef.current;
-    const shellRect = shell?.getBoundingClientRect() ?? root.getBoundingClientRect();
-    // Pin layer is outside the scrolling <pre>, so use visible viewport position, not document-scroll position.
-
-    for (const pin of pins) {
-      if (dragPinRef.current.pinId === pin.id) {
-        continue;
-      }
-
-      const effectiveOffset = pin.visual_offset ?? pin.start_offset;
-      const target = getTextNodeAtOffset(root, effectiveOffset);
-
-      if (!target) {
-        continue;
-      }
-
-      const range = document.createRange();
-      range.setStart(target.node, target.offset);
-      range.setEnd(target.node, target.offset);
-
-      const rect = range.getBoundingClientRect();
-      const lineHeight = Number.parseFloat(window.getComputedStyle(root).lineHeight) || rect.height || 22;
-      nextPositions[pin.id] = rect.top - shellRect.top + lineHeight / 2;
-    }
-
-    setPinPositions((currentPositions) => {
-      const nextPinIds = Object.keys(nextPositions);
-      const positionsAreEqual =
-        nextPinIds.length === Object.keys(currentPositions).length &&
-        nextPinIds.every((pinId) => currentPositions[pinId] === nextPositions[pinId]);
-
-      return positionsAreEqual ? currentPositions : nextPositions;
-    });
-  }
-
   function getPinNumber(pin: DocumentPin) {
     return pin.case_bookmark_number ?? pinNumberById.get(pin.id) ?? 0;
   }
 
   function scrollToPin(pinId: string) {
     const root = documentTextRef.current;
-    const pin = pins.find((currentPin) => currentPin.id === pinId);
+    const pin = pinsRef.current.find((currentPin) => currentPin.id === pinId);
 
     if (!root || !pin) {
       return;
@@ -1041,7 +1097,7 @@ export function DocumentViewPanel({
       behavior: "smooth"
     });
 
-    window.requestAnimationFrame(measurePinPositions);
+    schedulePinMeasurement();
   }
 
   function scrollToSourceRange(startOffset: number, endOffset: number) {
@@ -1078,7 +1134,7 @@ export function DocumentViewPanel({
       behavior: "smooth"
     });
 
-    window.requestAnimationFrame(measurePinPositions);
+    schedulePinMeasurement();
   }
 
 
@@ -1104,7 +1160,7 @@ export function DocumentViewPanel({
       })
     });
 
-    window.requestAnimationFrame(measurePinPositions);
+    schedulePinMeasurement();
   }
   function closePinEditor() {
     setIsPinEditorOpen(false);
@@ -2251,7 +2307,7 @@ export function DocumentViewPanel({
             onClick={(event) => {
               void handleDocumentTextClick(event);
             }}
-            onScroll={measurePinPositions}
+            onScroll={schedulePinMeasurement}
             onMouseUp={() => {
               window.setTimeout(() => {
                 void handleDocumentTextMouseUp();
@@ -2382,6 +2438,7 @@ export function DocumentViewPanel({
                   }
 
                   setIsPinDragging(false);
+                  schedulePinMeasurement();
                 }}
                 onPointerCancel={(event) => {
                   dragPinRef.current = {
@@ -2395,6 +2452,7 @@ export function DocumentViewPanel({
                   }
 
                   setIsPinDragging(false);
+                  schedulePinMeasurement();
                 }}
                 
                 onClick={(event) => {
@@ -2423,8 +2481,8 @@ export function DocumentViewPanel({
                
                 style={{
                   "--pin-color": getPinCssColor(pin.color),
-                  top: `${pinPositions[pin.id] ?? 0}px`,
-                  visibility: "visible"
+                  top: pinPositions[pin.id],
+                  visibility: Number.isFinite(pinPositions[pin.id]) ? "visible" : "hidden"
                 } as React.CSSProperties}
                 title={pin.note_text?.trim() || "Pin dokumentu"}
                 type="button"

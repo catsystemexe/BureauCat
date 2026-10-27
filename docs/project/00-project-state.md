@@ -64,6 +64,7 @@ The documentation-only Windows report update was published as `681fa5b4f1d938dff
 - Document Analysis / Document Insights.
 - Pins/bookmarks and evidence linkage.
 - Human-review repair on `fix/review-bookmarks-situation-ui` (baseline `3c300fde09050c741c09a47c2fc398c878a258f6`): document removal is scoped to the selected Situation and atomically removes its related Journal findings/bookmark links without distinguishing authorship or edits. Shared document-owned records needed elsewhere are preserved. Selected Situation numbers are black on light blue; unselected numbers remain dark on white, including hover/focus-visible. Static/regression verification is recorded in `docs/review-bookmarks-situation-ui.md`; browser/reload/keyboard verification by VS agent and synchronization of these new documentation changes remain pending.
+- Follow-up on `fix/insight-hover-bookmark-positions`, based on `8ad5a37aad218e18ae15f30dcac5f764fab5aa87` from draft PR #39: prepared repair for bookmark clustering after insight hover. Measurements read committed pins after rendering; stale hover timers, queued scrolls and pin-fetch responses are guarded or cancelled. A deterministic component-callback regression reproduces baseline positions `0,0,0` and passes after the repair; actual browser verification remains pending. See `docs/insight-hover-bookmark-positions.md`. PR #39 is preserved; Drive synchronization of this new documentation is pending.
 - Workflow persistence for:
   - `WorkflowStep`;
   - `RequiredInput`;

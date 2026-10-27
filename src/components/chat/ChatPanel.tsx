@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BookmarkCheck, Brain, Check, Download, Trash2 } from "lucide-react";
 import { MeetingPrepButton } from "@/components/chat/MeetingPrepButton";
 import { MeetingPrepCard } from "@/components/chat/MeetingPrepCard";
@@ -109,6 +109,18 @@ export function ChatPanel({
   const [expandedInsightIds, setExpandedInsightIds] = useState<string[]>([]);
   const [hoveredInsightId, setHoveredInsightId] = useState<string | null>(null);
   const [externalHoveredBookmarkPinId, setExternalHoveredBookmarkPinId] = useState<string | null>(null);
+  const insightSourceScrollRef = useRef<{ insightId: string; timer: number } | null>(null);
+
+  function cancelInsightSourceScroll(insightId?: string) {
+    const pending = insightSourceScrollRef.current;
+    if (!pending || (insightId && pending.insightId !== insightId)) return;
+    window.clearTimeout(pending.timer);
+    insightSourceScrollRef.current = null;
+  }
+
+  useLayoutEffect(() => {
+    return () => cancelInsightSourceScroll();
+  }, [activeAnalysisDocument?.id, selectedSituationId, analysisInsights, expandedInsightIds]);
 
   useEffect(() => {
     function handleBookmarkPinHover(event: Event) {
@@ -281,6 +293,33 @@ export function ChatPanel({
     );
   }
 
+  function handleInsightMouseEnter(insight: DocumentInsight, isExpanded: boolean) {
+    cancelInsightSourceScroll();
+    setHoveredInsightId(insight.id);
+    window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-hover", { detail: { insightId: insight.id } }));
+    if (insight.source_pin_id) {
+      window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: insight.source_pin_id } }));
+    }
+    if (isExpanded) {
+      insightSourceScrollRef.current = {
+        insightId: insight.id,
+        timer: window.setTimeout(() => {
+          insightSourceScrollRef.current = null;
+          dispatchScrollToInsightSource(insight);
+        }, 280)
+      };
+    }
+  }
+
+  function handleInsightMouseLeave(insight: DocumentInsight) {
+    cancelInsightSourceScroll(insight.id);
+    setHoveredInsightId((currentId) => currentId === insight.id ? null : currentId);
+    window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-leave", { detail: { insightId: insight.id } }));
+    if (insight.source_pin_id) {
+      window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: insight.source_pin_id } }));
+    }
+  }
+
 
   function renderAnalysisInsightCard(insight: DocumentInsight) {
     const isExpanded = expandedInsightIds.includes(insight.id);
@@ -304,26 +343,8 @@ export function ChatPanel({
               dispatchScrollToInsightSource(insight);
             }
           }}
-          onMouseEnter={() => {
-            setHoveredInsightId(insight.id);
-            window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-hover", { detail: { insightId: insight.id } }));
-            if (insight.source_pin_id) {
-              window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: insight.source_pin_id } }));
-            }
-
-            if (isExpanded) {
-              window.setTimeout(() => {
-                dispatchScrollToInsightSource(insight);
-              }, 280);
-            }
-          }}
-          onMouseLeave={() => {
-            setHoveredInsightId((currentId) => currentId === insight.id ? null : currentId);
-            window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-leave", { detail: { insightId: insight.id } }));
-            if (insight.source_pin_id) {
-              window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: insight.source_pin_id } }));
-            }
-          }}
+          onMouseEnter={() => handleInsightMouseEnter(insight, isExpanded)}
+          onMouseLeave={() => handleInsightMouseLeave(insight)}
           title={insight.title}
           type="button"
         >
@@ -739,20 +760,8 @@ export function ChatPanel({
           <button
             className={`analysis-inline-insight analysis-inline-insight-${range.insight.insight_type} analysis-inline-insight-status-${range.insight.status}${isBookmarkHovered || isExpanded ? " analysis-inline-insight-bookmark-hover" : ""}`}
             onClick={() => toggleExpandedInsight(range.insight.id)}
-            onMouseEnter={() => {
-              setHoveredInsightId(range.insight.id);
-              window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-hover", { detail: { insightId: range.insight.id } }));
-              if (range.insight.source_pin_id) {
-                window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: range.insight.source_pin_id } }));
-              }
-            }}
-            onMouseLeave={() => {
-              setHoveredInsightId((currentId) => currentId === range.insight.id ? null : currentId);
-              window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-leave", { detail: { insightId: range.insight.id } }));
-              if (range.insight.source_pin_id) {
-                window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: range.insight.source_pin_id } }));
-              }
-            }}
+            onMouseEnter={() => handleInsightMouseEnter(range.insight, isExpanded)}
+            onMouseLeave={() => handleInsightMouseLeave(range.insight)}
             title={range.insight.title}
             type="button"
           >
