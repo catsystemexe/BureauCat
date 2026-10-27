@@ -93,6 +93,8 @@ Detailed state/transition semantics live in `07-workflow-persistence-state-contr
 
 Journal is the user-visible compact working model. Documents are evidence. Source-grounded analytical projection may add traceable compact Journal entries under D-014, but AI must not silently overwrite or delete authoritative user-authored Journal content.
 
+Compact Journal v1 is a derived Situation-local view under D-025, available without an established Goal or Plan. Grouping and document filtering change presentation only; all original records, variants and concrete evidence links remain available. Existing saved content/passages support older records without reanalysis. Explicit editing is separate from read-only projection; document issue dates are not inferred risks. This view does not introduce Timeline persistence or workflow transitions.
+
 Legacy Journal `GOAL` items are not the authoritative Goal persistence model.
 
 ## Documents and Document Analysis

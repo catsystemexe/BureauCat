@@ -23,6 +23,7 @@ import {
   TriangleAlert
 } from "lucide-react";
 import type { CaseDocument, DocumentAnnotation, DocumentAnnotationType, DocumentInsight, DocumentPin } from "@/components/types";
+import { resolveSourceRange, type SourceTarget } from "@/lib/journal/overview";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("cs-CZ", {
@@ -122,6 +123,8 @@ export function DocumentViewPanel({
   onDocumentRemoved,
   selectedSituationId,
   targetPinId = null,
+  targetSourceRange = null,
+  contextualPinIds = [],
   hoveredBookmarkPinId = null
 }: {
   document: CaseDocument;
@@ -132,6 +135,8 @@ export function DocumentViewPanel({
   onDocumentRemoved: (documentId: string, situationId: string) => void;
   selectedSituationId: string | null;
   targetPinId?: string | null;
+  targetSourceRange?: SourceTarget | null;
+  contextualPinIds?: string[];
   hoveredBookmarkPinId?: string | null;
 }) {
   const [currentDocument, setCurrentDocument] = useState(initialDocument);
@@ -163,6 +168,7 @@ export function DocumentViewPanel({
   const [insights, setInsights] = useState<DocumentInsight[]>([]);
   const [isInsightEvidenceVisible, setIsInsightEvidenceVisible] = useState(false);
   const [pins, setPins] = useState<DocumentPin[]>([]);
+  const [bookmarkScope, setBookmarkScope] = useState<"context" | "all">("all");
   const pinsRef = useRef<DocumentPin[]>([]);
   const documentIdRef = useRef(initialDocument.id);
   const pinMeasurementFrameRef = useRef<number | null>(null);
@@ -211,17 +217,24 @@ export function DocumentViewPanel({
   const displayText =
     currentDocument.processed_markdown ?? currentDocument.processed_text ?? currentDocument.extracted_text ?? "";
   const isValidated = currentDocument.validation_status === "validated";
-  const orderedPins = useMemo(
+  const allDocumentPins = useMemo(
     () => pins.filter((pin) => pin.document_id === currentDocument.id).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
     [pins, currentDocument.id]
   );
+  const contextPinSet = new Set([
+    ...contextualPinIds, ...expandedLinkedPinIds,
+    ...activeAnalysisInsights.flatMap((insight) => insight.source_document_id === currentDocument.id && insight.source_pin_id ? [insight.source_pin_id] : []),
+    ...(targetPinId ? [targetPinId] : []), ...(hoveredBookmarkPinId ? [hoveredBookmarkPinId] : []),
+    ...(externallyHoveredBookmarkPinId ? [externallyHoveredBookmarkPinId] : [])
+  ]);
+  const orderedPins = allDocumentPins.filter((pin) => bookmarkScope === "all" || contextPinSet.has(pin.id) || editingPinId === pin.id || dragPinRef.current.pinId === pin.id);
   const pinNumberById = useMemo(
-    () => new Map(orderedPins.map((pin, index) => [pin.id, index + 1])),
-    [orderedPins]
+    () => new Map(allDocumentPins.map((pin, index) => [pin.id, index + 1])),
+    [allDocumentPins]
   );
   const renderedDisplayText = useMemo(
     () => renderDisplayTextWithHighlights(displayText),
-    [annotations, insights, activeAnalysisInsights, isInsightEvidenceVisible, displayText, isAnnotationNoteOpen]
+    [annotations, insights, activeAnalysisInsights, isInsightEvidenceVisible, displayText, isAnnotationNoteOpen, targetSourceRange, currentDocument.id]
   );
 
   const measurePinPositions = useCallback(() => {
@@ -376,6 +389,19 @@ export function DocumentViewPanel({
 
 
   useEffect(() => {
+    if (!targetSourceRange || targetSourceRange.documentId !== currentDocument.id) return;
+    const range = resolveSourceRange(displayText, targetSourceRange);
+    if (!range) { setError("Dokument je otevřen. Uloženou pasáž nelze v aktuálním textu jednoznačně určit."); return; }
+    const frame = window.requestAnimationFrame(() => {
+      if (targetSourceRange.documentId === documentIdRef.current) scrollToSourceRange(range.start, range.end);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [targetSourceRange, currentDocument.id, displayText]);
+
+  useEffect(() => {
+    // A selected Journal source refers to the evidence passage. A manually
+    // dragged bookmark may have a different visual offset; keep it intact.
+    if (targetSourceRange?.documentId === currentDocument.id) return;
     if (!targetPinId || pins.length === 0) {
       return;
     }
@@ -390,7 +416,7 @@ export function DocumentViewPanel({
       lastScrolledTargetPinRef.current = `${currentDocument.id}:${targetPinId}`;
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [currentDocument.id, displayText, pins, targetPinId]);
+  }, [currentDocument.id, displayText, pins, targetPinId, targetSourceRange]);
 
 
   useEffect(() => {
@@ -640,6 +666,7 @@ export function DocumentViewPanel({
   }
 
   function renderDisplayTextWithHighlights(text: string) {
+    const selectedSourceRange = targetSourceRange?.documentId === currentDocument.id ? resolveSourceRange(text, targetSourceRange) : null;
     const highlightRanges = annotations
       .filter((annotation) => annotation.annotation_type === "highlight" && annotation.highlight_color !== "transparent")
       .map((annotation) => {
@@ -653,6 +680,7 @@ export function DocumentViewPanel({
       .filter((range): range is { start: number; end: number; color: string } => Boolean(range))
       .filter((range) => range.start >= 0 && range.end > range.start && range.end <= text.length)
       .sort((a, b) => a.start - b.start);
+    if (selectedSourceRange) highlightRanges.push({ start: selectedSourceRange.start, end: selectedSourceRange.end, color: "#dbeafe" });
 
     const noteMarkers = annotations
       .filter((annotation) => annotation.annotation_type === "note")
@@ -743,7 +771,7 @@ export function DocumentViewPanel({
         const activeInsight = insightRanges.find((range) => range.start <= start && range.end >= end);
         const segmentNode = activeHighlight ? (
           <mark
-            className="document-inline-highlight"
+            className={`document-inline-highlight${selectedSourceRange && selectedSourceRange.start <= start && selectedSourceRange.end >= end ? " selected-journal-source" : ""}`}
             key={`highlight-inner-${index}-${start}`}
             style={{ backgroundColor: activeHighlight.color }}
           >
@@ -2300,6 +2328,13 @@ export function DocumentViewPanel({
             </div>
           </div>
         ) : displayText.trim().length > 0 ? (
+          <>
+          <div className="document-bookmark-scope" role="group" aria-label="Zobrazení bookmarků">
+            <span>Bookmarky</span>
+            <button type="button" aria-pressed={bookmarkScope === "context"} onClick={() => setBookmarkScope("context")}>Kontextové</button>
+            <button type="button" aria-pressed={bookmarkScope === "all"} onClick={() => setBookmarkScope("all")}>Všechny ({allDocumentPins.length})</button>
+            {bookmarkScope === "context" && !orderedPins.length ? <span>V aktuálním kontextu nejsou bookmarky.</span> : null}
+          </div>
           <div className={`document-text-pin-shell${isPinDragging ? " pin-dragging" : ""}${isBookmarkLinkMode ? " bookmark-link-mode" : ""}`} ref={documentTextShellRef}>
           <pre
             ref={documentTextRef}
@@ -2493,6 +2528,7 @@ export function DocumentViewPanel({
             ))}
           </div>
           </div>
+          </>
         ) : (
           <p className="panel-note">Zpracovaný text pro tento dokument není k dispozici.</p>
         )}

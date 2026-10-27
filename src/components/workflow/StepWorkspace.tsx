@@ -1,5 +1,6 @@
 "use client";
 
+import type { JournalSource } from "@/lib/journal/overview";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
 import type {
@@ -41,6 +42,8 @@ export function StepWorkspace({
   onJournalRefreshRequested,
   onOpenAnalysisSourceDocument,
   onOpenBookmark,
+  onOpenJournalSource,
+  onContextualPinsChange,
   onOpenDocument,
   onSelectSituation,
   onStartBookmarkLink,
@@ -59,6 +62,8 @@ export function StepWorkspace({
   onJournalRefreshRequested: () => void;
   onOpenAnalysisSourceDocument: (documentId: string) => Promise<boolean>;
   onOpenBookmark: (documentId: string, pinId: string) => void;
+  onOpenJournalSource: (source: JournalSource) => Promise<boolean>;
+  onContextualPinsChange: (situationId: string | null, pinIds: string[]) => void;
   onOpenDocument: (document: CaseDocument) => void;
   onSelectSituation: (situationId: string | null) => void;
   onStartBookmarkLink: (journalItemId: string) => void;
@@ -102,6 +107,8 @@ export function StepWorkspace({
             onOpenDocument={onOpenDocument}
             onSelectSituation={onSelectSituation}
             onOpenBookmark={onOpenBookmark}
+            onOpenSource={onOpenJournalSource}
+            onContextualPinsChange={onContextualPinsChange}
             onStartBookmarkLink={onStartBookmarkLink}
             pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId}
             selectedSituationId={selectedSituationId}

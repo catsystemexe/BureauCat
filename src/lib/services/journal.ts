@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { getSourceLinkDocumentId } from "@/lib/documents/sourceLinks";
+import { parseJournalLinks } from "@/lib/journal/overview";
 import { evidenceStateRecheck } from "@/lib/services/evidenceStateService";
 import type { CreateJournalItemInput, UpdateJournalItemInput } from "@/lib/validation/journal";
 
@@ -37,6 +38,48 @@ export function getJournalItemById(id: string) {
     where: { id },
     select: journalItemSelect
   });
+}
+
+/** Read-only support for the Situation's derived Journal view. */
+export async function readJournalEvidence(caseId: string, situationId: string, items: { id: string; source_links_json: string }[]) {
+  const links = items.flatMap((item) => parseJournalLinks(item.source_links_json));
+  const insights = await prisma.documentInsight.findMany({
+    where: {
+      document: { case_id: caseId },
+      OR: [
+        { journal_item_id: { in: items.map((item) => item.id) } },
+        { id: { in: links.flatMap((link) => typeof link.insightId === "string" ? [link.insightId] : []) } }
+      ]
+    },
+    select: {
+      id: true, document_id: true, source_document_id: true, source_pin_id: true,
+      journal_item_id: true, title: true, content: true, source_text: true,
+      source_start_offset: true, source_end_offset: true, insight_type: true
+    }
+  });
+  const pins = await prisma.documentPin.findMany({
+    where: {
+      document: { case_id: caseId },
+      id: { in: [
+        ...links.flatMap((link) => typeof link.pinId === "string" ? [link.pinId] : []),
+        ...insights.flatMap((insight) => insight.source_pin_id ? [insight.source_pin_id] : [])
+      ] }
+    },
+    select: { id: true, document_id: true, selected_text: true, start_offset: true, end_offset: true }
+  });
+  const documentIds = [
+    ...links.flatMap((link) => getSourceLinkDocumentId(link) ? [getSourceLinkDocumentId(link)!] : []),
+    ...pins.map((pin) => pin.document_id),
+    ...insights.flatMap((insight) => insight.source_document_id ? [insight.source_document_id] : [])
+  ];
+  const documents = await prisma.document.findMany({
+    where: { case_id: caseId, OR: [
+      { id: { in: documentIds } }, { situation_documents: { some: { situation_id: situationId } } }
+    ] },
+    select: { id: true, filename: true, display_name: true },
+    orderBy: { created_at: "asc" }
+  });
+  return { documents, insights, pins };
 }
 
 export async function createJournalItemForCase(caseId: string, situationId: string, input: CreateJournalItemInput) {
@@ -86,6 +129,27 @@ export function markJournalItemObsolete(id: string) {
     where: { id },
     data: { status: "obsolete" },
     select: journalItemSelect
+  });
+}
+
+export class JournalSourceLinkError extends Error {
+  constructor(public readonly code: "NOT_FOUND" | "CASE_MISMATCH" | "INVALID_LINKS") { super(code); }
+}
+
+export function appendJournalBookmark(itemId: string, pinId: string) {
+  return prisma.$transaction(async (transaction) => {
+    const item = await transaction.journalItem.findUnique({ where: { id: itemId } });
+    const pin = await transaction.documentPin.findUnique({ where: { id: pinId }, include: { document: { select: { case_id: true } } } });
+    if (!item || !pin) throw new JournalSourceLinkError("NOT_FOUND");
+    if (item.case_id !== pin.document.case_id) throw new JournalSourceLinkError("CASE_MISMATCH");
+    let links: unknown;
+    try { links = JSON.parse(item.source_links_json); } catch { throw new JournalSourceLinkError("INVALID_LINKS"); }
+    if (!Array.isArray(links)) throw new JournalSourceLinkError("INVALID_LINKS");
+    if (links.some((link) => link && typeof link === "object" && link.pinId === pin.id)) return item;
+    return transaction.journalItem.update({ where: { id: itemId }, data: {
+      source_links_json: JSON.stringify([...links, { type: "bookmark", documentId: pin.document_id,
+        pinId: pin.id, caseBookmarkNumber: pin.case_bookmark_number, color: pin.color }])
+    }, select: journalItemSelect });
   });
 }
 

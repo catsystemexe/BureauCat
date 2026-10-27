@@ -56,13 +56,24 @@ function hookRenderer(componentPath, exportName, props, commit) {
   };
   const filename = path.join(root, componentPath);
   const localRequire = createRequire(filename);
+  const sourceCache = new Map();
+  function requireLibrary(name) {
+    if (!name.startsWith("@/lib/")) return localRequire(name);
+    if (sourceCache.has(name)) return sourceCache.get(name).exports;
+    const file = path.join(root, "src", `${name.slice(2)}.ts`);
+    const dependency = { exports: {} };
+    sourceCache.set(name, dependency);
+    const output = ts.transpileModule(fs.readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+    vm.runInThisContext(`(function(require,module,exports){${output}\n})`, { filename: file })(requireLibrary, dependency, dependency.exports);
+    return dependency.exports;
+  }
   const module = { exports: {} };
   const compiled = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true }
   }).outputText;
   vm.runInThisContext(`(function(require,module,exports){${compiled}\n})`, { filename })(
     (name) => name === "react" ? react : name.startsWith("@/components/")
-      ? new Proxy({}, { get: () => () => null }) : localRequire(name), module, module.exports
+      ? new Proxy({}, { get: () => () => null }) : requireLibrary(name), module, module.exports
   );
   renderer.render = () => {
     if (!renderer.dirty) return;
@@ -153,7 +164,9 @@ function environment() {
   };
 }
 
-test("actual insight/pin callbacks keep current positions without incidental writes", async (t) => {
+module.exports = { hookRenderer, elements, byClass };
+
+if (require.main === module) test("actual insight/pin callbacks keep current positions without incidental writes", async (t) => {
   const env = environment();
   const globals = { window: env.window, document: env.document, ResizeObserver: env.ResizeObserver, NodeFilter: { SHOW_TEXT: 4 } };
   const previous = new Map(Object.keys(globals).concat("fetch").map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
@@ -262,6 +275,25 @@ test("actual insight/pin callbacks keep current positions without incidental wri
       respond(older, pins); await settle();
       assert.deepEqual(tops(), updated, "an older refresh did not overwrite the new offsets");
       assert.ok(calls.every((call) => !call.options.method));
+    });
+
+    await t.test("context/all bookmark display and an unbookmarked source range are read-only", async () => {
+      const analysis = chat.props.activeAnalysisDocument;
+      chat.update({ activeAnalysisDocument: null }); await settle();
+      panel.update({ activeAnalysisInsights: [], contextualPinIds: ["p1"] }); await settle();
+      const scopeButtons = () => elements(byClass(panel.tree, "document-bookmark-scope")[0], (element) => element.type === "button");
+      const buttonText = (button) => [button.props.children].flat().join("");
+      scopeButtons().find((button) => buttonText(button) === "Kontextové").props.onClick(); await settle();
+      assert.deepEqual(markers().map((marker) => marker.key), ["p1"]);
+      scopeButtons().find((button) => buttonText(button) === "Všechny (3)").props.onClick(); await settle();
+      assertPositions();
+      panel.update({ targetPinId: "p1", targetSourceRange: { documentId: "A", startOffset: 410, endOffset: 413, quote: "xxx", token: 1 } }); await settle();
+      assertPositions();
+      assert.equal(env.text.scrollTop, 398, "the source passage wins over the bookmark's different visual offset");
+      assert.ok(byClass(panel.tree, "selected-journal-source").length > 0, "the selected evidence passage is visible in the source text");
+      assert.ok(calls.every((call) => !call.options.method), "scope and source navigation made no writes");
+      panel.update({ activeAnalysisInsights: insights, targetSourceRange: null, targetPinId: null }); await settle();
+      chat.update({ activeAnalysisDocument: analysis }); await settle();
     });
 
     await t.test("measurement during actual pointer drag preserves its position; only pointer-up persists the move", async () => {

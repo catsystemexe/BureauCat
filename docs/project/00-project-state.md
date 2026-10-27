@@ -57,6 +57,7 @@ The documentation-only Windows report update was published as `681fa5b4f1d938dff
 
 ## Implemented on the active working branch
 
+- Compact Situation Journal v1 on `feat/compact-situation-journal`, baseline `79ef398b1ef72af575a2ea07a74c6539ed83ca02` (draft PR #40 lineage): the existing AI analysis now retains `DocumentInsight.content`. A derived, read-only overview exposes concrete saved findings, requests, temporal meanings and unresolved variants before Goal/Plan. Stable identification and explicit shared contexts can group sources without merging records; uncertain matches remain separate. Identification/supplementary details are collapsible, manual notes remain editable, and original document analyses remain available. Source choosers open individual passages; the local document filter does not change application context. Document bookmarks can show contextual or all pins without changing saved offsets. PR #39 deletion isolation and PR #40 hover/drag measurement fixes are retained. Focused temporary-SQLite, pure-view and controlled component regressions, Prisma checks, typecheck and build pass; actual Windows/browser acceptance and Drive synchronization remain pending. See `docs/compact-situation-journal.md` and D-025. This is a bounded Journal improvement, not completion of BC-012/BC-015, Goal Resolver or Timeline.
 - Prisma + SQLite baseline with replayable migrations.
 - Case and Situation persistence/workspace.
 - Goal persistence.

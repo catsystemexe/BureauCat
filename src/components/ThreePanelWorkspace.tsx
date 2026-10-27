@@ -1,5 +1,6 @@
 "use client";
 
+import type { JournalSource, SourceTarget } from "@/lib/journal/overview";
 import { getRecordValue, getSourceLinkDocumentId } from "@/lib/documents/sourceLinks";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
@@ -364,7 +365,9 @@ function RightContextPanel({
   onOpenSourceDocument,
   onSituationDocumentLinked,
   selectedSituationId,
-  targetPinId
+  targetPinId,
+  targetSourceRange,
+  contextualPinIds
 }: {
   caseId: string;
   mode: RightPanelMode;
@@ -385,6 +388,8 @@ function RightContextPanel({
   onSituationDocumentLinked: () => void;
   selectedSituationId: string | null;
   targetPinId: string | null;
+  targetSourceRange: SourceTarget | null;
+  contextualPinIds: string[];
 }) {
   const [isCaseDocumentListVisible, setIsCaseDocumentListVisible] = useState(false);
   const documentUploadRef = useRef<DocumentUploadHandle | null>(null);
@@ -510,6 +515,8 @@ function RightContextPanel({
               onDocumentRemoved={onDocumentRemoved}
               selectedSituationId={selectedSituationId}
               targetPinId={targetPinId}
+              targetSourceRange={targetSourceRange}
+              contextualPinIds={contextualPinIds}
             />
           ) : (
             <div className="right-panel-placeholder compact-right-placeholder">
@@ -567,6 +574,12 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [selectedStepKey, setSelectedStepKey] = useState<WorkflowStepKey | null>(null);
   const [pendingBookmarkTargetJournalItemId, setPendingBookmarkTargetJournalItemId] = useState<string | null>(null);
   const [targetDocumentPinId, setTargetDocumentPinId] = useState<string | null>(null);
+  const [targetSourceRange, setTargetSourceRange] = useState<SourceTarget | null>(null);
+  const sourceNavigationRef = useRef(0);
+  const [journalPinContext, setJournalPinContext] = useState<{ situationId: string | null; pinIds: string[] }>({ situationId: null, pinIds: [] });
+  const handleContextualPinsChange = useCallback((situationId: string | null, pinIds: string[]) => {
+    setJournalPinContext((current) => current.situationId === situationId && current.pinIds.join("|") === pinIds.join("|") ? current : { situationId, pinIds });
+  }, []);
 
   useEffect(() => {
     selectedSituationIdRef.current = selectedSituationId;
@@ -578,6 +591,9 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   }, [caseItem.id]);
 
   const selectSituation = useCallback((situationId: string | null) => {
+    sourceNavigationRef.current += 1;
+    setTargetSourceRange(null);
+    setPendingBookmarkTargetJournalItemId(null);
     setSelectedSituationId(situationId);
     setSelectedStepKey(null);
   }, []);
@@ -730,6 +746,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   }
 
   function openDocument(document: CaseDocument, pinId: string | null = null) {
+    sourceNavigationRef.current += 1;
+    setTargetSourceRange(null);
     setSelectedDocument(document);
     setTargetDocumentPinId(pinId);
     window.setTimeout(() => {
@@ -779,6 +797,19 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     openDocument(document);
   }
 
+  async function handleOpenJournalSource(source: JournalSource) {
+    const request = ++sourceNavigationRef.current;
+    const situationId = selectedSituationIdRef.current;
+    try {
+      const response = await fetch(`/api/documents/${encodeURIComponent(source.documentId)}`, { cache: "no-store" });
+      const data = await response.json() as { document?: CaseDocument };
+      if (!response.ok || !data.document || request !== sourceNavigationRef.current || situationId !== selectedSituationIdRef.current) return false;
+      openDocument(data.document, source.pinId);
+      setTargetSourceRange({ ...source, token: request });
+      return true;
+    } catch { return false; }
+  }
+
   async function handleOpenJournalBookmark(documentId: string, pinId: string) {
     await openSourceDocument(documentId, pinId);
   }
@@ -788,20 +819,10 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
       return;
     }
 
-    const response = await fetch(`/api/journal/${pendingBookmarkTargetJournalItemId}`, {
-      method: "PATCH",
+    const response = await fetch(`/api/journal/${pendingBookmarkTargetJournalItemId}/sources`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        source_links_json: JSON.stringify([
-          {
-            type: "bookmark",
-            pinId: pin.id,
-            documentId: selectedDocument.id,
-            caseBookmarkNumber: pin.case_bookmark_number,
-            color: pin.color
-          }
-        ])
-      })
+      body: JSON.stringify({ pin_id: pin.id })
     });
 
     if (response.ok) {
@@ -988,6 +1009,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           onJournalRefreshRequested={requestJournalRefresh}
           onOpenAnalysisSourceDocument={openSourceDocument}
           onOpenBookmark={handleOpenJournalBookmark}
+          onOpenJournalSource={handleOpenJournalSource}
+          onContextualPinsChange={handleContextualPinsChange}
           onOpenDocument={openDocument}
           onSelectSituation={selectSituation}
           onStartBookmarkLink={setPendingBookmarkTargetJournalItemId}
@@ -1019,6 +1042,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           selectedJournalItem={selectedJournalItem}
           selectedSituationId={selectedSituationId}
           targetPinId={targetDocumentPinId}
+          targetSourceRange={targetSourceRange}
+          contextualPinIds={journalPinContext.situationId === selectedSituationId ? journalPinContext.pinIds : []}
         />
       </div>
     </div>

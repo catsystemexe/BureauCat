@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCaseById } from "@/lib/services/cases";
 import { getSituationById } from "@/lib/services/situations";
-import { createJournalItemForCase, listJournalItemsForCase } from "@/lib/services/journal";
+import { createJournalItemForCase, listJournalItemsForCase, readJournalEvidence } from "@/lib/services/journal";
 import { createJournalItemSchema } from "@/lib/validation/journal";
 
 type CaseJournalRouteContext = {
@@ -33,7 +33,8 @@ export async function GET(request: Request, context: CaseJournalRouteContext) {
 
   const journal = await listJournalItemsForCase(caseId, situationId);
 
-  return NextResponse.json({ journal });
+  const evidence = await readJournalEvidence(caseId, situationId, journal.filter((item) => item.status !== "obsolete"));
+  return NextResponse.json({ journal, evidence });
 }
 
 
