@@ -119,6 +119,7 @@ export function DocumentViewPanel({
   isBookmarkLinkMode = false,
   onBookmarkSelectedForLink,
   onAnalysisCreated,
+  onDocumentRemoved,
   selectedSituationId,
   targetPinId = null,
   hoveredBookmarkPinId = null
@@ -128,6 +129,7 @@ export function DocumentViewPanel({
   isBookmarkLinkMode?: boolean;
   onBookmarkSelectedForLink?: (pin: DocumentPin) => void;
   onAnalysisCreated?: (document: CaseDocument) => void;
+  onDocumentRemoved: (documentId: string, situationId: string) => void;
   selectedSituationId: string | null;
   targetPinId?: string | null;
   hoveredBookmarkPinId?: string | null;
@@ -1708,8 +1710,13 @@ export function DocumentViewPanel({
   }
 
   async function handleDeleteDocument() {
+    if (!selectedSituationId) {
+      setError("Nejdřív vyber situaci.");
+      return;
+    }
+
     const confirmed = window.confirm(
-      `Smazat dokument?\n\n${currentDocument.filename}\n\nBude odstraněn originál, zpracovaný text a budoucí anotace. Tuto akci nelze vrátit.`
+      `Smazat dokument z aktuální situace?\n\n${currentDocument.filename}\n\nBudou odstraněny i všechny jeho související poznatky a bookmarky v této situaci. Ostatní situace zůstanou zachované. Tuto akci nelze vrátit.`
     );
 
     if (!confirmed) return;
@@ -1718,7 +1725,7 @@ export function DocumentViewPanel({
     setError(null);
 
     try {
-      const response = await fetch(`/api/documents/${currentDocument.id}`, {
+      const response = await fetch(`/api/situations/${selectedSituationId}/documents/${currentDocument.id}`, {
         method: "DELETE"
       });
 
@@ -1726,9 +1733,10 @@ export function DocumentViewPanel({
         throw new Error("Dokument se nepodařilo smazat.");
       }
 
-      window.location.reload();
+      onDocumentRemoved(currentDocument.id, selectedSituationId);
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Dokument se nepodařilo smazat.");
+    } finally {
       setIsSaving(false);
     }
   }
@@ -1790,7 +1798,7 @@ export function DocumentViewPanel({
 
             <button
               className="document-icon-action danger"
-              disabled={isSaving}
+              disabled={isSaving || !selectedSituationId}
               onClick={handleDeleteDocument}
               title="Smazat dokument"
               type="button"

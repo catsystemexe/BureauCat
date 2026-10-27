@@ -1081,13 +1081,13 @@ h1 {
   outline-offset: 1px;
 }
 
-.selected-situation-page,
-.selected-situation-page:hover,
-.selected-situation-page:focus-visible {
-  background: var(--user-accent);
+.situation-page-button.selected-situation-page,
+.situation-page-button.selected-situation-page:hover,
+.situation-page-button.selected-situation-page:focus-visible {
+  background: #dbeafe;
   border-color: var(--user-accent);
   box-shadow: 0 2px 5px rgba(8, 105, 215, 0.18);
-  color: #ffffff;
+  color: #000000;
 }
 
 .situation-page-add-button {
