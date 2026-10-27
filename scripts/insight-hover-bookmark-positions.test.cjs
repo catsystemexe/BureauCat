@@ -172,7 +172,7 @@ if (require.main === module) test("actual insight/pin callbacks keep current pos
   const previous = new Map(Object.keys(globals).concat("fetch").map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   Object.assign(globalThis, globals);
   const calls = [], requests = [], renderers = [];
-  const source = (id) => ({ id, filename: `${id}.txt`, filetype: "txt", created_at: "2026-10-27T00:00:00Z", processed_text: "x".repeat(1000) });
+  const source = (id) => ({ id, filename: `${id}.txt`, filetype: "txt", created_at: "2026-10-27T00:00:00Z", processed_text: "x".repeat(600) + "CITACE" + "x".repeat(394) });
   const pin = (id, documentId, offset) => ({ id, document_id: documentId, start_offset: offset, end_offset: offset + 3,
     visual_offset: null, selected_text: "xxx", color: "green", created_at: "2026-10-27T00:00:00Z" });
   const pins = [pin("p1", "A", 10), pin("p2", "A", 210), pin("p3", "A", 410)];
@@ -292,6 +292,32 @@ if (require.main === module) test("actual insight/pin callbacks keep current pos
       assert.equal(env.text.scrollTop, 398, "the source passage wins over the bookmark's different visual offset");
       assert.ok(byClass(panel.tree, "selected-journal-source").length > 0, "the selected evidence passage is visible in the source text");
       assert.ok(calls.every((call) => !call.options.method), "scope and source navigation made no writes");
+      panel.update({ activeAnalysisInsights: insights, targetSourceRange: null, targetPinId: null }); await settle();
+      chat.update({ activeAnalysisDocument: analysis }); await settle();
+    });
+
+    await t.test("stale source ranges recover only a unique quote; missing or ambiguous quotes report an error without highlighting or writes", async () => {
+      const analysis = chat.props.activeAnalysisDocument;
+      chat.update({ activeAnalysisDocument: null }); await settle();
+      panel.update({ activeAnalysisInsights: [] }); await settle();
+      const beforePins = JSON.stringify(pins);
+      const target = Object.freeze({ documentId: "A", startOffset: 10, endOffset: 16, quote: "CITACE", token: 2 });
+      panel.update({ targetPinId: "p1", targetSourceRange: target }); await settle();
+      assert.equal(env.text.scrollTop, 618, "scroll uses the unique quote at 600, not stale offsets at 10");
+      assert.ok(byClass(panel.tree, "selected-journal-source").length > 0);
+      const beforeScroll = env.text.scrollTop;
+      for (const quote of ["missing", "xxx"]) {
+        panel.update({ targetSourceRange: { ...target, startOffset: 600, endOffset: 603, quote, token: quote } }); await settle();
+        assert.equal(env.text.scrollTop, beforeScroll, "invalid source navigation must not scroll to the wrong passage or pin");
+        assert.equal(byClass(panel.tree, "selected-journal-source").length, 0);
+        assert.match(byClass(panel.tree, "document-review-error")[0]?.props.children ?? "", /pasáž nelze.*jednoznačně určit/);
+      }
+      panel.update({ targetSourceRange: { ...target, startOffset: 600, endOffset: 606, token: 3 } }); await settle();
+      assert.equal(byClass(panel.tree, "document-review-error").length, 0, "a subsequent valid source clears only the source navigation error");
+      assert.ok(byClass(panel.tree, "selected-journal-source").length > 0);
+      assert.equal(JSON.stringify(pins), beforePins);
+      assert.equal(target.startOffset, 10); assert.equal(target.endOffset, 16);
+      assert.ok(calls.every((call) => !call.options.method), "range recovery never persists corrected offsets");
       panel.update({ activeAnalysisInsights: insights, targetSourceRange: null, targetPinId: null }); await settle();
       chat.update({ activeAnalysisDocument: analysis }); await settle();
     });

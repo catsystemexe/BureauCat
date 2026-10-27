@@ -20,11 +20,17 @@ export type SourceTarget = Pick<JournalSource, "documentId" | "startOffset" | "e
 export const EMPTY_EVIDENCE: JournalEvidence = { documents: [], insights: [], pins: [] };
 
 export function resolveSourceRange(text: string, target: Pick<JournalSource, "startOffset" | "endOffset" | "quote">) {
-  if (target.startOffset !== null && target.endOffset !== null && target.startOffset >= 0 && target.endOffset > target.startOffset && target.endOffset <= text.length) {
+  const quote = target.quote;
+  const hasQuote = quote.trim().length > 0;
+  if (target.startOffset !== null && target.endOffset !== null &&
+      Number.isInteger(target.startOffset) && Number.isInteger(target.endOffset) &&
+      target.startOffset >= 0 && target.endOffset > target.startOffset && target.endOffset <= text.length &&
+      (!hasQuote || text.slice(target.startOffset, target.endOffset) === quote)) {
     return { start: target.startOffset, end: target.endOffset };
   }
-  const quote = target.quote.trim();
-  const start = quote ? text.indexOf(quote) : -1;
+  // A valid numeric range can still point at different text after an edit.
+  // Resolve only the exact saved quote, without rewriting the stored offsets.
+  const start = hasQuote ? text.indexOf(quote) : -1;
   return start >= 0 && text.lastIndexOf(quote) === start ? { start, end: start + quote.length } : null;
 }
 
@@ -58,16 +64,21 @@ export const TIME_LABELS: Record<TimeKind, string> = {
 function timeKind(title: string, body: string): TimeKind | null {
   const label = folded(title);
   const text = folded(`${title} ${body}`);
-  // A document's date must not become a deadline/risk because its quote also
-  // happens to contain the request that follows the heading.
-  if (/datum (vyhotoveni|vydani|dokumentu|vyzvy)|vyhotoven|vydano|vydani (dokumentu|vyzvy)|ze dne/.test(label)) return "document";
-  if (/dorucen|datum prijeti/.test(label)) return "delivery";
-  if (/jednani|setreni|schuzka|planovana udalost/.test(label)) return "event";
-  if (/lhuta|termin (reakce|odpovedi|doplneni)|nejpozdeji/.test(text) ||
-      /\bdo\s+\d{1,2}[.\s]/.test(text)) return "response";
-  if (/dorucen/.test(text)) return "delivery";
-  if (/vyhotoveno|vydano|vyzva ze dne/.test(text)) return "document";
-  if (/datum|\b\d{1,2}\.\s*\d{1,2}\./.test(label)) return "unspecified";
+  const date = String.raw`(?:\d{4}-\d{2}-\d{2}\b|\d{1,2}\.\s*\d{1,2}\.(?:\s*\d{4}\b)?|\d{1,2}\.?\s+(?:ledna|unora|brezna|dubna|kvetna|cervna|cervence|srpna|zari|rijna|listopadu|prosince)\b)`;
+  const request = /\b(?:doloz\w*|dopln\w*|predloz\w*|dodat|dodani|dodej\w*|poskyt\w*|pozadavek|pozaduj\w*|vyzyvame|musite|povinnost)\b/.test(text);
+  // A deadline for materials "k jednání" is not the hearing's date. A bare
+  // quantity such as "do 10 osob" supplies no temporal evidence.
+  if (/\blhut(?:a|y|u|e|ou)\b|\btermin (?:reakce|odpovedi|doplneni|dodani|predlozeni)\b|\bnejpozdeji\b/.test(text) ||
+      new RegExp(String.raw`\bdo\s+${date}`).test(text) ||
+      (request && /\bdo\s+\d+\s+(?:pracovnich\s+)?(?:dnu|dne|dni|tydnu|tydne|tydny|mesicu|mesice|hodin|hodiny)\b/.test(text))) return "response";
+  // Keep a notice's actual request visible even under a dated heading. Only
+  // a dedicated date field without a request belongs in collapsed parameters.
+  if (request) return null;
+  if (/^(?:datum (?:vyhotoveni|vydani|vystaveni)(?: (?:dokumentu|vyzvy))?|datum (?:dokumentu|vyzvy)|vyhotoveno|vydano|vystaveno|(?:vyhotoveni|vydani) (?:dokumentu|vyzvy))\s*:?$/.test(label)) return "document";
+  if (/^(?:(?:datum|termin) )?(?:doruceni|doruceno|prijeti)\b/.test(label)) return "delivery";
+  if (/^(?:(?:datum|termin) )?(?:jednani|mistni setreni|setreni|schuzka|planovana udalost)\b/.test(label)) return "event";
+  // Dates without a reliably recognized role remain visible and neutral.
+  if (new RegExp(String.raw`\b${date}`).test(text)) return "unspecified";
   return null;
 }
 
@@ -77,8 +88,8 @@ function category(item: JournalItem, type: string, body: string, manual: boolean
   }
   if (manual) return { category: "notes", time: null };
   const time = timeKind(item.title, body);
-  if (time) return { category: ["response", "delivery", "event"].includes(time) ? "time" : "parameters", time };
-  if (type === "term") return { category: "time", time: "unspecified" };
+  if (time) return { category: time === "document" ? "parameters" : "time", time };
+  if (type === "term") return { category: "matter", time: null };
   if (type === "identifier") return { category: "identity", time: null };
   if (type === "legal_reference" || /sirka|vyska|delka|rozmer|parametr/.test(folded(item.title))) return { category: "parameters", time: null };
   // No plan/Goal is consulted and no new risk is inferred from dates.

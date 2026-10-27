@@ -25,6 +25,8 @@ import {
 import type { CaseDocument, DocumentAnnotation, DocumentAnnotationType, DocumentInsight, DocumentPin } from "@/components/types";
 import { resolveSourceRange, type SourceTarget } from "@/lib/journal/overview";
 
+const SOURCE_RANGE_ERROR = "Dokument je otevřen. Uloženou pasáž nelze v aktuálním textu jednoznačně určit.";
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("cs-CZ", {
     dateStyle: "medium",
@@ -389,9 +391,13 @@ export function DocumentViewPanel({
 
 
   useEffect(() => {
-    if (!targetSourceRange || targetSourceRange.documentId !== currentDocument.id) return;
+    if (!targetSourceRange || targetSourceRange.documentId !== currentDocument.id) {
+      setError((current) => current === SOURCE_RANGE_ERROR ? null : current);
+      return;
+    }
     const range = resolveSourceRange(displayText, targetSourceRange);
-    if (!range) { setError("Dokument je otevřen. Uloženou pasáž nelze v aktuálním textu jednoznačně určit."); return; }
+    if (!range) { setError(SOURCE_RANGE_ERROR); return; }
+    setError((current) => current === SOURCE_RANGE_ERROR ? null : current);
     const frame = window.requestAnimationFrame(() => {
       if (targetSourceRange.documentId === documentIdRef.current) scrollToSourceRange(range.start, range.end);
     });

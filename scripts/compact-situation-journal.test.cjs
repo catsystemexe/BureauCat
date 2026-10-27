@@ -93,6 +93,46 @@ test("compact derived Journal content, identity, variants, sources and time", as
     ]);
     assert.deepEqual(buildJournalOverview(f.items, f.evidence, "s1").map((group) => group.time), ["document", "delivery", "response", "event"]);
   });
+  await t.test("a deadline for hearing materials is a response deadline, not the hearing date", () => {
+    const f = fixture([
+      sample("materials", "Lhůta dodání podkladů k jednání", "Podklady dodejte do 11. září.", "term", "A"),
+      sample("relative", "Dodání podkladů k jednání", "Doložte podklady do 10 dnů od doručení.", "term", "A"),
+      sample("hearing", "Datum jednání", "15. září", "term", "A")
+    ]);
+    const before = JSON.stringify(f); freeze(f);
+    const groups = buildJournalOverview(f.items, f.evidence, "s1");
+    assert.deepEqual(groups.map((group) => group.time), ["response", "response", "event"]);
+    assert.ok(groups.every((group) => group.category === "time"));
+    assert.equal(JSON.stringify(f), before);
+  });
+  await t.test("dated notice headings never collapse their request or response deadline into the issue date", () => {
+    const f = fixture([
+      sample("deadline-heading", "Výzva ze dne 25. srpna 2026", "Doložte souhlas nejpozději do 11. září.", "fact", "A"),
+      sample("request-heading", "Výzva ze dne 25. srpna 2026", "Doložte souhlas vlastníka.", "fact", "B"),
+      sample("mixed-field", "Datum vyhotovení výzvy", "25. srpna 2026. Doložte souhlas vlastníka.", "fact", "C"),
+      sample("issue-field", "Datum vyhotovení výzvy", "25. srpna 2026", "term", "A")
+    ]);
+    const groups = buildJournalOverview(f.items, f.evidence, "s1");
+    assert.equal(groups[0].time, "response"); assert.equal(groups[0].category, "time");
+    for (const group of groups.slice(1, 3)) {
+      assert.equal(group.category, "matter"); assert.equal(group.time, null);
+      assert.match(group.variants[0].text, /Doložte souhlas vlastníka/);
+    }
+    assert.equal(groups[3].category, "parameters"); assert.equal(groups[3].time, "document");
+  });
+  await t.test("quantity limits are not dates and uncertain temporal wording remains visible without an invented meaning", () => {
+    const f = fixture([
+      sample("capacity", "Kapacita", "Do 10 osob.", "fact", "A"),
+      sample("mislabelled", "Kapacita", "Do 10 osob.", "term", "B"),
+      sample("uncertain", "Datum související s výzvou", "11. září – význam není v podkladu určen.", "term", "C"),
+      sample("undated", "Další údaj", "Časový význam nelze určit.", "term", "D")
+    ]);
+    const groups = buildJournalOverview(f.items, f.evidence, "s1");
+    for (const index of [0, 1, 3]) {
+      assert.equal(groups[index].category, "matter"); assert.equal(groups[index].time, null);
+    }
+    assert.equal(groups[2].category, "time"); assert.equal(groups[2].time, "unspecified");
+  });
   await t.test("repeated reliable identification appears once with every document's source", () => {
     const f = fixture([
       sample("a", "Odesílatel", "Městský úřad Lipová, IČO 12345678", "identifier", "A"),
@@ -155,10 +195,21 @@ test("compact derived Journal content, identity, variants, sources and time", as
     assert.equal(JSON.stringify(f), before);
     assert.equal(buildJournalOverview(f.items, f.evidence, "s2").length, 0);
   });
-  await t.test("source range uses saved offsets or one exact quote; ambiguous quotes never invent an offset", () => {
+  await t.test("source offsets must match the saved quote; recovery is exact, unique and read-only", () => {
     assert.deepEqual(resolveSourceRange("first quoted last", { startOffset: null, endOffset: null, quote: "quoted" }), { start: 6, end: 12 });
     assert.deepEqual(resolveSourceRange("abc", { startOffset: 0, endOffset: 2, quote: "ab" }), { start: 0, end: 2 });
     assert.equal(resolveSourceRange("x x", { startOffset: null, endOffset: null, quote: "x" }), null);
+    const stale = freeze({ startOffset: 0, endOffset: 6, quote: "quoted" });
+    const before = JSON.stringify(stale);
+    assert.deepEqual(resolveSourceRange("first quoted last", stale), { start: 6, end: 12 });
+    assert.equal(JSON.stringify(stale), before, "navigation does not repair saved offsets");
+    assert.equal(resolveSourceRange("wrong text", { startOffset: 0, endOffset: 5, quote: "missing" }), null);
+    assert.equal(resolveSourceRange("wrong quoted quoted", stale), null);
+    assert.equal(resolveSourceRange("wrong aaa", { startOffset: 0, endOffset: 2, quote: "aa" }), null, "overlapping matches are ambiguous too");
+    assert.deepEqual(resolveSourceRange("quoted quoted", { startOffset: 7, endOffset: 13, quote: "quoted" }), { start: 7, end: 13 }, "matching saved offsets disambiguate repeated quotes");
+    assert.deepEqual(resolveSourceRange("prefix quoted suffix", { startOffset: 0, endOffset: 8, quote: " quoted " }), { start: 6, end: 14 }, "the exact saved quote includes its whitespace");
+    assert.deepEqual(resolveSourceRange("abc", { startOffset: 0, endOffset: 2, quote: "" }), { start: 0, end: 2 }, "offset-only legacy sources remain supported");
+    assert.equal(resolveSourceRange("abc", { startOffset: null, endOffset: null, quote: "" }), null);
   });
   await t.test("server-rendered overview has compact sources, collapsed identification and no empty categories", () => {
     const { createElement } = require("react");
