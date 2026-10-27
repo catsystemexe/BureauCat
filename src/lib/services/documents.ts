@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { extractDocumentText } from "@/lib/documents/extraction";
 import { evidenceStateRecheckForCase } from "@/lib/services/evidenceStateService";
 import { journalizeDocumentInsight } from "@/lib/services/documentInsights";
+import { removeDocumentJournalItems } from "@/lib/services/journal";
 import { storeOriginalDocument } from "@/lib/documents/storage";
 import type { ValidatedDocumentFile } from "@/lib/validation/documents";
 import { convertDocumentWithMarkItDown } from "@/lib/documents/markitdown";
@@ -152,11 +153,18 @@ export function linkDocumentToSituation(situationId: string, documentId: string)
 }
 
 export async function unlinkDocumentFromSituation(situationId: string, documentId: string) {
-  await prisma.situationDocument.deleteMany({
-    where: {
-      situation_id: situationId,
-      document_id: documentId
-    }
+  return prisma.$transaction(async (transaction) => {
+    const situation = await transaction.situation.findUnique({ where: { id: situationId } });
+    const document = await transaction.document.findUnique({ where: { id: documentId } });
+    if (!situation) throw new SituationDocumentLinkError("SITUATION_NOT_FOUND");
+    if (!document) throw new SituationDocumentLinkError("DOCUMENT_NOT_FOUND");
+    if (document.case_id !== situation.case_id) throw new SituationDocumentLinkError("CASE_MISMATCH");
+
+    await removeDocumentJournalItems(transaction, situationId, documentId);
+    await transaction.situationDocument.deleteMany({
+      where: { situation_id: situationId, document_id: documentId }
+    });
+    // The Case's original, analysis documents and files remain available elsewhere.
   });
 }
 

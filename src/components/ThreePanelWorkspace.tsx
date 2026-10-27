@@ -1,5 +1,6 @@
 "use client";
 
+import { getRecordValue, getSourceLinkDocumentId } from "@/lib/documents/sourceLinks";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { DocumentList } from "@/components/documents/DocumentList";
@@ -130,62 +131,10 @@ function parseSourceLinks(sourceLinksJson: string | null | undefined): ParsedSou
   }
 }
 
-function normalizeSourceLinkKey(key: string) {
-  return key.replaceAll("_", "").replaceAll("-", "").toLowerCase();
-}
-
-function getRecordValue(record: Record<string, unknown>, keys: string[]) {
-  const normalizedKeys = new Set(keys.map(normalizeSourceLinkKey));
-
-  for (const [key, value] of Object.entries(record)) {
-    if (!normalizedKeys.has(normalizeSourceLinkKey(key))) {
-      continue;
-    }
-
-    if (typeof value === "string" && value.trim().length > 0) {
-      return value.trim();
-    }
-  }
-
-  return null;
-}
-
-function extractDocumentIdFromValue(value: unknown): string | null {
-  if (typeof value === "string" && value.trim().length > 0) {
-    return value.trim();
-  }
-
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return getRecordValue(value as Record<string, unknown>, ["id", "document_id", "documentId"]);
-  }
-
-  return null;
-}
-
 function findDocumentSourceReference(sourceLink: unknown): DocumentSourceReference | null {
-  if (!sourceLink || typeof sourceLink !== "object" || Array.isArray(sourceLink)) {
-    return null;
-  }
-
+  const documentId = getSourceLinkDocumentId(sourceLink);
+  if (!documentId) return null;
   const sourceRecord = sourceLink as Record<string, unknown>;
-  const typeValue = sourceRecord.type;
-  const typeSuggestsDocument =
-    typeof typeValue === "string" && typeValue.toLowerCase().includes("document");
-
-  const directDocumentId = getRecordValue(sourceRecord, [
-    "document_id",
-    "documentId",
-    "documentID",
-    "doc_id",
-    "docId"
-  ]);
-  const nestedDocumentId = extractDocumentIdFromValue(sourceRecord.document);
-  const typedId = typeSuggestsDocument ? getRecordValue(sourceRecord, ["id"]) : null;
-  const documentId = directDocumentId ?? nestedDocumentId ?? typedId;
-
-  if (!documentId) {
-    return null;
-  }
 
   const documentName =
     getRecordValue(sourceRecord, ["filename", "file_name", "document_name", "name", "title"]) ??
@@ -410,6 +359,7 @@ function RightContextPanel({
   onAnalysisCreated,
   onBookmarkSelectedForLink,
   onDocumentUploaded,
+  onDocumentRemoved,
   onOpenDocument,
   onOpenSourceDocument,
   onSituationDocumentLinked,
@@ -429,6 +379,7 @@ function RightContextPanel({
   onAnalysisCreated: (document: CaseDocument) => void;
   onBookmarkSelectedForLink: (pin: DocumentPin) => void;
   onDocumentUploaded: (document: CaseDocument) => void;
+  onDocumentRemoved: (documentId: string, situationId: string) => void;
   onOpenDocument: (document: CaseDocument) => void;
   onOpenSourceDocument: (documentId: string) => Promise<boolean>;
   onSituationDocumentLinked: () => void;
@@ -556,6 +507,7 @@ function RightContextPanel({
               isBookmarkLinkMode={isBookmarkLinkMode}
               onAnalysisCreated={onAnalysisCreated}
               onBookmarkSelectedForLink={onBookmarkSelectedForLink}
+              onDocumentRemoved={onDocumentRemoved}
               selectedSituationId={selectedSituationId}
               targetPinId={targetPinId}
             />
@@ -611,9 +563,14 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [documentListRefreshKey, setDocumentListRefreshKey] = useState(0);
   const [situationDocumentListRefreshKey, setSituationDocumentListRefreshKey] = useState(0);
   const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null);
+  const selectedSituationIdRef = useRef(selectedSituationId);
   const [selectedStepKey, setSelectedStepKey] = useState<WorkflowStepKey | null>(null);
   const [pendingBookmarkTargetJournalItemId, setPendingBookmarkTargetJournalItemId] = useState<string | null>(null);
   const [targetDocumentPinId, setTargetDocumentPinId] = useState<string | null>(null);
+
+  useEffect(() => {
+    selectedSituationIdRef.current = selectedSituationId;
+  }, [selectedSituationId]);
 
   useEffect(() => {
     setSelectedSituationId(null);
@@ -800,6 +757,21 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
 
   function handleSituationDocumentLinked() {
     setSituationDocumentListRefreshKey((currentKey) => currentKey + 1);
+  }
+
+  function handleDocumentRemoved(documentId: string, situationId: string) {
+    setSituationDocumentListRefreshKey((currentKey) => currentKey + 1);
+    if (selectedSituationIdRef.current === situationId) {
+      setSelectedDocument((current) => current?.id === documentId ? null : current);
+      setSelectedJournalItem(null);
+      setActiveAnalysisDocument(null);
+      setActiveAnalysisInsights([]);
+      setHoveredBookmarkPinId(null);
+      setTargetDocumentPinId(null);
+      setPendingBookmarkTargetJournalItemId(null);
+    }
+    window.dispatchEvent(new CustomEvent("bureaucat:journal-refresh"));
+    window.dispatchEvent(new CustomEvent("bureaucat:document-pins-refresh"));
   }
 
   function handleDocumentUploaded(document: CaseDocument) {
@@ -1039,6 +1011,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           }}
           onBookmarkSelectedForLink={handleBookmarkSelectedForLink}
           onDocumentUploaded={handleDocumentUploaded}
+          onDocumentRemoved={handleDocumentRemoved}
           onOpenDocument={openDocument}
           onOpenSourceDocument={openSourceDocument}
           onSituationDocumentLinked={handleSituationDocumentLinked}

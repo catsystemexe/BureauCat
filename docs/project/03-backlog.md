@@ -177,6 +177,8 @@ Implemented compact left Situation/workflow rail, Goal summary, seven-Step navig
 
 VS agent reports supplied with the BC-009 update: Ordinary mouse selection passed at 1440×900. Keyboard activation via focus and Enter passed at 544×234, where pointer interaction was blocked by layout clipping. Neither selection changed the persisted active Step. Open UX issue: navigation has zero height at viewport `544×234`. No CSS repair is included in the documentation update.
 
+Human-review follow-up on `fix/review-bookmarks-situation-ui`, baseline `3c300fde09050c741c09a47c2fc398c878a258f6`: the document delete action now removes the document and all related findings/bookmark links from the selected Situation in one transaction, preserves other Situations and unrelated content, and refreshes the UI after success. The Situation selector uses black on light blue for selection and dark on white otherwise, with hover/focus-visible preserved. Targeted isolated-SQLite regressions, Prisma checks, typecheck and build pass; see `docs/review-bookmarks-situation-ui.md` for evidence and VS agent handoff. Actual browser/reload/isolation/keyboard verification and Drive synchronization of these new documentation changes are pending. BC-015 remains In Progress; this repair does not resolve the previously reported `544×234` navigation clipping.
+
 # P1 — Timeline
 
 ## BC-020 — Timeline product model

@@ -63,6 +63,7 @@ The documentation-only Windows report update was published as `681fa5b4f1d938dff
 - Journal and document/evidence capabilities.
 - Document Analysis / Document Insights.
 - Pins/bookmarks and evidence linkage.
+- Human-review repair on `fix/review-bookmarks-situation-ui` (baseline `3c300fde09050c741c09a47c2fc398c878a258f6`): document removal is scoped to the selected Situation and atomically removes its related Journal findings/bookmark links without distinguishing authorship or edits. Shared document-owned records needed elsewhere are preserved. Selected Situation numbers are black on light blue; unselected numbers remain dark on white, including hover/focus-visible. Static/regression verification is recorded in `docs/review-bookmarks-situation-ui.md`; browser/reload/keyboard verification by VS agent and synchronization of these new documentation changes remain pending.
 - Workflow persistence for:
   - `WorkflowStep`;
   - `RequiredInput`;
