@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { WORKFLOW_STEP_DEFINITIONS } from "@/lib/workflow/constants";
+import { initializeSituationWorkflow } from "@/lib/workflow/initialize";
 import type {
   CreateSituationInput,
   UpdateSituationInput
@@ -57,14 +57,7 @@ export function createSituation(caseId: string, input: CreateSituationInput) {
       select: situationSelect
     });
 
-    await transaction.workflowStep.createMany({
-      data: WORKFLOW_STEP_DEFINITIONS.map(({ key, order }) => ({
-        situation_id: situation.id,
-        step_key: key,
-        status: key === "ANALYSIS" ? "ACTIVE" : "INACTIVE",
-        display_order: order
-      }))
-    });
+    await initializeSituationWorkflow(transaction, situation.id);
 
     return situation;
   });

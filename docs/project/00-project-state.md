@@ -4,7 +4,7 @@
 
 Canonical project-state document under D-022. GitHub `docs/project/` is the normative, versioned documentation location. Google Drive mirrors these documents for reading, sharing, and ChatGPT Project access.
 
-The canonical documentation bootstrap, operating-rule consolidation and first manual GitHub → Drive mirror synchronization are complete. The mirror mapping/procedure is maintained in `09-drive-sync.md`. Synchronization of the current local-development changes is **pending**; the historical first sync does not establish parity for this batch.
+The canonical documentation bootstrap, operating-rule consolidation and historical first manual GitHub → Drive mirror synchronization are complete. The mirror mapping/procedure is maintained in `09-drive-sync.md`. On 2026-10-27, ChatGPT synchronized the existing Drive mirrors 00–06 from snapshot `681fa5b4f1d938dff8b405edda6577e4f4b5cba0`; readback of all seven documents confirmed exact text equality, with IDs and titles preserved. This is a separate, snapshot-specific synchronization record. After this new status commit, only mirrors 00, 03 and 04 require alignment; that new alignment has not been performed, so parity with this new commit is not yet established.
 
 ## Product identity
 
@@ -48,7 +48,12 @@ Active development branch: `work/workflow-foundation-v01`.
 
 `main` is not assumed to represent the latest working implementation.
 
-Local portability batch: `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`. Under D-024, ChatGPT handles planning/instructions, Codex code/versioned docs/static verification, and VS agent local runtime/environment/API/UI checks. This supersedes the former Replit workflow. Remote preservation, VS agent runtime verification and Drive synchronization are pending; no database or product-architecture changes belong to this batch.
+Local portability batch: `chore/windows-local-bootstrap`, based on verified `work/workflow-foundation-v01` at `1a2de452581104f48b87d2193465785e00f12853`. Under D-024, ChatGPT handles planning/instructions, Codex code/versioned docs/static verification, and VS agent local runtime/environment/API/UI checks. This supersedes the former Replit workflow. Subsequent explicit user authorization superseded the original push restrictions for both published commits:
+
+- Bootstrap `07761fb8e31263b3a4b7605742d2e2ee0252ea40`: draft [PR #37](https://github.com/catsystemexe/BureauCat/pull/37), base `work/workflow-foundation-v01`.
+- Workflow-initialization repair `4d9a07a002f3e1a1abdcc99a28f1c69c9cc947ad` on `fix/situation-workflow-initialization`: draft [PR #38](https://github.com/catsystemexe/BureauCat/pull/38), base `chore/windows-local-bootstrap`.
+
+The documentation-only Windows report update was published as `681fa5b4f1d938dff8b405edda6577e4f4b5cba0` on the repair branch; the reported Windows verification covers `4d9a07a002f3e1a1abdcc99a28f1c69c9cc947ad`. BC-009 is recorded as Done for the approved portable local bootstrap scope. Final closure confirmation awaits alignment and readback of status mirrors 00, 03 and 04 from this new status commit. This does not mean BureauCat is complete: the product gaps below and all reported limits remain; BC-015 stays In Progress with the 544×234 navigation issue open. Neither PR has been merged or deployed by this work.
 
 ## Implemented on the active working branch
 
@@ -65,7 +70,7 @@ Local portability batch: `chore/windows-local-bootstrap`, based on verified `wor
   - `WorkflowTask`;
   - `WorkflowOverride`;
   - append-only `WorkflowEvent`.
-- Seven canonical workflow Steps initialized for Situations.
+- Seven canonical workflow Steps initialized atomically for new Situations through both Case creation and standalone Situation creation. The shared helper uses the caller's Prisma transaction; existing Situations are not repaired on read.
 - Situation workflow read service/API.
 - Case Context expanded with authoritative Goal and workflow state.
 - UX shell foundation:
@@ -76,7 +81,25 @@ Local portability batch: `chore/windows-local-bootstrap`, based on verified `wor
   - existing right Document/Analysis panel preserved.
 - Canonical project documentation under `docs/project/` with manual one-way Drive mirror workflow.
 
-Runtime verification on Replit Free confirmed the new workflow rail loads after regenerating Prisma Client and Step selection changes only UI selection, not persisted active workflow state.
+Historical Replit Free verification confirmed the workflow rail loads after regenerating Prisma Client and Step selection changes only UI selection, not persisted active workflow state. It does not establish current Windows verification or Drive mirror parity.
+
+## Windows verification reported by VS agent
+
+These results are taken from VS agent reports supplied for the documentation update, not from new Windows checks run by Codex:
+
+- Lockfile-based Windows installation, Prisma Client generation and typecheck without incremental cache passed.
+- Both Situation creation paths initialize seven Steps; only `ANALYSIS` is `ACTIVE`.
+- Ordinary mouse selection passed at 1440×900. Keyboard activation via focus and Enter passed at 544×234, where pointer interaction was blocked by layout clipping. Neither selection changed the persisted active Step.
+- Python `3.12.10` in an isolated venv outside the repository converted TXT, MD, DOCX and text-based PDF fixtures successfully.
+- The actual `convertDocumentWithMarkItDown()` was verified from Node through `MARKITDOWN_PYTHON`: `ok=true`, expected marker present, `error=null`, exit `0`. The test environment setting was not persisted; normal startup must supply it to the process launching the application.
+
+Evidence limits and open items:
+
+- OCR is unavailable because `rapidocr_onnxruntime` is missing. Short PDFs can attempt OCR fallback and suppress its exception; this does not prove OCR works.
+- Open UX issue: at `544×234`, navigation has zero height. No CSS change is included; tracked under BC-009/BC-015.
+- Literal `Ctrl+C` was not verified.
+- Existing Replit data was not imported.
+- End-to-end document upload through the application was not tested.
 
 ## Incomplete / not yet implemented
 
@@ -90,7 +113,7 @@ Runtime verification on Replit Free confirmed the new workflow rail loads after 
 - Execution / completion lifecycle.
 - Timeline persistence/UI.
 - Final production assistant/chat interaction model.
-- Automated test suite / CI.
+- Broad automated test suite / CI (a focused temporary-SQLite regression check is available via `node --test scripts/workflow-initialization.test.cjs`).
 - Automated GitHub → Drive documentation synchronization (manual sync is operational; automation is intentionally deferred).
 
 ## Important current implementation gaps
