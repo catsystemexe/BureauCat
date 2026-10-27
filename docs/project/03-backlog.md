@@ -76,7 +76,7 @@ Replaced the obsolete Designer/Coding two-mode terminology with D-023: DESIGNER 
 
 ## BC-009 — Portable local development bootstrap
 
-**Status:** In Progress
+**Status:** Done
 
 **Priority:** P0
 
@@ -106,7 +106,9 @@ Windows results taken from the VS agent reports supplied for this documentation 
 
 Limits/open items: OCR is unavailable because `rapidocr_onnxruntime` is missing; short PDFs can attempt OCR fallback and suppress its exception. At `544×234`, navigation has zero height (open UX issue, also recorded under BC-015; no CSS fix). Literal `Ctrl+C` was not verified. Existing Replit data was not imported. End-to-end document upload through the application was not tested.
 
-BC-009 remains **In Progress**: documentation review/closeout and Drive synchronization still await completion. Historical first mirror synchronization is not evidence of current parity. No merge or deployment was performed. Prior BC-007/BC-008 closeouts are historical; D-024 supersedes their Replit execution allocation.
+Documentation publication and synchronization record — **2026-10-27**: Windows results for `4d9a07a002f3e1a1abdcc99a28f1c69c9cc947ad` were published in documentation commit `681fa5b4f1d938dff8b405edda6577e4f4b5cba0`. ChatGPT synchronized the existing Drive mirrors 00–06 from that documentation snapshot. Readback of all seven confirmed exact text equality, with IDs and titles preserved. This completed event supersedes the earlier pending-sync status; the historical first synchronization is retained as a separate event.
+
+Done applies only to the approved portable local bootstrap scope. Final closure confirmation awaits alignment and readback of status mirrors 00, 03 and 04 from this new status commit; that alignment has not been performed. This is not completion of the application or BC-015: the 544×234 navigation issue remains under BC-015, which stays In Progress, and all evidence limits above remain recorded. No merge or deployment was performed. Prior BC-007/BC-008 closeouts are historical; D-024 supersedes their Replit execution allocation.
 
 **Dependency:** D-024; runtime handoff must preserve the existing database and stop if migration/schema changes would be required.
 

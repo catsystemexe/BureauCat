@@ -4,7 +4,7 @@
 
 Canonical project-state document under D-022. GitHub `docs/project/` is the normative, versioned documentation location. Google Drive mirrors these documents for reading, sharing, and ChatGPT Project access.
 
-The canonical documentation bootstrap, operating-rule consolidation and first manual GitHub → Drive mirror synchronization are complete. The mirror mapping/procedure is maintained in `09-drive-sync.md`. Synchronization of the current local-development changes is **pending**; the historical first sync does not establish parity for this batch.
+The canonical documentation bootstrap, operating-rule consolidation and historical first manual GitHub → Drive mirror synchronization are complete. The mirror mapping/procedure is maintained in `09-drive-sync.md`. On 2026-10-27, ChatGPT synchronized the existing Drive mirrors 00–06 from snapshot `681fa5b4f1d938dff8b405edda6577e4f4b5cba0`; readback of all seven documents confirmed exact text equality, with IDs and titles preserved. This is a separate, snapshot-specific synchronization record. After this new status commit, only mirrors 00, 03 and 04 require alignment; that new alignment has not been performed, so parity with this new commit is not yet established.
 
 ## Product identity
 
@@ -53,7 +53,7 @@ Local portability batch: `chore/windows-local-bootstrap`, based on verified `wor
 - Bootstrap `07761fb8e31263b3a4b7605742d2e2ee0252ea40`: draft [PR #37](https://github.com/catsystemexe/BureauCat/pull/37), base `work/workflow-foundation-v01`.
 - Workflow-initialization repair `4d9a07a002f3e1a1abdcc99a28f1c69c9cc947ad` on `fix/situation-workflow-initialization`: draft [PR #38](https://github.com/catsystemexe/BureauCat/pull/38), base `chore/windows-local-bootstrap`.
 
-The documentation-only Windows report update is prepared for review on the repair branch. BC-009 remains In Progress; documentation closeout and Drive synchronization are pending. Neither PR has been merged or deployed by this work.
+The documentation-only Windows report update was published as `681fa5b4f1d938dff8b405edda6577e4f4b5cba0` on the repair branch; the reported Windows verification covers `4d9a07a002f3e1a1abdcc99a28f1c69c9cc947ad`. BC-009 is recorded as Done for the approved portable local bootstrap scope. Final closure confirmation awaits alignment and readback of status mirrors 00, 03 and 04 from this new status commit. This does not mean BureauCat is complete: the product gaps below and all reported limits remain; BC-015 stays In Progress with the 544×234 navigation issue open. Neither PR has been merged or deployed by this work.
 
 ## Implemented on the active working branch
 

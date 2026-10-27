@@ -57,7 +57,7 @@ Detailed contracts:
 
 ### Roles and local bootstrap
 
-ChatGPT owns planning/instructions, Codex owns code/versioned docs/static verification, and VS agent owns local runtime/environment/API/UI verification (D-024). This supersedes the former Replit workflow. GitHub remains canonical; Drive synchronization for this batch is pending.
+ChatGPT owns planning/instructions, Codex owns code/versioned docs/static verification, and VS agent owns local runtime/environment/API/UI verification (D-024). This supersedes the former Replit workflow. GitHub remains canonical. On 2026-10-27, ChatGPT synchronized the existing Drive mirrors 00–06 from commit `681fa5b4f1d938dff8b405edda6577e4f4b5cba0`; readback of all seven confirmed exact text equality, with IDs and titles preserved. Only status mirrors 00, 03 and 04 need alignment after this new status commit; that alignment has not been performed.
 
 Check branch, commit and working-tree state before setup. Bootstrap commit `07761fb8e31263b3a4b7605742d2e2ee0252ea40` is preserved in draft [PR #37](https://github.com/catsystemexe/BureauCat/pull/37), base `work/workflow-foundation-v01`. Workflow-initialization repair `4d9a07a002f3e1a1abdcc99a28f1c69c9cc947ad` is preserved on `fix/situation-workflow-initialization` in draft [PR #38](https://github.com/catsystemexe/BureauCat/pull/38), base `chore/windows-local-bootstrap`. Preserve existing local files. If needed, create `.env` from `.env.example` in your editor without overwriting local settings.
 
@@ -121,7 +121,7 @@ Limits of this evidence:
 - Existing Replit data was not imported.
 - End-to-end document upload through the application was not tested; direct conversion is a separate check.
 
-BC-009 remains **In Progress**: documentation review/closeout and Drive synchronization are pending. Historical first synchronization does not establish current mirror parity. See `docs/project/05-workflow.md` for operating rules.
+BC-009 is recorded as **Done for the approved portable local bootstrap scope**. Final closure confirmation awaits alignment and readback of status mirrors 00, 03 and 04 from this new status commit; the completed 2026-10-27 synchronization covers snapshot `681fa5b4f1d938dff8b405edda6577e4f4b5cba0`, not these newer status changes. This closes neither the application as a whole nor BC-015: the small-viewport UX issue and all evidence limits above remain open. The historical first synchronization remains a separate event. See `docs/project/05-workflow.md` for operating rules.
 
 ## MarkItDown support matrix
 
