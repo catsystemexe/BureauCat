@@ -322,13 +322,13 @@ export function JournalPanel({ caseItem, documentListRefreshKey, onOpenDocument,
           onCreateSituation={createSituation} isLoading={isLoadingSituations} isCreating={isCreatingSituation} error={situationError} />
       </div>
       <div className="notebook-page">
-        <UserLayer key={selectedSituationId} selectedSituation={selectedSituation} documentListRefreshKey={documentListRefreshKey} onOpenDocument={onOpenDocument}
+        <UserLayer key={`user-layer:${selectedSituationId}`} selectedSituation={selectedSituation} documentListRefreshKey={documentListRefreshKey} onOpenDocument={onOpenDocument}
           hiddenDocumentIds={documentSelection.situationId === selectedSituationId ? documentSelection.hiddenIds : []}
           onDocumentsChange={onDocumentsChange} onDocumentVisibilityChange={onDocumentVisibilityChange}
           onSituationUpdated={(updated) => setSituations((current) => current.map((situation) => situation.id === updated.id ? updated : situation))} />
         {journalError ? <p className="notebook-inline-error" role="alert">{journalError}</p> : null}
         {loading ? <p className="journal-empty-message" role="status">Načítám přehled…</p> : null}
-        {selectedSituationId ? <CompactJournal key={selectedSituationId} situationId={selectedSituationId} items={items} evidence={evidence}
+        {selectedSituationId ? <CompactJournal key={`compact-journal:${selectedSituationId}`} situationId={selectedSituationId} items={items} evidence={evidence}
           selectedDocumentIds={selectedDocumentIds} onSave={save} onArchive={archive} onCreate={createNote} onStartBookmarkLink={onStartBookmarkLink}
           pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId} /> : <p>Vyberte situaci.</p>}
       </div>

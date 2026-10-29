@@ -296,7 +296,7 @@ test("compact derived Journal content, identity, variants, sources and time", as
   });
 });
 
-test("document-list checkboxes control only Journal visibility across document and Situation changes", async () => {
+test("document-list checkboxes control only Journal visibility across document and Situation changes", async (t) => {
   const { hookRenderer, elements } = require("./insight-hover-bookmark-positions.test.cjs");
   const previous = new Map(["window", "fetch"].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   globalThis.window = new EventTarget();
@@ -321,6 +321,12 @@ test("document-list checkboxes control only Journal visibility across document a
   let panel, list, listKey;
   const makePanel = () => hookRenderer("src/components/journal/JournalPanel.tsx", "JournalPanel", props);
   const overview = () => elements(panel.tree, (element) => Array.isArray(element.props.items) && element.props.evidence)[0].props;
+  // Inspect raw direct siblings before React.Children would namespace keys.
+  // The hook harness does not reconcile siblings or emit React key warnings.
+  const siblingKeys = () => {
+    const page = elements(panel.tree, (element) => element.props.className === "notebook-page")[0];
+    return [page.props.children].flat().filter((child) => child?.key != null).map((child) => child.key);
+  };
   async function settle() {
     for (let pass = 0; pass < 15; pass++) {
       panel.render();
@@ -342,6 +348,13 @@ test("document-list checkboxes control only Journal visibility across document a
   const reloadDocuments = async () => { panel.update({ documentListRefreshKey: ++refresh }); await settle(); };
   try {
     panel = makePanel(); await settle();
+    const initialKeys = siblingKeys();
+    await t.test("notebook-page direct siblings have distinct keys stable within a Situation", async () => {
+      assert.equal(initialKeys.length, 2, "both UserLayer and CompactJournal are keyed direct siblings");
+      assert.equal(new Set(initialKeys).size, initialKeys.length, `duplicate sibling keys: ${initialKeys.join(", ")}`);
+      panel.update({ documentListRefreshKey: 0 }); await settle();
+      assert.deepEqual(siblingKeys(), initialKeys, "ordinary rerenders do not generate new keys");
+    });
     assert.equal(visible(), null); assert.deepEqual(checkboxes().map((entry) => entry.props.checked), [true, true]);
     assert.equal(checkboxes()[0].props["aria-label"], "Zobrazit informace z dokumentu Výzva A v zápisníku");
     assert.equal(checkboxes()[1].props["aria-label"], "Zobrazit informace z dokumentu B.txt v zápisníku");
@@ -354,6 +367,7 @@ test("document-list checkboxes control only Journal visibility across document a
     assert.deepEqual(buildJournalOverview(overview().items, overview().evidence, "s1", visible()).map((group) => group.id), ["note"]);
     await toggle(0, true); assert.deepEqual(visible(), ["A"]);
     await toggle(1, true); assert.equal(visible(), null);
+    assert.deepEqual(siblingKeys(), initialKeys, "checkbox toggling does not remount the sibling layers");
     assert.deepEqual(opened, []); assert.equal(calls.length, initialCalls, "checkbox changes do not even fetch, let alone save");
     assert.equal(JSON.stringify(contexts), initialContexts, "checkbox filtering does not change bookmark/AI context");
     const openButtons = elements(list.tree, (element) => element.type === "button" && element.props.className === "situation-document-title");
@@ -370,11 +384,17 @@ test("document-list checkboxes control only Journal visibility across document a
     assert.deepEqual(checkboxes().map((entry) => entry.props.checked), [true, true], "removed/re-added documents do not retain stale exclusions");
     await toggle(1, false);
     panel.update({ selectedSituationId: "s2" }); await settle(); assert.equal(checkboxes().length, 0); assert.equal(visible(), null);
+    const otherKeys = siblingKeys();
+    assert.equal(otherKeys.length, 2);
+    assert.equal(new Set(otherKeys).size, otherKeys.length);
+    assert.ok(otherKeys.every((key, index) => key !== initialKeys[index]), "both layers remount for a different Situation");
     panel.update({ selectedSituationId: "s1" }); await settle();
+    assert.deepEqual(siblingKeys(), initialKeys, "returning uses the same deterministic Situation keys");
     assert.deepEqual(checkboxes().map((entry) => entry.props.checked), [true, true], "returning to a Situation resets selection to All");
     await toggle(0, false);
     list.dispose(); panel.dispose(); list = null;
     panel = makePanel(); await settle();
+    assert.deepEqual(siblingKeys(), initialKeys);
     assert.deepEqual(checkboxes().map((entry) => entry.props.checked), [true, true], "reload/remount starts with all documents on");
     assert.ok(calls.every((call) => !call.options.method), "all lifecycle requests were read-only GETs");
   } finally {
