@@ -54,6 +54,27 @@ Initial test-fixture failures were corrected in test setup: `RangeError: Invalid
 
 Build retains `Turbopack build encountered 1 warnings: ./next.config.ts — Encountered unexpected file in NFT list`, through document conversion/DELETE tracing. It is not repaired in this batch. Browser acceptance, native clipboard/selection and dense-line wrapping remain pending; tests do not establish their visual success.
 
+## PR #42 repair — response deadline recognition
+
+Repair baseline: `66d470cc34e22a51bfb037993dc99884fd5af1d2`, same branch, 2026-10-29. Detailed Analysis had narrower deadline rules than the already repaired Journal. Both now reuse the Journal's bounded explicit-request/deadline rules from `src/lib/documents/deadlines.ts`; their other category rules remain separate. References, pin numbering, source validation and the simplified Journal controls are unchanged.
+
+- `Doložte fotografie do 10 dnů od doručení.` is a response deadline, including under an attachment title, dated notice heading or issue-date label. Relative durations require request wording; they are not automatically deadlines on their own.
+- Absolute deadlines support all twelve Czech month names (with or without a day-number dot), numeric dates and ISO dates. Response deadlines precede attachment and issue-date placement. A standalone issue date stays `Vyhotovení`; `do 10 osob` is not a deadline, even alongside a request for participant numbers.
+- Only saved wording is recognized. No due date, calendar validity, delivery event or legal effect is calculated or inferred; no data, model/prompt, AI call, dependency or schema changes are made.
+
+Repair checks (Linux, existing lockfile environment):
+
+| Command | Result / exit |
+| --- | --- |
+| `node scripts/analysis-document-references.test.cjs` | 33 tests including parents, pass / 0 |
+| `node scripts/compact-situation-journal.test.cjs` | 24 tests including parents, pass / 0 |
+| `npm run typecheck -- --incremental false` | pass / 0 |
+| `git diff --check` including the new helper | pass / 0 |
+
+The expanded suite was first run against the unchanged repair baseline: exit `1`, 16 passed / 17 failed including the parent test. Diagnostics included `actual: null, expected: 'Termín reakce'` and `actual: 'Vyhotovení', expected: 'Termín reakce'`. After the repair all 33 pass. A preliminary filtered `node --test` invocation exited `1` with only `'test failed'`; the direct repository test command above supplied the reproducible assertion diagnostics. Build results in the earlier table belong to the original implementation; build was not rerun for this lexical repair.
+
+**Additional VS scenario, still pending:** using stored synthetic insights in an isolated fixture, inspect both detailed Analysis and Journal for the quoted photographic request, a consent deadline `do 11. února 2027` under a dated/issue heading, all twelve month names, numeric/ISO dates, standalone issue date and `do 10 osob`. Check temporal labels, retained statements and unchanged source indices/targets; no computed deadline or legal consequence should appear. Do not rerun paid analysis or modify existing user records. Automated classification/controlled geometry is not Windows/browser PASS. Drive synchronization remains pending; this handoff has no mapped mirror.
+
 ## Read-only check of actual Windows links
 
 1. Confirm the tested branch/commit and preserve the existing DB. Do not run normal `npm run dev`/`npm start` merely to inspect it: those force the repository SQLite URL and run migrations. Use an already prepared matching environment or an isolated snapshot. No paid analysis, data import, migration or pin repair is authorized.

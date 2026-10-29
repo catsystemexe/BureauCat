@@ -1,4 +1,5 @@
 import type { DocumentInsight } from "@/components/types";
+import { hasExplicitResponseDeadline } from "@/lib/documents/deadlines";
 
 type Insight = Pick<DocumentInsight, "title" | "content" | "source_text" | "insight_type">;
 export const ANALYSIS_CATEGORIES = ["Identifikace", "Klíčové skutečnosti", "Podklady a přílohy", "Data, lhůty a události", "Rizika a rozpory", "Otázky"] as const;
@@ -18,7 +19,7 @@ export function classifyAnalysisInsight(insight: Insight): { category: typeof AN
   const dateOnly = hasDate && !body.replace(/\d|[\s.,:/–—-]|ledna|unora|brezna|dubna|kvetna|cervna|cervence|srpna|zari|rijna|listopadu|prosince|dne/g, "").trim();
   if ((insight.insight_type === "risk" || insight.insight_type === "conflict") && consequence && !dateOnly) return placement("Rizika a rozpory");
   let time: string | null = null;
-  if (/lhut|termin (reakce|odpovedi|doplneni|dodani)|nejpozdeji/.test(text) || /\bdo\s+\d{1,2}\.\s*(?:\d{1,2}\.|zari|rijna|srpna|listopadu|prosince)/.test(text)) time = "Termín reakce";
+  if (hasExplicitResponseDeadline(text)) time = "Termín reakce";
   else if (/datum (vyhotoveni|vydani)|vyhotoveno|vydano/.test(title)) time = "Vyhotovení";
   else if (/podani|podano/.test(title)) time = "Podání";
   else if (/doruceni|doruceno|datum prijeti/.test(title)) time = "Doručení";

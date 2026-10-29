@@ -31,6 +31,7 @@ function loader() {
 const load = loader();
 const { resolveAnalysisReferences, groupAnalysisReferences } = load("src/lib/analysis/references.ts");
 const { classifyAnalysisInsight } = load("src/lib/analysis/presentation.ts");
+const { buildJournalOverview } = load("src/lib/journal/overview.ts");
 const text = "Alpha beta gamma delta\n" + "x".repeat(700);
 const document = (id) => ({ id, case_id: "case", filename: `${id}.txt`, filetype: "txt", created_at: "2026-10-29T00:00:00Z", processed_text: text });
 const pin = (id, number, start, end) => ({ id, document_id: "A", case_bookmark_number: number, color: "green", start_offset: start, end_offset: end,
@@ -106,6 +107,54 @@ test("derived categories preserve role, attachment/date and deadline/risk distin
   assert.equal(classify("Neurčené datum", "11. září 2026", "risk").category, "Data, lhůty a události");
   assert.equal(classify("Kapacita", "Do 10 osob.", "term").category, "Klíčové skutečnosti");
   assert.equal(classify("Chybějící souhlas", "Kdo jej dodá?", "question").category, "Otázky");
+});
+
+test("Analysis response deadlines agree with Journal without computing dates or legal effects", async (t) => {
+  function check(title, content, expectedTime, journalTime = expectedTime === "Termín reakce" ? "response" : null, insight_type = "fact") {
+    const insight = { id: "deadline", document_id: "analysis-A", source_document_id: "A", source_pin_id: "pin",
+      journal_item_id: "item", title, content, source_text: content, insight_type };
+    const item = { id: "item", situation_id: "s1", title, value: content, status: "active", evidence_state: "inferred",
+      item_type: "FACT", source_links_json: "[]" };
+    const evidence = { insights: [insight], documents: [{ id: "A", filename: "A.txt", display_name: null }], pins: [] };
+    const before = JSON.stringify({ insight, item, evidence });
+    const placement = classifyAnalysisInsight(insight);
+    assert.equal(placement.time, expectedTime);
+    if (expectedTime === "Termín reakce") assert.equal(placement.category, "Data, lhůty a události");
+    assert.equal(buildJournalOverview([item], evidence, "s1")[0].time, journalTime);
+    assert.equal(JSON.stringify({ insight, item, evidence }), before, "classification never changes stored text or dates");
+  }
+  await t.test("relative photographic evidence request overrides attachment wording", () => {
+    check("Fotografie v příloze", "Doložte fotografie do 10 dnů od doručení.", "Termín reakce");
+  });
+  await t.test("dated notice and issue heading cannot hide an explicit response deadline", () => {
+    for (const title of ["Výzva ze dne 25. srpna 2026", "Datum vyhotovení výzvy", "Vyhotoveno"]) {
+      check(title, "Doložte fotografie do 10 dnů od doručení.", "Termín reakce");
+      check(title, "Doložte souhlas do 11. února 2027.", "Termín reakce");
+    }
+  });
+  for (const month of ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"]) {
+    await t.test(`absolute deadline in ${month}, with or without a dot`, () => {
+      for (const day of ["11.", "11"]) check("Souhlas vlastníka", `Doložte souhlas do ${day} ${month} 2027.`, "Termín reakce");
+    });
+  }
+  await t.test("numeric and ISO absolute deadlines remain supported", () => {
+    for (const date of ["11. 2. 2027", "11.2.", "2027-02-11"]) check("Datum vyhotovení výzvy", `Doplňte podklady do ${date}.`, "Termín reakce");
+  });
+  await t.test("relative time units match existing Journal rules; source-text fallback works", () => {
+    for (const unit of ["dnů", "dne", "dní", "pracovních dnů", "týdnů", "týdne", "týdny", "měsíců", "měsíce", "hodin", "hodiny"]) {
+      check("Podklady k jednání", `Doložte fotografie do 10 ${unit} od doručení.`, "Termín reakce");
+    }
+    const placement = classifyAnalysisInsight({ title: "Fotografie", content: null, source_text: "Doložte fotografie do 10 dnů od doručení.", insight_type: "fact" });
+    assert.equal(placement.time, "Termín reakce");
+  });
+  await t.test("standalone issue date stays issue date; quantities and unqualified durations are not deadlines", () => {
+    check("Datum vyhotovení výzvy", "25. srpna 2026", "Vyhotovení", "document", "term");
+    for (const content of ["Do 10 osob.", "Doložte počet účastníků do 10 osob.", "Do 10 fotografií.", "Do 10 dnů od doručení."]) {
+      check("Kapacita", content, null);
+    }
+    check("Přiložený náčrt", "11. února 2027", null, "unspecified");
+    assert.equal(classifyAnalysisInsight({ title: "Přiložený náčrt", content: "11. února 2027", source_text: null, insight_type: "fact" }).category, "Podklady a přílohy");
+  });
 });
 
 test("actual panel callbacks keep references distinct and source text clean (controlled geometry, not browser acceptance)", async (t) => {
