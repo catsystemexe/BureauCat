@@ -107,11 +107,13 @@ function uniqueSources(sources: JournalSource[]) {
 export type JournalVariant = { text: string; sources: JournalSource[]; items: JournalItem[] };
 export type JournalGroup = {
   id: string; label: string; category: JournalCategory; time: TimeKind | null;
+  manual: boolean;
   variants: JournalVariant[]; sources: JournalSource[]; items: JournalItem[];
 };
 
 /** Pure view: never mutates rows, sources, offsets, statuses or application context. */
-export function buildJournalOverview(items: JournalItem[], evidence: JournalEvidence, situationId: string, documentFilter: string | null = null): JournalGroup[] {
+export function buildJournalOverview(items: JournalItem[], evidence: JournalEvidence, situationId: string, selectedDocumentIds: readonly string[] | null = null): JournalGroup[] {
+  const selectedDocuments = selectedDocumentIds === null ? null : new Set(selectedDocumentIds);
   const documents = new Map(evidence.documents.map((doc) => [doc.id, doc]));
   const insights = new Map(evidence.insights.map((insight) => [insight.id, insight]));
   const pins = new Map(evidence.pins.map((pin) => [pin.id, pin]));
@@ -156,8 +158,8 @@ export function buildJournalOverview(items: JournalItem[], evidence: JournalEvid
       insight?.content?.trim() || item.explanation?.trim() || allSources.find((source) => source.quote)?.quote || "";
     const display = body && normalized(body) !== normalized(item.title) ? `${item.title}: ${body}` : item.title;
     const placement = category(item, insight?.insight_type ?? "", body, manual);
-    const visibleSources = documentFilter ? allSources.filter((source) => source.documentId === documentFilter) : allSources;
-    if (documentFilter && !manual && !visibleSources.length) continue;
+    const visibleSources = selectedDocuments ? allSources.filter((source) => selectedDocuments.has(source.documentId)) : allSources;
+    if (selectedDocuments && !manual && !visibleSources.length) continue;
 
     // Identity grouping is deliberately narrow: stable IČO/DS/file identifiers,
     // explicit subject — attribute — context with a common file context, or the exact same
@@ -183,7 +185,7 @@ export function buildJournalOverview(items: JournalItem[], evidence: JournalEvid
     const key = JSON.stringify([situationId, placement.category, placement.time, item.status, identity ?? item.id]);
     let group = groups.get(key);
     if (!group) {
-      group = { id: item.id, label: item.title, ...placement, variants: [], sources: [], items: [] };
+      group = { id: item.id, label: item.title, ...placement, manual, variants: [], sources: [], items: [] };
       groups.set(key, group);
     }
     const variant = group.variants.find((entry) => normalized(entry.text) === normalized(display));

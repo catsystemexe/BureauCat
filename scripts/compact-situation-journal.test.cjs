@@ -189,11 +189,40 @@ test("compact derived Journal content, identity, variants, sources and time", as
     ]);
     const before = JSON.stringify(f); freeze(f);
     const pinsBefore = contextualJournalPinIds(f.items, f.evidence, "s1");
-    const filtered = buildJournalOverview(f.items, f.evidence, "s1", "B");
+    const filtered = buildJournalOverview(f.items, f.evidence, "s1", ["B"]);
     assert.deepEqual(filtered[0].sources.map((source) => source.documentId), ["B"]);
     assert.deepEqual(contextualJournalPinIds(f.items, f.evidence, "s1"), pinsBefore);
     assert.equal(JSON.stringify(f), before);
     assert.equal(buildJournalOverview(f.items, f.evidence, "s2").length, 0);
+  });
+  await t.test("A+B, A, B, none and All preserve sources, hide unsupported variants and retain manual notes", () => {
+    const f = fixture([
+      sample("issuer-a", "Odesílatel", "Úřad, IČO 12345678", "identifier", "A"),
+      sample("issuer-b", "Odesílatel", "Úřad, IČO 12345678", "identifier", "B"),
+      sample("wide", "Průchod A — šířka — měření 2026", "1,80 m", "fact", "A", "Č.j. SP/2026/1: šířka 1,80 m."),
+      sample("narrow", "Průchod A — šířka — měření 2026", "1,20 m", "fact", "B", "Č.j. SP/2026/1: šířka 1,20 m.")
+    ]);
+    f.items.push({ ...f.items[0], id: "note", title: "Moje poznámka", value: "Uživatelský text",
+      source_links_json: JSON.stringify([{ documentId: "A", pinId: "pin-issuer-a" }]) });
+    const before = JSON.stringify(f); freeze(f);
+    for (const selected of [["A", "B"], ["A"], ["B"], [], null]) {
+      const groups = buildJournalOverview(f.items, f.evidence, "s1", selected);
+      const active = selected ?? ["A", "B"];
+      assert.equal(groups.filter((group) => group.manual).length, 1);
+      assert.equal(groups.length, active.length ? 3 : 1);
+      for (const group of groups.filter((group) => !group.manual)) {
+        assert.deepEqual(group.sources.map((source) => source.documentId).sort(), active);
+        assert.ok(group.variants.every((variant) => variant.sources.every((source) => active.includes(source.documentId))));
+      }
+      const width = groups.find((group) => group.label.includes("Průchod"));
+      if (width) {
+        assert.equal(width.variants.length, active.length);
+        assert.equal(width.category, active.length === 2 ? "questions" : "parameters");
+        assert.equal(width.variants.some((variant) => variant.text.includes("1,80")), active.includes("A"));
+        assert.equal(width.variants.some((variant) => variant.text.includes("1,20")), active.includes("B"));
+      }
+    }
+    assert.equal(JSON.stringify(f), before);
   });
   await t.test("source offsets must match the saved quote; recovery is exact, unique and read-only", () => {
     assert.deepEqual(resolveSourceRange("first quoted last", { startOffset: null, endOffset: null, quote: "quoted" }), { start: 6, end: 12 });
@@ -211,45 +240,47 @@ test("compact derived Journal content, identity, variants, sources and time", as
     assert.deepEqual(resolveSourceRange("abc", { startOffset: 0, endOffset: 2, quote: "" }), { start: 0, end: 2 }, "offset-only legacy sources remain supported");
     assert.equal(resolveSourceRange("abc", { startOffset: null, endOffset: null, quote: "" }), null);
   });
-  await t.test("server-rendered overview has compact sources, collapsed identification and no empty categories", () => {
+  await t.test("analytical cards contain statements and collapsed categories without source menus, editors or replacement controls", () => {
     const { createElement } = require("react");
     const { renderToStaticMarkup } = require("react-dom/server");
     const { CompactJournal } = load("src/components/journal/CompactJournal.tsx");
     const f = fixture([sample("a", "Odesílatel", "Úřad, IČO 12345678", "identifier", "A"), sample("b", "Odesílatel", "Úřad, IČO 12345678", "identifier", "B")]);
-    const html = renderToStaticMarkup(createElement(CompactJournal, { ...f, situationId: "s1", onOpenSource: async () => true, onSave() {}, onArchive() {}, onCreate() {}, onStartBookmarkLink() {} }));
+    const html = renderToStaticMarkup(createElement(CompactJournal, { ...f, situationId: "s1", onSave() {}, onArchive() {}, onCreate() {}, onStartBookmarkLink() {} }));
     assert.match(html, /<summary>Identifikace \(1\)<\/summary>/);
-    assert.match(html, /<summary>2 zdrojů<\/summary>/);
-    assert.ok(html.includes("A.txt") && html.includes("B.txt"));
+    assert.match(html, /Úřad, IČO 12345678/);
+    assert.ok(!/Zdroj|zdrojů|Upravit původní|původní záznamy|<select|<option/.test(html));
+    const card = html.match(/<li class="compact-journal-group[\s\S]*?<\/li>/)[0];
+    assert.ok(!/<button|<input|<details|<svg/.test(card), "analytical cards have no replacement buttons or icons");
     assert.ok(!html.includes("Nejasnosti a rozpory"));
     assert.ok(!html.includes("journal-linked-bookmark-marker"));
   });
-  await t.test("actual filter and source chooser callbacks keep view changes local and open each chosen passage", async () => {
-    const { hookRenderer, elements } = require("./insight-hover-bookmark-positions.test.cjs");
+  await t.test("controlled multi-document display retains the existing manual editor and all-off empty state without writes", async () => {
+    const { hookRenderer, elements, byClass } = require("./insight-hover-bookmark-positions.test.cjs");
     const previous = Object.getOwnPropertyDescriptor(globalThis, "window");
     globalThis.window = new EventTarget();
     const f = fixture([sample("a", "Odesílatel", "Úřad, IČO 12345678", "identifier", "A"), sample("b", "Odesílatel", "Úřad, IČO 12345678", "identifier", "B")]);
-    const before = JSON.stringify(f), calls = [];
+    f.items.push({ ...f.items[0], id: "note", title: "Moje poznámka", value: null, source_links_json: "[]" });
+    const before = JSON.stringify(f);
     const overview = hookRenderer("src/components/journal/CompactJournal.tsx", "CompactJournal", {
-      ...f, situationId: "s1", onOpenSource: async (source) => { calls.push(source); return true; },
+      ...f, situationId: "s1",
       onSave() { throw new Error("Filter must not save"); }, onArchive() { throw new Error("Filter must not delete"); }, onCreate() {}, onStartBookmarkLink() {}
     });
-    let chooser;
     let editor;
     try {
       overview.render();
-      const select = elements(overview.tree, (element) => element.type === "select")[0];
-      assert.equal(select.props.value, "");
-      select.props.onChange({ target: { value: "B" } }); overview.render();
-      const menu = elements(overview.tree, (element) => element.type?.name === "JournalSources")[0];
-      assert.deepEqual(menu.props.sources.map((source) => source.documentId), ["B"]);
-      const groups = buildJournalOverview(f.items, f.evidence, "s1");
-      chooser = hookRenderer("src/components/journal/CompactJournal.tsx", "JournalSources", { sources: groups[0].sources, onOpenSource: async (source) => { calls.push(source); return true; } });
-      chooser.render();
-      for (const button of elements(chooser.tree, (element) => element.type === "button")) await button.props.onClick();
-      assert.deepEqual(calls.map((source) => [source.documentId, source.pinId, source.startOffset]), [["A", "pin-a", 10], ["B", "pin-b", 10]]);
+      assert.equal(elements(overview.tree, (element) => element.type === "select").length, 0);
+      assert.equal(byClass(overview.tree, "compact-journal-originals").length, 1, "only the manual note retains its editor");
+      const manualEditors = () => elements(overview.tree, (element) => element.type?.name === "JournalRecordEditor");
+      assert.deepEqual(manualEditors().map((entry) => entry.props.item.id), ["note"]);
+      overview.update({ selectedDocumentIds: [] }); overview.render();
+      assert.equal(byClass(overview.tree, "compact-journal-group").length, 1);
+      assert.deepEqual(manualEditors().map((entry) => entry.props.item.id), ["note"]);
+      assert.equal(elements(overview.tree, (element) => element.props.role === "status")[0].props.children, "Informace z dokumentů jsou skryté.");
+      overview.update({ selectedDocumentIds: null }); overview.render();
+      assert.equal(byClass(overview.tree, "compact-journal-group").length, 2);
       const saves = [];
       editor = hookRenderer("src/components/journal/CompactJournal.tsx", "JournalRecordEditor", {
-        item: { ...f.items[0], value: null }, onSave: async (id, fields) => saves.push({ id, fields }), onArchive() {}, onStartBookmarkLink() {}
+        item: f.items[2], onSave: async (id, fields) => saves.push({ id, fields }), onArchive() {}, onStartBookmarkLink() {}
       });
       editor.render();
       await elements(editor.tree, (element) => element.type === "form")[0].props.onSubmit({ preventDefault() {} }); editor.render();
@@ -259,10 +290,97 @@ test("compact derived Journal content, identity, variants, sources and time", as
       assert.equal(saves[1].fields.value, "", "an explicit clear remains authoritative");
       assert.equal(JSON.stringify(f), before);
     } finally {
-      overview.dispose(); chooser?.dispose(); editor?.dispose();
+      overview.dispose(); editor?.dispose();
       if (previous) Object.defineProperty(globalThis, "window", previous); else delete globalThis.window;
     }
   });
+});
+
+test("document-list checkboxes control only Journal visibility across document and Situation changes", async () => {
+  const { hookRenderer, elements } = require("./insight-hover-bookmark-positions.test.cjs");
+  const previous = new Map(["window", "fetch"].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  globalThis.window = new EventTarget();
+  const document = (id) => ({ id, filename: `${id}.txt`, display_name: id === "A" ? "Výzva A" : null, filetype: "txt" });
+  const documents = { s1: [document("A"), document("B")], s2: [document("D")] };
+  const f = fixture([sample("a", "Požadavek A", "Doložte souhlas.", "fact", "A"), sample("b", "Požadavek B", "Doložte plán.", "fact", "B")]);
+  f.items.push({ ...f.items[0], id: "note", title: "Moje poznámka", source_links_json: "[]" });
+  const calls = [], opened = [], contexts = [];
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    const list = url.match(/^\/api\/situations\/(s[12])\/documents$/);
+    if (list) return { ok: true, json: async () => ({ documents: documents[list[1]] }) };
+    if (url.endsWith("/situations")) return { ok: true, json: async () => ({ situations: ["s1", "s2"].map((id) => ({ id, status: "active", title: id })) }) };
+    if (url.includes("/journal?")) return { ok: true, json: async () => ({ journal: url.endsWith("s1") ? f.items : [], evidence: f.evidence }) };
+    throw new Error(`Unexpected request: ${url}`);
+  };
+  const props = { caseItem: { id: "case" }, selectedSituationId: "s1", documentListRefreshKey: 0,
+    onOpenDocument: (doc) => opened.push(doc.id), onOpenSource() { throw new Error("Checkbox must not navigate"); },
+    onSelectSituation() { throw new Error("Checkbox must not select a Situation"); },
+    onStartBookmarkLink() { throw new Error("Checkbox must not attach a source"); },
+    onContextualPinsChange: (id, pins) => contexts.push([id, pins]), pendingBookmarkTargetJournalItemId: null };
+  let panel, list, listKey;
+  const makePanel = () => hookRenderer("src/components/journal/JournalPanel.tsx", "JournalPanel", props);
+  const overview = () => elements(panel.tree, (element) => Array.isArray(element.props.items) && element.props.evidence)[0].props;
+  async function settle() {
+    for (let pass = 0; pass < 15; pass++) {
+      panel.render();
+      const layer = elements(panel.tree, (element) => element.type?.name === "UserLayer")[0];
+      const section = elements(layer.type(layer.props), (element) => element.props.onDocumentsChange)[0];
+      if (!list || listKey !== layer.key) {
+        list?.dispose(); listKey = layer.key;
+        list = hookRenderer("src/components/journal/SituationDocumentsSection.tsx", "SituationDocumentsSection", section.props);
+      } else list.update(section.props);
+      list.render();
+      await Promise.resolve(); await Promise.resolve();
+    }
+    assert.ok(!panel.dirty && !list.dirty, "Journal/document-list updates settled");
+  }
+  const checkboxes = () => elements(list.tree, (element) => element.type === "input" && element.props.type === "checkbox");
+  const toggle = async (index, checked) => { checkboxes()[index].props.onChange({ target: { checked } }); await settle(); };
+  const visible = () => overview().selectedDocumentIds;
+  let refresh = 0;
+  const reloadDocuments = async () => { panel.update({ documentListRefreshKey: ++refresh }); await settle(); };
+  try {
+    panel = makePanel(); await settle();
+    assert.equal(visible(), null); assert.deepEqual(checkboxes().map((entry) => entry.props.checked), [true, true]);
+    assert.equal(checkboxes()[0].props["aria-label"], "Zobrazit informace z dokumentu Výzva A v zápisníku");
+    assert.equal(checkboxes()[1].props["aria-label"], "Zobrazit informace z dokumentu B.txt v zápisníku");
+    assert.equal(checkboxes()[0].props.tabIndex, undefined, "native checkbox retains its normal keyboard behavior");
+    assert.equal(checkboxes()[0].props.onKeyDown, undefined);
+    assert.ok(elements(list.tree, (element) => element.type === "li").every((entry) => !entry.props.onClick), "rows do not couple checkbox clicks to document opening");
+    const initialContexts = JSON.stringify(contexts), initialCalls = calls.length;
+    await toggle(0, false); assert.deepEqual(visible(), ["B"]);
+    await toggle(1, false); assert.deepEqual(visible(), []);
+    assert.deepEqual(buildJournalOverview(overview().items, overview().evidence, "s1", visible()).map((group) => group.id), ["note"]);
+    await toggle(0, true); assert.deepEqual(visible(), ["A"]);
+    await toggle(1, true); assert.equal(visible(), null);
+    assert.deepEqual(opened, []); assert.equal(calls.length, initialCalls, "checkbox changes do not even fetch, let alone save");
+    assert.equal(JSON.stringify(contexts), initialContexts, "checkbox filtering does not change bookmark/AI context");
+    const openButtons = elements(list.tree, (element) => element.type === "button" && element.props.className === "situation-document-title");
+    openButtons[0].props.onClick(); assert.deepEqual(opened, ["A"]); assert.equal(visible(), null);
+
+    await toggle(0, false); await toggle(1, false);
+    documents.s1.push(document("C")); await reloadDocuments();
+    assert.deepEqual(checkboxes().map((entry) => entry.props.checked), [false, false, true]);
+    assert.deepEqual(visible(), ["C"], "a newly added document is on while old choices are preserved");
+    documents.s1 = documents.s1.filter((entry) => entry.id !== "C"); await reloadDocuments(); assert.deepEqual(visible(), []);
+    documents.s1 = [document("A")]; await reloadDocuments();
+    assert.equal(checkboxes().length, 0); assert.equal(visible(), null, "a single remaining document is always visible");
+    documents.s1.push(document("B")); await reloadDocuments();
+    assert.deepEqual(checkboxes().map((entry) => entry.props.checked), [true, true], "removed/re-added documents do not retain stale exclusions");
+    await toggle(1, false);
+    panel.update({ selectedSituationId: "s2" }); await settle(); assert.equal(checkboxes().length, 0); assert.equal(visible(), null);
+    panel.update({ selectedSituationId: "s1" }); await settle();
+    assert.deepEqual(checkboxes().map((entry) => entry.props.checked), [true, true], "returning to a Situation resets selection to All");
+    await toggle(0, false);
+    list.dispose(); panel.dispose(); list = null;
+    panel = makePanel(); await settle();
+    assert.deepEqual(checkboxes().map((entry) => entry.props.checked), [true, true], "reload/remount starts with all documents on");
+    assert.ok(calls.every((call) => !call.options.method), "all lifecycle requests were read-only GETs");
+  } finally {
+    list?.dispose(); panel?.dispose();
+    for (const [key, descriptor] of previous) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key]; }
+  }
 });
 
 test("actual persistence, read-only GET, edits, source append, isolation and document deletion", async (t) => {
@@ -323,7 +441,9 @@ test("actual persistence, read-only GET, edits, source append, isolation and doc
           assert.equal(source.documentId, doc.id);
           assert.equal(doc.processed_text.slice(source.startOffset, source.endOffset), source.quote, "every summary source resolves to its actual saved passage");
         }
-        buildJournalOverview(data.journal, data.evidence, first.id, doc.id);
+        for (const selected of [[doc.id, analysis.id], [doc.id], [analysis.id], [], null]) {
+          buildJournalOverview(data.journal, data.evidence, first.id, selected);
+        }
         assert.equal((await read(second.id)).journal.length, 0);
         assert.equal((await read(second.id)).evidence.insights.length, 0);
       }

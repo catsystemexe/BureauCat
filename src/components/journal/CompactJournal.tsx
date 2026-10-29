@@ -2,38 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { JournalItem } from "@/components/types";
-import { buildJournalOverview, JOURNAL_CATEGORIES, TIME_LABELS, sourceKey, type JournalEvidence, type JournalSource } from "@/lib/journal/overview";
-
-export function JournalSources({ sources, onOpenSource }: { sources: JournalSource[]; onOpenSource: (source: JournalSource) => Promise<boolean> }) {
-  const [error, setError] = useState<string | null>(null);
-  if (!sources.length) return <span className="compact-journal-source-missing">Bez uloženého zdroje</span>;
-  function hover(source: JournalSource, entering: boolean) {
-    if (source.pinId) window.dispatchEvent(new CustomEvent(`bureaucat:bookmark-pin-${entering ? "hover" : "leave"}`, { detail: { pinId: source.pinId } }));
-    if (source.insightId) window.dispatchEvent(new CustomEvent(`bureaucat:analysis-insight-${entering ? "hover" : "leave"}`, { detail: { insightId: source.insightId } }));
-  }
-  return (
-    <details className="compact-journal-sources">
-      <summary>{sources.length === 1 ? "Zdroj" : `${sources.length} zdrojů`}</summary>
-      <ul>
-        {sources.map((source) => (
-          <li key={sourceKey(source)}>
-            <button type="button" onMouseEnter={() => hover(source, true)} onMouseLeave={() => hover(source, false)}
-              onFocus={() => hover(source, true)} onBlur={() => hover(source, false)}
-              onClick={async () => {
-                setError(null);
-                try { if (!await onOpenSource(source)) setError("Zdroj se nepodařilo otevřít."); }
-                catch { setError("Zdroj se nepodařilo otevřít."); }
-              }}>
-              <strong>{source.documentName}</strong>
-              <span>{source.quote || "Přesná pasáž není uložena; otevřít dokument."}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      {error ? <p role="alert">{error}</p> : null}
-    </details>
-  );
-}
+import { buildJournalOverview, JOURNAL_CATEGORIES, TIME_LABELS, type JournalEvidence } from "@/lib/journal/overview";
 
 export function JournalRecordEditor({ item, onSave, onArchive, onStartBookmarkLink, pending }: {
   item: JournalItem;
@@ -72,24 +41,22 @@ export function JournalRecordEditor({ item, onSave, onArchive, onStartBookmarkLi
   );
 }
 
-export function CompactJournal({ items, evidence, situationId, onOpenSource, onSave, onArchive, onCreate, onStartBookmarkLink, pendingBookmarkTargetJournalItemId }: {
+export function CompactJournal({ items, evidence, situationId, selectedDocumentIds = null, onSave, onArchive, onCreate, onStartBookmarkLink, pendingBookmarkTargetJournalItemId }: {
   items: JournalItem[]; evidence: JournalEvidence; situationId: string;
-  onOpenSource: (source: JournalSource) => Promise<boolean>;
+  selectedDocumentIds?: readonly string[] | null;
   onSave: (id: string, fields: { title: string; value: string | null }) => Promise<void>;
   onArchive: (id: string) => Promise<void>;
   onCreate: (title: string) => Promise<void>;
   onStartBookmarkLink: (id: string) => void;
   pendingBookmarkTargetJournalItemId: string | null;
 }) {
-  const [documentFilter, setDocumentFilter] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [highlightedPin, setHighlightedPin] = useState<string | null>(null);
   const [highlightedInsight, setHighlightedInsight] = useState<string | null>(null);
-  const effectiveFilter = evidence.documents.some((doc) => doc.id === documentFilter) ? documentFilter : null;
-  const groups = useMemo(() => buildJournalOverview(items, evidence, situationId, effectiveFilter), [items, evidence, situationId, effectiveFilter]);
+  const groups = useMemo(() => buildJournalOverview(items, evidence, situationId, selectedDocumentIds), [items, evidence, situationId, selectedDocumentIds]);
   useEffect(() => {
     const pin = (event: Event) => setHighlightedPin((event as CustomEvent<{ pinId: string }>).detail?.pinId ?? null);
     const insight = (event: Event) => setHighlightedInsight((event as CustomEvent<{ insightId: string }>).detail?.insightId ?? null);
@@ -109,10 +76,6 @@ export function CompactJournal({ items, evidence, situationId, onOpenSource, onS
     <div className="compact-journal" aria-label="Přehled situace">
       <div className="compact-journal-heading">
         <h3>Přehled situace</h3>
-        <label>Dokument<select value={effectiveFilter ?? ""} onChange={(event) => setDocumentFilter(event.target.value || null)}>
-          <option value="">Všechny</option>
-          {evidence.documents.map((doc) => <option key={doc.id} value={doc.id}>{doc.display_name || doc.filename}</option>)}
-        </select></label>
       </div>
       {JOURNAL_CATEGORIES.map((category) => {
         const entries = groups.filter((group) => group.category === category.key);
@@ -124,21 +87,21 @@ export function CompactJournal({ items, evidence, situationId, onOpenSource, onS
             {group.variants.map((variant, index) => (
               <div className="compact-journal-variant" key={index}>
                 <p>{variant.text}</p>
-                <JournalSources sources={variant.sources} onOpenSource={onOpenSource} />
               </div>
             ))}
-            <details className="compact-journal-originals">
-              <summary>{group.items.length === 1 ? "Upravit původní záznam" : `${group.items.length} původní záznamy / úpravy`}</summary>
+            {group.manual ? <details className="compact-journal-originals">
+              <summary>Upravit poznámku</summary>
               {group.items.map((item) => <JournalRecordEditor key={item.id} item={item} onSave={onSave} onArchive={onArchive}
                 onStartBookmarkLink={onStartBookmarkLink} pending={pendingBookmarkTargetJournalItemId === item.id} />)}
-            </details>
+            </details> : null}
           </li>
         ))}</ul>;
         return category.collapsed ? (
           <details className="compact-journal-category" key={category.key}><summary>{category.title} ({entries.length})</summary>{content}</details>
         ) : <section className="compact-journal-category" key={category.key} aria-label={category.title}><h4>{category.title}</h4>{content}</section>;
       })}
-      {!groups.length ? <p className="journal-empty-message">Zatím žádná sdělení pro tento výběr. Přidejte poznámku nebo dokument.</p> : null}
+      {selectedDocumentIds?.length === 0 ? <p className="journal-empty-message" role="status">Informace z dokumentů jsou skryté.</p> :
+        !groups.length ? <p className="journal-empty-message">Zatím žádná sdělení pro tento výběr. Přidejte poznámku nebo dokument.</p> : null}
       {adding ? <form className="compact-journal-note" onSubmit={async (event) => {
         event.preventDefault(); setBusy(true); setError(null);
         try { await onCreate(note.trim()); setNote(""); setAdding(false); }

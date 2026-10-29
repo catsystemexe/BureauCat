@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { CaseDocument, CaseSummary, JournalItem, Situation } from "@/components/types";
 import { GoalsSection } from "@/components/journal/GoalsSection";
 import { SituationDocumentsSection } from "@/components/journal/SituationDocumentsSection";
@@ -156,12 +156,18 @@ function UserLayer({
   documentListRefreshKey,
   onOpenDocument,
   onSituationUpdated,
-  selectedSituation
+  selectedSituation,
+  hiddenDocumentIds,
+  onDocumentsChange,
+  onDocumentVisibilityChange
 }: {
   documentListRefreshKey: number;
   onOpenDocument: (document: CaseDocument) => void;
   onSituationUpdated: (situation: Situation) => void;
   selectedSituation: Situation | null;
+  hiddenDocumentIds: readonly string[];
+  onDocumentsChange: (situationId: string, documentIds: string[]) => void;
+  onDocumentVisibilityChange: (documentId: string, visible: boolean) => void;
 }) {
   return (
     <div className="notebook-layer notebook-user-layer">
@@ -174,12 +180,15 @@ function UserLayer({
         onOpenDocument={onOpenDocument}
         refreshKey={documentListRefreshKey}
         selectedSituationId={selectedSituation?.id ?? null}
+        hiddenDocumentIds={hiddenDocumentIds}
+        onDocumentsChange={onDocumentsChange}
+        onDocumentVisibilityChange={onDocumentVisibilityChange}
       />
     </div>
   );
 }
 
-export function JournalPanel({ caseItem, documentListRefreshKey, onOpenDocument, onOpenSource, onSelectSituation,
+export function JournalPanel({ caseItem, documentListRefreshKey, onOpenDocument, onSelectSituation,
   onStartBookmarkLink, pendingBookmarkTargetJournalItemId, selectedSituationId, onContextualPinsChange
 }: {
   caseItem: CaseSummary; documentListRefreshKey: number;
@@ -190,8 +199,7 @@ export function JournalPanel({ caseItem, documentListRefreshKey, onOpenDocument,
   pendingBookmarkTargetJournalItemId: string | null;
   selectedSituationId: string | null;
   onContextualPinsChange: (situationId: string | null, pinIds: string[]) => void;
-  // Existing workspace callbacks remain compatible; source selection uses the
-  // structured callback above for both bookmarked and unbookmarked passages.
+  // Keep the workspace callback contract; analytical cards expose no source controls.
   onOpenBookmark?: (documentId: string, pinId: string) => void;
   onBookmarkHover?: (pinId: string) => void;
   onBookmarkLeave?: () => void;
@@ -203,8 +211,28 @@ export function JournalPanel({ caseItem, documentListRefreshKey, onOpenDocument,
   const [journalError, setJournalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [snapshot, setSnapshot] = useState<{ situationId: string | null; items: JournalItem[]; evidence: JournalEvidence }>({ situationId: null, items: [], evidence: EMPTY_EVIDENCE });
+  const [documentSelection, setDocumentSelection] = useState<{ situationId: string | null; documentIds: string[]; hiddenIds: string[] }>({ situationId: null, documentIds: [], hiddenIds: [] });
   const selection = useRef(selectedSituationId);
-  useLayoutEffect(() => { selection.current = selectedSituationId; }, [selectedSituationId]);
+  useLayoutEffect(() => {
+    selection.current = selectedSituationId;
+    setDocumentSelection({ situationId: selectedSituationId, documentIds: [], hiddenIds: [] });
+  }, [caseItem.id, selectedSituationId]);
+  const onDocumentsChange = useCallback((situationId: string, documentIds: string[]) => {
+    if (selection.current !== situationId) return;
+    setDocumentSelection((current) => ({ situationId, documentIds,
+      hiddenIds: current.situationId === situationId && documentIds.length > 1
+        ? current.hiddenIds.filter((id) => documentIds.includes(id)) : [] }));
+  }, []);
+  const onDocumentVisibilityChange = (documentId: string, visible: boolean) => {
+    if (selection.current !== selectedSituationId) return;
+    setDocumentSelection((current) => {
+      if (current.situationId !== selectedSituationId || current.documentIds.length <= 1 || !current.documentIds.includes(documentId)) return current;
+      return { ...current, hiddenIds: visible ? current.hiddenIds.filter((id) => id !== documentId)
+        : [...new Set([...current.hiddenIds, documentId])] };
+    });
+  };
+  const selectedDocumentIds = useMemo(() => documentSelection.situationId === selectedSituationId && documentSelection.hiddenIds.length
+    ? documentSelection.documentIds.filter((id) => !documentSelection.hiddenIds.includes(id)) : null, [documentSelection, selectedSituationId]);
   const items = snapshot.situationId === selectedSituationId ? snapshot.items : EMPTY_ITEMS;
   const evidence = snapshot.situationId === selectedSituationId ? snapshot.evidence : EMPTY_EVIDENCE;
   const contextualPins = useMemo(() => selectedSituationId ? contextualJournalPinIds(items, evidence, selectedSituationId) : [], [items, evidence, selectedSituationId]);
@@ -294,12 +322,14 @@ export function JournalPanel({ caseItem, documentListRefreshKey, onOpenDocument,
           onCreateSituation={createSituation} isLoading={isLoadingSituations} isCreating={isCreatingSituation} error={situationError} />
       </div>
       <div className="notebook-page">
-        <UserLayer selectedSituation={selectedSituation} documentListRefreshKey={documentListRefreshKey} onOpenDocument={onOpenDocument}
+        <UserLayer key={selectedSituationId} selectedSituation={selectedSituation} documentListRefreshKey={documentListRefreshKey} onOpenDocument={onOpenDocument}
+          hiddenDocumentIds={documentSelection.situationId === selectedSituationId ? documentSelection.hiddenIds : []}
+          onDocumentsChange={onDocumentsChange} onDocumentVisibilityChange={onDocumentVisibilityChange}
           onSituationUpdated={(updated) => setSituations((current) => current.map((situation) => situation.id === updated.id ? updated : situation))} />
         {journalError ? <p className="notebook-inline-error" role="alert">{journalError}</p> : null}
         {loading ? <p className="journal-empty-message" role="status">Načítám přehled…</p> : null}
         {selectedSituationId ? <CompactJournal key={selectedSituationId} situationId={selectedSituationId} items={items} evidence={evidence}
-          onOpenSource={onOpenSource} onSave={save} onArchive={archive} onCreate={createNote} onStartBookmarkLink={onStartBookmarkLink}
+          selectedDocumentIds={selectedDocumentIds} onSave={save} onArchive={archive} onCreate={createNote} onStartBookmarkLink={onStartBookmarkLink}
           pendingBookmarkTargetJournalItemId={pendingBookmarkTargetJournalItemId} /> : <p>Vyberte situaci.</p>}
       </div>
     </aside>
