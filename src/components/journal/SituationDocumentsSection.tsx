@@ -30,11 +30,17 @@ function getDocumentIcon(filetype: string, filename: string) {
 export function SituationDocumentsSection({
   onOpenDocument,
   refreshKey,
-  selectedSituationId
+  selectedSituationId,
+  hiddenDocumentIds,
+  onDocumentsChange,
+  onDocumentVisibilityChange
 }: {
   onOpenDocument: (document: CaseDocument) => void;
   refreshKey: number;
   selectedSituationId: string | null;
+  hiddenDocumentIds: readonly string[];
+  onDocumentsChange: (situationId: string, documentIds: string[]) => void;
+  onDocumentVisibilityChange: (documentId: string, visible: boolean) => void;
 }) {
   const [documents, setDocuments] = useState<CaseDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,6 +74,7 @@ export function SituationDocumentsSection({
 
         if (isMounted) {
           setDocuments(data.documents);
+          onDocumentsChange(selectedSituationId!, data.documents.map((document) => document.id));
         }
       } catch {
         if (isMounted) {
@@ -86,7 +93,7 @@ export function SituationDocumentsSection({
     return () => {
       isMounted = false;
     };
-  }, [refreshKey, selectedSituationId]);
+  }, [refreshKey, selectedSituationId, onDocumentsChange]);
 
   async function handleUnlinkDocument(document: CaseDocument) {
     if (!selectedSituationId) {
@@ -132,9 +139,17 @@ export function SituationDocumentsSection({
             {documents.map((document) => {
               const isUnlinking = unlinkingDocumentId === document.id;
               const documentIcon = getDocumentIcon(document.filetype, document.filename);
+              const name = document.display_name || document.filename;
 
               return (
                 <li className="situation-document-row" key={document.id}>
+                  {documents.length > 1 ? <input
+                    type="checkbox"
+                    className="situation-document-visibility"
+                    aria-label={`Zobrazit informace z dokumentu ${name} v zápisníku`}
+                    checked={!hiddenDocumentIds.includes(document.id)}
+                    onChange={(event) => onDocumentVisibilityChange(document.id, event.target.checked)}
+                  /> : null}
                   <span
                     aria-hidden="true"
                     className={`document-file-icon document-file-icon-${documentIcon.kind}`}
@@ -142,13 +157,13 @@ export function SituationDocumentsSection({
                     {documentIcon.label}
                   </span>
                   <button
-                    aria-label={`Otevřít dokument ${document.filename}`}
+                    aria-label={`Otevřít dokument ${name}`}
                     className="situation-document-title"
                     disabled={isUnlinking}
                     onClick={() => onOpenDocument(document)}
                     type="button"
                   >
-                    {document.filename}
+                    {name}
                   </button>
                 </li>
               );

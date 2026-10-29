@@ -649,7 +649,7 @@ ${renderLines(grouped.questions)}
           target_section: target.target_section,
           target_item_type: target.target_item_type,
           title: insight.title,
-          content: null,
+          content: insight.content ?? null,
           evidence_state: insight.insight_type === "conflict" ? "conflict" : "inferred",
           status: "pending",
           source_text: sourceRange?.sourceText ?? insight.source_text,
