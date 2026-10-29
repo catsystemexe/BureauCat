@@ -22,6 +22,8 @@ The recorded Windows outcomes are taken from the VS agent reports supplied for t
 
 ## Direction
 
+Analysis ↔ Document follow-up (2026-10-29), `feat/analysis-document-references`, baseline `340fc410ee3a7a8c66ff38c12c6fb1929b0527dd`: changed mirrors **00, 01, 03 and 04** require later synchronization after review/preservation. This synchronization has not been performed. The handoff and read-only SQL under `docs/analysis-document-references.md` / `docs/analysis-document-reference-audit.sql` have no mapped Drive mirrors. No current Drive parity or Drive write is claimed.
+
 Current follow-up — compact Situation Journal v1 (`feat/compact-situation-journal`, baseline `79ef398b1ef72af575a2ea07a74c6539ed83ca02`): the 2026-10-29 human-review simplification starts from `3906c46c45ee4266c351a64774e8c00921f6085b`. Mirrors **00, 01, 03 and 04** require synchronization after the implementation/documentation diff is reviewed and preserved. That synchronization has not been performed. The earlier snapshot-specific 00–06 verification and pending bootstrap-status alignment above remain historical evidence, not proof of current parity. Document 09 and `docs/compact-situation-journal.md` have no mapped mirrors. This batch writes nothing to Drive and does not change existing mirror IDs/titles.
 
 Synchronization is one-way by default:

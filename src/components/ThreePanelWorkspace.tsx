@@ -1,6 +1,7 @@
 "use client";
 
 import type { JournalSource, SourceTarget } from "@/lib/journal/overview";
+import type { AnalysisReference } from "@/lib/analysis/references";
 import { getRecordValue, getSourceLinkDocumentId } from "@/lib/documents/sourceLinks";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
@@ -576,6 +577,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [targetDocumentPinId, setTargetDocumentPinId] = useState<string | null>(null);
   const [targetSourceRange, setTargetSourceRange] = useState<SourceTarget | null>(null);
   const sourceNavigationRef = useRef(0);
+  const referenceNavigationRef = useRef(0);
+  const [targetAnalysisInsight, setTargetAnalysisInsight] = useState<{ analysisDocumentId: string; insightId: string; token: number } | null>(null);
   const [journalPinContext, setJournalPinContext] = useState<{ situationId: string | null; pinIds: string[] }>({ situationId: null, pinIds: [] });
   const handleContextualPinsChange = useCallback((situationId: string | null, pinIds: string[]) => {
     setJournalPinContext((current) => current.situationId === situationId && current.pinIds.join("|") === pinIds.join("|") ? current : { situationId, pinIds });
@@ -591,6 +594,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   }, [caseItem.id]);
 
   const selectSituation = useCallback((situationId: string | null) => {
+    referenceNavigationRef.current += 1;
+    setTargetAnalysisInsight(null);
     sourceNavigationRef.current += 1;
     setTargetSourceRange(null);
     setPendingBookmarkTargetJournalItemId(null);
@@ -746,6 +751,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   }
 
   function openDocument(document: CaseDocument, pinId: string | null = null) {
+    referenceNavigationRef.current += 1;
     sourceNavigationRef.current += 1;
     setTargetSourceRange(null);
     setSelectedDocument(document);
@@ -809,6 +815,32 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
       return true;
     } catch { return false; }
   }
+
+  const handleOpenAnalysisSourceReference = (reference: AnalysisReference) => handleOpenJournalSource({
+    documentId: reference.sourceDocumentId, documentName: "", pinId: reference.pinId, insightId: reference.insightId,
+    startOffset: reference.startOffset, endOffset: reference.endOffset, quote: reference.quote
+  });
+
+  useEffect(() => {
+    let active = true;
+    const open = async (event: Event) => {
+      const reference = (event as CustomEvent<AnalysisReference>).detail;
+      if (!reference?.analysisDocumentId || !reference.insightId) return;
+      const request = ++referenceNavigationRef.current;
+      const situationId = selectedSituationIdRef.current;
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(reference.analysisDocumentId)}`, { cache: "no-store" });
+        const data = await response.json() as { document?: CaseDocument };
+        if (!active || request !== referenceNavigationRef.current || situationId !== selectedSituationIdRef.current ||
+            !response.ok || !data.document || data.document.case_id !== caseItem.id || data.document.document_type !== "analysis") return;
+        setActiveAnalysisDocument(data.document);
+        setSelectedStepKey("ANALYSIS");
+        setTargetAnalysisInsight({ analysisDocumentId: data.document.id, insightId: reference.insightId, token: request });
+      } catch { /* Navigation is read-only; keep the current panels on failure. */ }
+    };
+    window.addEventListener("bureaucat:open-analysis-reference", open);
+    return () => { active = false; referenceNavigationRef.current += 1; sourceNavigationRef.current += 1; window.removeEventListener("bureaucat:open-analysis-reference", open); };
+  }, [caseItem.id]);
 
   async function handleOpenJournalBookmark(documentId: string, pinId: string) {
     await openSourceDocument(documentId, pinId);
@@ -1003,11 +1035,15 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           onBookmarkHover={setHoveredBookmarkPinId}
           onBookmarkLeave={() => setHoveredBookmarkPinId(null)}
           onCloseAnalysisDocument={() => {
+            referenceNavigationRef.current += 1;
+            setTargetAnalysisInsight(null);
             setActiveAnalysisDocument(null);
             setActiveAnalysisInsights([]);
           }}
           onJournalRefreshRequested={requestJournalRefresh}
           onOpenAnalysisSourceDocument={openSourceDocument}
+          onOpenAnalysisSourceReference={handleOpenAnalysisSourceReference}
+          targetAnalysisInsight={targetAnalysisInsight}
           onOpenBookmark={handleOpenJournalBookmark}
           onOpenJournalSource={handleOpenJournalSource}
           onContextualPinsChange={handleContextualPinsChange}

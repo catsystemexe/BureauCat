@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { CaseDocument, DocumentAnnotation, DocumentAnnotationType, DocumentInsight, DocumentPin } from "@/components/types";
 import { resolveSourceRange, type SourceTarget } from "@/lib/journal/overview";
+import { analysisReferenceColor, groupAnalysisReferences, type AnalysisReference, type ReferenceIssue } from "@/lib/analysis/references";
 
 const SOURCE_RANGE_ERROR = "Dokument je otevřen. Uloženou pasáž nelze v aktuálním textu jednoznačně určit.";
 
@@ -170,6 +171,8 @@ export function DocumentViewPanel({
   const [insights, setInsights] = useState<DocumentInsight[]>([]);
   const [isInsightEvidenceVisible, setIsInsightEvidenceVisible] = useState(false);
   const [pins, setPins] = useState<DocumentPin[]>([]);
+  const [referenceSnapshot, setReferenceSnapshot] = useState<{ documentId: string; references: AnalysisReference[]; issues: ReferenceIssue[] } | null>(null);
+  const [referenceChoicePinId, setReferenceChoicePinId] = useState<string | null>(null);
   const [bookmarkScope, setBookmarkScope] = useState<"context" | "all">("all");
   const pinsRef = useRef<DocumentPin[]>([]);
   const documentIdRef = useRef(initialDocument.id);
@@ -229,14 +232,19 @@ export function DocumentViewPanel({
     ...(targetPinId ? [targetPinId] : []), ...(hoveredBookmarkPinId ? [hoveredBookmarkPinId] : []),
     ...(externallyHoveredBookmarkPinId ? [externallyHoveredBookmarkPinId] : [])
   ]);
-  const orderedPins = allDocumentPins.filter((pin) => bookmarkScope === "all" || contextPinSet.has(pin.id) || editingPinId === pin.id || dragPinRef.current.pinId === pin.id);
-  const pinNumberById = useMemo(
-    () => new Map(allDocumentPins.map((pin, index) => [pin.id, index + 1])),
-    [allDocumentPins]
-  );
+  const validatedReferences = (referenceSnapshot?.documentId === currentDocument.id ? referenceSnapshot.references : [])
+    .filter((reference) => reference.sourceDocumentId === currentDocument.id && allDocumentPins.some((pin) => {
+      if (pin.id !== reference.pinId || pin.case_bookmark_number !== reference.number) return false;
+      const range = resolveSourceRange(displayText, { startOffset: reference.startOffset, endOffset: reference.endOffset, quote: reference.quote });
+      const pinRange = resolveSourceRange(displayText, { startOffset: pin.start_offset, endOffset: pin.end_offset, quote: pin.selected_text });
+      return range?.start === reference.startOffset && range?.end === reference.endOffset && pinRange?.start === range?.start && pinRange?.end === range?.end;
+    }));
+  const analyticalPinIds = new Set(validatedReferences.map((reference) => reference.pinId));
+  const orderedPins = allDocumentPins.filter((pin) => !analyticalPinIds.has(pin.id) && (bookmarkScope === "all" || contextPinSet.has(pin.id) || editingPinId === pin.id || dragPinRef.current.pinId === pin.id));
+  const referenceGroups = groupAnalysisReferences(validatedReferences).filter((group) => bookmarkScope === "all" || contextPinSet.has(group.pinId));
   const renderedDisplayText = useMemo(
     () => renderDisplayTextWithHighlights(displayText),
-    [annotations, insights, activeAnalysisInsights, isInsightEvidenceVisible, displayText, isAnnotationNoteOpen, targetSourceRange, currentDocument.id]
+    [annotations, insights, activeAnalysisInsights, isInsightEvidenceVisible, displayText, isAnnotationNoteOpen, targetSourceRange, targetPinId, currentDocument.id, referenceSnapshot, pins, bookmarkScope, expandedLinkedPinIds, contextualPinIds, hoveredBookmarkPinId, externallyHoveredBookmarkPinId]
   );
 
   const measurePinPositions = useCallback(() => {
@@ -378,7 +386,9 @@ export function DocumentViewPanel({
       frame = window.requestAnimationFrame(() => {
         frame = null;
         if (customEvent.detail.documentId !== documentIdRef.current) return;
-        scrollToSourceRange(customEvent.detail.startOffset!, customEvent.detail.endOffset!);
+        const detail = customEvent.detail as { startOffset: number; endOffset: number; quote?: string };
+        const range = resolveSourceRange(displayText, { startOffset: detail.startOffset, endOffset: detail.endOffset, quote: detail.quote ?? "" });
+        if (range) scrollToSourceRange(range.start, range.end);
       });
     }
 
@@ -440,6 +450,23 @@ export function DocumentViewPanel({
     }
 
     void loadInsights();
+  }, [initialDocument.id]);
+
+  useEffect(() => {
+    let active = true, version = 0;
+    setReferenceSnapshot(null); setReferenceChoicePinId(null);
+    async function load() {
+      const request = ++version;
+      try {
+        const response = await fetch(`/api/documents/${initialDocument.id}/references`, { cache: "no-store" });
+        const data = await response.json() as { references?: AnalysisReference[]; issues?: ReferenceIssue[] };
+        if (active && request === version) setReferenceSnapshot(response.ok ? { documentId: initialDocument.id, references: data.references ?? [], issues: data.issues ?? [] } : null);
+      } catch { if (active && request === version) setReferenceSnapshot(null); }
+    }
+    void load();
+    const refresh = () => { void load(); };
+    window.addEventListener("bureaucat:document-pins-refresh", refresh);
+    return () => { active = false; window.removeEventListener("bureaucat:document-pins-refresh", refresh); };
   }, [initialDocument.id]);
 
   useEffect(() => {
@@ -672,6 +699,7 @@ export function DocumentViewPanel({
   }
 
   function renderDisplayTextWithHighlights(text: string) {
+    const focusedReferences = validatedReferences.filter((reference) => reference.pinId === (externallyHoveredBookmarkPinId ?? hoveredBookmarkPinId));
     const selectedSourceRange = targetSourceRange?.documentId === currentDocument.id ? resolveSourceRange(text, targetSourceRange) : null;
     const highlightRanges = annotations
       .filter((annotation) => annotation.annotation_type === "highlight" && annotation.highlight_color !== "transparent")
@@ -735,20 +763,21 @@ export function DocumentViewPanel({
 
     const insightRanges = [...activeSourceInsights, ...fallbackDocumentInsights]
       .filter((insight, index, array) => array.findIndex((item) => item.id === insight.id) === index)
-      .map((insight) => ({
-        insight,
-        start: insight.source_start_offset!,
-        end: insight.source_end_offset!
-      }))
+      .flatMap((insight) => {
+        const range = resolveSourceRange(text, { startOffset: insight.source_start_offset, endOffset: insight.source_end_offset, quote: insight.source_text ?? "" });
+        return range ? [{ insight, ...range }] : [];
+      })
       .sort((a, b) => a.start - b.start);
 
-    if (highlightRanges.length === 0 && noteMarkers.length === 0 && insightRanges.length === 0) {
+    if (highlightRanges.length === 0 && noteMarkers.length === 0 && insightRanges.length === 0 && referenceGroups.length === 0) {
       return text;
     }
 
     const breakpoints = new Set<number>();
     breakpoints.add(0);
     breakpoints.add(text.length);
+    for (const reference of referenceGroups) breakpoints.add(reference.startOffset);
+    for (const reference of focusedReferences) { breakpoints.add(reference.startOffset); breakpoints.add(reference.endOffset); }
 
     for (const range of highlightRanges) {
       breakpoints.add(range.start);
@@ -772,9 +801,28 @@ export function DocumentViewPanel({
       const end = points[index + 1];
       const segment = text.slice(start, end);
       const activeHighlight = highlightRanges.find((range) => range.start <= start && range.end >= end);
+      for (const group of referenceGroups.filter((reference) => reference.startOffset === start)) {
+        parts.push(<button key={`reference-${group.pinId}`} type="button"
+          className={`analysis-reference-index document-analysis-reference${group.pinId === (hoveredBookmarkPinId ?? externallyHoveredBookmarkPinId) ? " is-highlighted" : ""}`}
+          data-reference-number={group.number} data-pin-id={group.pinId}
+          aria-label={`Odkaz ${group.number}: ${group.references.length === 1 ? group.references[0].insightTitle : `${group.references.length} poznatků`}`}
+          style={{ "--reference-color": analysisReferenceColor(group.color) } as React.CSSProperties}
+          onMouseDown={(event) => event.stopPropagation()}
+          onMouseUp={(event) => event.stopPropagation()}
+          onMouseEnter={() => window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: group.pinId } }))}
+          onMouseLeave={() => window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: group.pinId } }))}
+          onFocus={() => window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: group.pinId } }))}
+          onBlur={() => window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: group.pinId } }))}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (group.references.length === 1) openAnalysisReference(group.references[0]);
+            else setReferenceChoicePinId(group.pinId);
+          }} />);
+      }
 
       if (segment.length > 0) {
         const activeInsight = insightRanges.find((range) => range.start <= start && range.end >= end);
+        const focusedReference = focusedReferences.find((reference) => reference.startOffset <= start && reference.endOffset >= end);
         const segmentNode = activeHighlight ? (
           <mark
             className={`document-inline-highlight${selectedSourceRange && selectedSourceRange.start <= start && selectedSourceRange.end >= end ? " selected-journal-source" : ""}`}
@@ -787,13 +835,13 @@ export function DocumentViewPanel({
           segment
         );
 
-        if (activeInsight) {
+        if (activeInsight || focusedReference) {
           parts.push(
             <span
-              className={`document-insight-range document-insight-range-${activeInsight.insight.insight_type}`}
-              key={`insight-${activeInsight.insight.id}-${index}-${start}`}
-              style={{ "--insight-link-color": getInsightLinkColor(activeInsight.insight.insight_type) } as React.CSSProperties}
-              title={activeInsight.insight.title}
+              className={`document-insight-range document-insight-range-${activeInsight?.insight.insight_type ?? "fact"}${focusedReference ? " document-reference-range-focused" : ""}`}
+              key={`insight-${activeInsight?.insight.id ?? focusedReference!.insightId}-${index}-${start}`}
+              style={{ "--insight-link-color": focusedReference ? analysisReferenceColor(focusedReference.color) : getInsightLinkColor(activeInsight!.insight.insight_type) } as React.CSSProperties}
+              title={focusedReference?.insightTitle ?? activeInsight?.insight.title}
             >
               {segmentNode}
             </span>
@@ -810,6 +858,8 @@ export function DocumentViewPanel({
           <button
             className="document-note-marker"
             key={`note-${marker.annotation.id}`}
+            data-note-number={marker.number}
+            aria-label={`Otevřít poznámku ${marker.number}`}
             onClick={(event) => {
               event.stopPropagation();
               const rect = event.currentTarget.getBoundingClientRect();
@@ -831,7 +881,6 @@ export function DocumentViewPanel({
             title="Otevřít poznámku"
             type="button"
           >
-            {marker.number}
           </button>
         );
       }
@@ -844,6 +893,8 @@ export function DocumentViewPanel({
         <button
           className="document-note-marker"
           key={`note-start-${marker.annotation.id}`}
+          data-note-number={marker.number}
+          aria-label={`Otevřít poznámku ${marker.number}`}
           onClick={(event) => {
             event.stopPropagation();
             const rect = event.currentTarget.getBoundingClientRect();
@@ -865,7 +916,6 @@ export function DocumentViewPanel({
           title="Otevřít poznámku"
           type="button"
         >
-          {marker.number}
         </button>
       );
     }
@@ -1084,8 +1134,9 @@ export function DocumentViewPanel({
 
     while (node) {
       const length = node.textContent?.length ?? 0;
+      const next = walker.nextNode();
 
-      if (currentOffset + length >= targetOffset) {
+      if (currentOffset + length > targetOffset || (currentOffset + length === targetOffset && !next)) {
         return {
           node,
           offset: Math.max(0, Math.min(length, targetOffset - currentOffset))
@@ -1093,14 +1144,19 @@ export function DocumentViewPanel({
       }
 
       currentOffset += length;
-      node = walker.nextNode();
+      node = next;
     }
 
     return null;
   }
 
   function getPinNumber(pin: DocumentPin) {
-    return pin.case_bookmark_number ?? pinNumberById.get(pin.id) ?? 0;
+    return pin.case_bookmark_number ?? "?";
+  }
+
+  function openAnalysisReference(reference: AnalysisReference) {
+    setReferenceChoicePinId(null);
+    window.dispatchEvent(new CustomEvent("bureaucat:open-analysis-reference", { detail: reference }));
   }
 
   function scrollToPin(pinId: string) {
@@ -2339,12 +2395,18 @@ export function DocumentViewPanel({
             <span>Bookmarky</span>
             <button type="button" aria-pressed={bookmarkScope === "context"} onClick={() => setBookmarkScope("context")}>Kontextové</button>
             <button type="button" aria-pressed={bookmarkScope === "all"} onClick={() => setBookmarkScope("all")}>Všechny ({allDocumentPins.length})</button>
-            {bookmarkScope === "context" && !orderedPins.length ? <span>V aktuálním kontextu nejsou bookmarky.</span> : null}
+            {bookmarkScope === "context" && !orderedPins.length && !referenceGroups.length ? <span>V aktuálním kontextu nejsou bookmarky.</span> : null}
           </div>
           <div className={`document-text-pin-shell${isPinDragging ? " pin-dragging" : ""}${isBookmarkLinkMode ? " bookmark-link-mode" : ""}`} ref={documentTextShellRef}>
           <pre
             ref={documentTextRef}
             className={`document-extracted-text${activeAnnotationTool ? ` sentence-tool-mode sentence-tool-${activeAnnotationTool}` : ""}`}
+            onCopy={(event) => {
+              const selection = getSelectionOffsets();
+              if (selection.startOffset === null || selection.endOffset === null) return;
+              event.clipboardData.setData("text/plain", displayText.slice(selection.startOffset, selection.endOffset));
+              event.preventDefault();
+            }}
             onClick={(event) => {
               void handleDocumentTextClick(event);
             }}
@@ -2357,6 +2419,11 @@ export function DocumentViewPanel({
           >
             {renderedDisplayText}
           </pre>
+          {referenceChoicePinId ? <div className="analysis-reference-choice" role="dialog" aria-label="Vybrat poznatek zdrojové pasáže">
+            {validatedReferences.filter((reference) => reference.pinId === referenceChoicePinId).map((reference) =>
+              <button type="button" key={reference.insightId} onClick={() => openAnalysisReference(reference)}>{reference.insightTitle}</button>)}
+            <button type="button" onClick={() => setReferenceChoicePinId(null)}>Zavřít</button>
+          </div> : null}
           <div className="document-pin-layer" aria-label="Piny dokumentu">
             {orderedPins.map((pin) => (
               <button

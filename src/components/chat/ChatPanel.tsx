@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BookmarkCheck, Brain, Check, Download, Trash2 } from "lucide-react";
 import { MeetingPrepButton } from "@/components/chat/MeetingPrepButton";
+import { analysisReferenceColor, type AnalysisReference, type ReferenceIssue } from "@/lib/analysis/references";
+import { ANALYSIS_CATEGORIES, IDENTIFICATION_ROLES, classifyAnalysisInsight } from "@/lib/analysis/presentation";
 import { MeetingPrepCard } from "@/components/chat/MeetingPrepCard";
 import { MessageComposer } from "@/components/chat/MessageComposer";
 import { MessageList } from "@/components/chat/MessageList";
@@ -79,6 +81,8 @@ export function ChatPanel({
   onActiveAnalysisInsightsChange,
   onCloseAnalysisDocument,
   onOpenAnalysisSourceDocument,
+  onOpenAnalysisSourceReference,
+  targetAnalysisInsight,
   onJournalRefreshRequested,
   selectedSituationId,
   hoveredBookmarkPinId
@@ -88,6 +92,8 @@ export function ChatPanel({
   onActiveAnalysisInsightsChange?: (insights: DocumentInsight[]) => void;
   onCloseAnalysisDocument?: () => void;
   onOpenAnalysisSourceDocument?: (documentId: string) => void;
+  onOpenAnalysisSourceReference?: (reference: AnalysisReference) => Promise<boolean>;
+  targetAnalysisInsight?: { analysisDocumentId: string; insightId: string; token: number } | null;
   onJournalRefreshRequested: () => void;
   selectedSituationId: string | null;
   hoveredBookmarkPinId?: string | null;
@@ -105,6 +111,14 @@ export function ChatPanel({
   const [meetingPrepError, setMeetingPrepError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [analysisInsights, setAnalysisInsights] = useState<DocumentInsight[]>([]);
+  const [referenceSnapshot, setReferenceSnapshot] = useState<{ documentId: string; references: AnalysisReference[]; issues: ReferenceIssue[] } | null>(null);
+  const referenceByInsight = new Map((referenceSnapshot?.documentId === activeAnalysisDocument?.id ? referenceSnapshot?.references ?? [] : []).map((reference) => [reference.insightId, reference]));
+  const analysisContentRef = useRef<HTMLDivElement | null>(null);
+  const analysisDocumentIdRef = useRef(activeAnalysisDocument?.id ?? null);
+  useLayoutEffect(() => {
+    analysisDocumentIdRef.current = activeAnalysisDocument?.id ?? null;
+    return () => { analysisDocumentIdRef.current = null; };
+  }, [activeAnalysisDocument?.id]);
   const [analysisInsightsError, setAnalysisInsightsError] = useState<string | null>(null);
   const [expandedInsightIds, setExpandedInsightIds] = useState<string[]>([]);
   const [hoveredInsightId, setHoveredInsightId] = useState<string | null>(null);
@@ -120,7 +134,7 @@ export function ChatPanel({
 
   useLayoutEffect(() => {
     return () => cancelInsightSourceScroll();
-  }, [activeAnalysisDocument?.id, selectedSituationId, analysisInsights, expandedInsightIds]);
+  }, [activeAnalysisDocument?.id, selectedSituationId, analysisInsights, expandedInsightIds, referenceSnapshot]);
 
   useEffect(() => {
     function handleBookmarkPinHover(event: Event) {
@@ -192,9 +206,11 @@ export function ChatPanel({
 
 
   useEffect(() => {
-    let isMounted = true;
-
+    let isMounted = true, version = 0, loaded = false;
+    setAnalysisInsights([]);
+    setReferenceSnapshot(null);
     async function loadAnalysisInsights() {
+      const request = ++version;
       if (!activeAnalysisDocument) {
         setAnalysisInsights([]);
         setAnalysisInsightsError(null);
@@ -206,24 +222,26 @@ export function ChatPanel({
 
       try {
         setAnalysisInsightsError(null);
-        const response = await fetch(`/api/documents/${activeAnalysisDocument.id}/insights`, {
+        const response = await fetch(`/api/documents/${activeAnalysisDocument.id}/references`, {
           cache: "no-store"
         });
-        const data = (await response.json()) as { insights?: DocumentInsight[]; error?: string };
+        const data = (await response.json()) as { insights?: DocumentInsight[]; references?: AnalysisReference[]; issues?: ReferenceIssue[]; error?: string };
 
         if (!response.ok || !Array.isArray(data.insights)) {
           throw new Error(data.error ?? "Insighty se nepodařilo načíst.");
         }
 
-        if (isMounted) {
-          setAnalysisInsights(data.insights);
-          setExpandedInsightIds(data.insights
-            .filter((insight) => insight.status === "pending")
-            .map((insight) => insight.id)
-          );
+        if (isMounted && request === version) {
+          const currentInsights = data.insights.filter((insight) => insight.document_id === activeAnalysisDocument.id);
+          setAnalysisInsights(currentInsights);
+          setReferenceSnapshot({ documentId: activeAnalysisDocument.id, references: data.references ?? [], issues: data.issues ?? [] });
+          const preserveExpanded = loaded;
+          setExpandedInsightIds((current) => preserveExpanded ? current.filter((id) => currentInsights.some((insight) => insight.id === id)) :
+            currentInsights.filter((insight) => insight.status === "pending").map((insight) => insight.id));
+          loaded = true;
         }
       } catch (loadError) {
-        if (isMounted) {
+        if (isMounted && request === version) {
           setAnalysisInsights([]);
           setAnalysisInsightsError(loadError instanceof Error ? loadError.message : "Insighty se nepodařilo načíst.");
         }
@@ -231,11 +249,27 @@ export function ChatPanel({
     }
 
     void loadAnalysisInsights();
+    const refresh = () => { void loadAnalysisInsights(); };
+    window.addEventListener("bureaucat:document-pins-refresh", refresh);
 
     return () => {
       isMounted = false;
+      window.removeEventListener("bureaucat:document-pins-refresh", refresh);
     };
   }, [activeAnalysisDocument]);
+
+  useEffect(() => {
+    if (!targetAnalysisInsight || targetAnalysisInsight.analysisDocumentId !== activeAnalysisDocument?.id ||
+        referenceSnapshot?.documentId !== activeAnalysisDocument.id || !analysisInsights.some((insight) => insight.id === targetAnalysisInsight.insightId)) return;
+    setExpandedInsightIds((current) => current.includes(targetAnalysisInsight.insightId) ? current : [...current, targetAnalysisInsight.insightId]);
+    const frame = window.requestAnimationFrame(() => {
+      const card = [...(analysisContentRef.current?.querySelectorAll<HTMLElement>("[data-insight-id]") ?? [])]
+        .find((element) => element.dataset.insightId === targetAnalysisInsight.insightId);
+      card?.scrollIntoView({ block: "nearest" });
+      card?.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [targetAnalysisInsight, activeAnalysisDocument?.id, referenceSnapshot, analysisInsights]);
 
   function getAnalysisInsightLabel(type: string) {
     if (type === "risk") return "Riziko";
@@ -273,20 +307,16 @@ export function ChatPanel({
   }
 
   function dispatchScrollToInsightSource(insight: DocumentInsight) {
-    if (
-      !insight.source_document_id ||
-      insight.source_start_offset === null ||
-      insight.source_end_offset === null
-    ) {
-      return;
-    }
+    const reference = referenceByInsight.get(insight.id);
+    if (!reference) return;
 
     window.dispatchEvent(
       new CustomEvent("bureaucat:scroll-to-source-range", {
         detail: {
-          documentId: insight.source_document_id,
-          startOffset: insight.source_start_offset,
-          endOffset: insight.source_end_offset,
+          documentId: reference.sourceDocumentId,
+          startOffset: reference.startOffset,
+          endOffset: reference.endOffset,
+          quote: reference.quote,
           insightId: insight.id
         }
       })
@@ -297,8 +327,9 @@ export function ChatPanel({
     cancelInsightSourceScroll();
     setHoveredInsightId(insight.id);
     window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-hover", { detail: { insightId: insight.id } }));
-    if (insight.source_pin_id) {
-      window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: insight.source_pin_id } }));
+    const reference = referenceByInsight.get(insight.id);
+    if (reference) {
+      window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-hover", { detail: { pinId: reference.pinId } }));
     }
     if (isExpanded) {
       insightSourceScrollRef.current = {
@@ -315,26 +346,43 @@ export function ChatPanel({
     cancelInsightSourceScroll(insight.id);
     setHoveredInsightId((currentId) => currentId === insight.id ? null : currentId);
     window.dispatchEvent(new CustomEvent("bureaucat:analysis-insight-leave", { detail: { insightId: insight.id } }));
-    if (insight.source_pin_id) {
-      window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: insight.source_pin_id } }));
+    const reference = referenceByInsight.get(insight.id);
+    if (reference) {
+      window.dispatchEvent(new CustomEvent("bureaucat:bookmark-pin-leave", { detail: { pinId: reference.pinId } }));
     }
   }
 
 
   function renderAnalysisInsightCard(insight: DocumentInsight) {
     const isExpanded = expandedInsightIds.includes(insight.id);
+    const reference = referenceByInsight.get(insight.id);
+    const placement = classifyAnalysisInsight(insight);
     const isBookmarkHovered =
       ((hoveredBookmarkPinId !== null && hoveredBookmarkPinId !== undefined) || externalHoveredBookmarkPinId !== null) &&
-      insight.source_pin_id === (hoveredBookmarkPinId ?? externalHoveredBookmarkPinId);
+      reference?.pinId === (hoveredBookmarkPinId ?? externalHoveredBookmarkPinId);
 
     return (
       <span
         className="analysis-inline-insight-wrap"
         key={insight.id}
-        style={{ "--insight-link-color": getAnalysisInsightColor(insight.insight_type) } as React.CSSProperties}
+        data-insight-id={insight.id}
+        style={{ "--insight-link-color": reference ? analysisReferenceColor(reference.color) : getAnalysisInsightColor(insight.insight_type) } as React.CSSProperties}
       >
+        {reference ? <button type="button" className="analysis-reference-index" data-reference-number={reference.number}
+          aria-label={`Odkaz ${reference.number}: otevřít zdroj poznatku ${insight.title}`}
+          style={{ "--reference-color": analysisReferenceColor(reference.color) } as React.CSSProperties}
+          onMouseEnter={() => handleInsightMouseEnter(insight, isExpanded)} onMouseLeave={() => handleInsightMouseLeave(insight)}
+          onFocus={() => handleInsightMouseEnter(insight, isExpanded)} onBlur={() => handleInsightMouseLeave(insight)}
+          onClick={async () => {
+            setExpandedInsightIds((current) => current.includes(insight.id) ? current : [...current, insight.id]);
+            if (onOpenAnalysisSourceReference) {
+              const opened = await onOpenAnalysisSourceReference(reference);
+              if (!opened && analysisDocumentIdRef.current === reference.analysisDocumentId) setAnalysisInsightsError("Zdroj poznatku se nepodařilo otevřít.");
+            } else dispatchScrollToInsightSource(insight);
+          }} /> : null}
+        {placement.time ? <span className="analysis-time-kind">{placement.time}</span> : null}
         <button
-          className={`analysis-inline-insight analysis-inline-insight-${insight.insight_type} analysis-inline-insight-status-${insight.status}${isBookmarkHovered || isExpanded ? " analysis-inline-insight-bookmark-hover" : ""}`}
+          className={`analysis-inline-insight analysis-inline-insight-${insight.insight_type} analysis-inline-insight-status-${insight.status}${isBookmarkHovered || isExpanded ? " analysis-inline-insight-bookmark-hover" : ""}${isBookmarkHovered ? " analysis-reference-matched" : ""}`}
           onClick={() => {
             const willExpand = !expandedInsightIds.includes(insight.id);
             toggleExpandedInsight(insight.id);
@@ -345,6 +393,8 @@ export function ChatPanel({
           }}
           onMouseEnter={() => handleInsightMouseEnter(insight, isExpanded)}
           onMouseLeave={() => handleInsightMouseLeave(insight)}
+          onFocus={() => handleInsightMouseEnter(insight, isExpanded)}
+          onBlur={() => handleInsightMouseLeave(insight)}
           title={insight.title}
           type="button"
         >
@@ -354,6 +404,8 @@ export function ChatPanel({
 
         {isExpanded ? (
           <span className="analysis-inline-insight-detail">
+            {insight.content ? <span className="analysis-insight-content">{insight.content}</span> : null}
+            {!reference ? <span className="analysis-reference-unavailable">{referenceSnapshot?.issues.find((issue) => issue.insightId === insight.id)?.message ?? "Ověřený číselný odkaz není dostupný."}</span> : null}
             {insight.source_text ? (
               <span className="analysis-inline-insight-source">{insight.source_text}</span>
             ) : null}
@@ -644,44 +696,23 @@ export function ChatPanel({
     });
   }
 
-  function renderAnalysisStructuredText(text: string) {
-    const sectionTitles = splitAnalysisMarkdownSections(text)
-      .map((section) => section.title)
-      .filter((title) => title !== "Stručné shrnutí");
-
-    const fallbackSectionTitles = [
-      "Identifikace",
-      "Paragrafy a úřední jazyk",
-      "Klíčové skutečnosti",
-      "Rizika, lhůty a rozpory",
-      "Otázky"
-    ];
-
-    const orderedSectionTitles = (sectionTitles.length > 0 ? sectionTitles : fallbackSectionTitles)
-      .filter((title, index, array) => array.indexOf(title) === index);
-
-    return (
-      <div className="analysis-section-list">
-        {orderedSectionTitles.map((sectionTitle) => {
-          const sectionInsights = analysisInsights.filter(
-            (insight) => getAnalysisSectionKeyForInsight(insight) === sectionTitle
-          );
-
-          if (sectionInsights.length === 0) {
-            return null;
-          }
-
-          return (
-            <section className="analysis-section-block" key={sectionTitle}>
-              <h4 className="analysis-section-title">{sectionTitle}</h4>
-              <div className="analysis-section-body">
-                {sectionInsights.map((insight) => renderAnalysisInsightCard(insight))}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-    );
+  function renderAnalysisStructuredText(_text: string) {
+    const currentInsights = analysisInsights.filter((insight) => insight.document_id === activeAnalysisDocument?.id);
+    return <div className="analysis-section-list">
+      {ANALYSIS_CATEGORIES.map((category) => {
+        const entries = currentInsights.filter((insight) => classifyAnalysisInsight(insight).category === category);
+        if (!entries.length) return null;
+        return <section className="analysis-section-block" key={category}>
+          <h4 className="analysis-section-title">{category}</h4>
+          {category === "Identifikace" ? IDENTIFICATION_ROLES.map((role) => {
+            const members = entries.filter((insight) => classifyAnalysisInsight(insight).role === role);
+            return members.length ? <section className="analysis-identification-role" key={role} aria-label={role}>
+              <h5>{role}</h5><div className="analysis-section-body">{members.map(renderAnalysisInsightCard)}</div>
+            </section> : null;
+          }) : <div className="analysis-section-body">{entries.map(renderAnalysisInsightCard)}</div>}
+        </section>;
+      })}
+    </div>;
   }
 
   function renderAnalysisTextWithInlineInsights(text: string, baseOffset = 0) {
@@ -1074,7 +1105,7 @@ export function ChatPanel({
                 : "Všechny insighty vyřešeny"}
             </span>
           </div>
-          <div className="analysis-floating-content">
+          <div className="analysis-floating-content" ref={analysisContentRef}>
             {analysisInsightsError ? (
               <p className="analysis-insight-error">{analysisInsightsError}</p>
             ) : null}
