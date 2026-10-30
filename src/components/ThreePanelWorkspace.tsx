@@ -1079,7 +1079,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         />
         <RightContextPanel
           planningPanel={selectedSituationId ? <SituationPlanningPanel key={`${caseItem.id}:${selectedSituationId}`} caseId={caseItem.id} situationId={selectedSituationId}
-            view={rightPanelTab === "plan" ? "PLAN" : "ANALYSIS"} refreshKey={situationDocumentListRefreshKey} onOpenSource={handleOpenJournalSource} onSelectPlan={() => setRightPanelTab("plan")} /> : <p>Vyberte situaci.</p>}
+            view={rightPanelTab === "plan" ? "PLAN" : "ANALYSIS"} refreshKey={situationDocumentListRefreshKey} onOpenSource={handleOpenJournalSource} onOpenDocument={(id) => { void openSourceDocument(id); setShowDocumentAnalysis(false); }} onSelectPlan={() => setRightPanelTab("plan")} /> : <p>Vyberte situaci.</p>}
           showDocumentAnalysis={showDocumentAnalysis && Boolean(activeAnalysisDocument)}
           onShowDocumentAnalysis={setShowDocumentAnalysis}
           documentAnalysis={activeAnalysisDocument ? <ChatPanel activeAnalysisDocument={activeAnalysisDocument} caseItem={caseItem}

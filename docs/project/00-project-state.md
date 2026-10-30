@@ -138,3 +138,8 @@ Do not introduce generic workflow-engine complexity unless implementation eviden
 ## Authority
 
 For intended product direction, use this Project State together with `01-architecture.md` and active Decisions. For what currently exists, inspect the actual GitHub implementation. Historical `docs/bureaucat-mvp-v1.2.md` and older audits are not authoritative.
+
+
+### One Situation Goal, trigger and document overview (2026-10-30)
+
+Follow-up from `396b4861416e950aa98b0ac1bb286d27a24dfe3f`, same branch/draft PR #43: one citizen-side umbrella Goal is the AI default, with separate editable trigger, requirements and sourced explicit deadline. Analysis now lists available documents once instead of atomic insights; accepted context is preserved in existing events and Plan proposals receive it. Legacy Plans display without the missing-link commentary or stored-content changes. Controlled tests cover this contract and existing safeguards; real AI quality (including the reported unknown-insight FAIL), Windows/browser acceptance and Drive sync remain pending. See D-027 and `docs/situation-right-panels.md`.

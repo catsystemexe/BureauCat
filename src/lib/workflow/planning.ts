@@ -31,13 +31,24 @@ export function editPlan(content: PlanContent | null): EditablePlan {
     procedure: (content?.procedure ?? [""]).map((title) => ({ id: crypto.randomUUID(), title, expectedResult: "", explanation: "", inputIds: [] })),
     inputs: (content?.inputs ?? [{ title: "", description: "", criteria: [""] }]).map((input) => ({ ...input, id: crypto.randomUUID() })) };
 }
+export const situationBriefSchema = z.object({
+  trigger: z.object({ description: text, documentIds: z.array(text).max(20) }).strict(),
+  requirements: z.array(z.object({ text, insightIds: z.array(text).max(20) }).strict()).max(20),
+  deadline: z.object({ text, insightIds: z.array(text).min(1).max(20) }).strict().nullable()
+}).strict().transform((brief) => ({
+  ...brief,
+  trigger: { ...brief.trigger, documentIds: [...new Set(brief.trigger.documentIds)] },
+  requirements: brief.requirements.map((item) => ({ ...item, insightIds: [...new Set(item.insightIds)] })),
+  deadline: brief.deadline ? { ...brief.deadline, insightIds: [...new Set(brief.deadline.insightIds)] } : null
+}));
+export type SituationBrief = z.infer<typeof situationBriefSchema>;
 const base = {
   caseId: z.string().min(1), requestKey: z.string().min(8).max(100),
   expectedRevision: z.number().int().min(0), contextHash: z.string().length(64)
 };
 export const planningCommandSchema = z.discriminatedUnion("action", [
   z.object({ ...base, action: z.literal("suggestGoals") }).strict(),
-  z.object({ ...base, action: z.literal("confirmGoal"), goalId: z.string().optional(), title: text }).strict(),
+  z.object({ ...base, action: z.literal("confirmGoal"), goalId: z.string().optional(), title: text, brief: situationBriefSchema.optional() }).strict(),
   z.object({ ...base, action: z.literal("suggestPlan"), goalId: z.string() }).strict(),
   z.object({ ...base, action: z.literal("savePlan"), goalId: z.string(), content: newPlanContentSchema }).strict(),
   z.object({ ...base, action: z.literal("acceptPlan"), planId: z.string() }).strict(),
@@ -47,15 +58,16 @@ export const planningCommandSchema = z.discriminatedUnion("action", [
     sufficient: z.boolean(), explanation: z.string().trim().max(4000) }).strict()
 ]);
 export type PlanningCommand = z.infer<typeof planningCommandSchema>;
-export const goalSuggestionsSchema = z.object({ goals: z.array(z.object({ title: text, reason: text, insightIds: z.array(z.string()).max(20) }).strict()).min(2).max(4) }).strict();
+export const goalSuggestionsSchema = z.object({ goals: z.array(z.object({ title: text, reason: text, insightIds: z.array(z.string()).max(20) }).strict()).min(1).max(4), brief: situationBriefSchema }).strict();
 export const inputMatchesSchema = z.object({ matches: z.array(z.object({
   criterionId: z.string(), value: z.string().max(4000), insightIds: z.array(z.string()).max(20),
   explanation: text
 }).strict()).max(240) }).strict();
 export type PlanningState = {
+  brief?: SituationBrief | null; briefStale?: boolean; documents?: { id: string; name: string }[];
   revision: number; contextHash: string; goalSelectionRequired: boolean;
   goal: { id: string; title: string } | null;
-  goals: { id: string; title: string; status: string; confirmed_at: string | null; reason?: string | null; insightIds?: string[]; currentProposal?: boolean }[];
+  goals: { id: string; title: string; status: string; confirmed_at: string | null; reason?: string | null; insightIds?: string[]; currentProposal?: boolean; brief?: SituationBrief | null }[];
   steps: { step_key: string; status: string }[];
   plan: { id: string; goal_id: string; status: string; content: PlanContent; revision: number; accepted_at: string | null } | null;
   history: { id: string; goal_id: string; status: string; revision: number; content: PlanContent }[];

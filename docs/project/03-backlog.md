@@ -281,3 +281,8 @@ Reduce handwritten response typing and inconsistent validation.
 ## Maintenance rule
 
 Designer decisions create or revise backlog items. IMPLEMENTATION completion updates status and only the project documents affected by the change. Minor visual patches do not trigger broad documentation churn.
+
+
+### One Situation Goal, trigger and document overview (2026-10-30)
+
+BC-012/BC-015 remain In Progress. PR #43 now separates case intent, editable Situation trigger, one default umbrella Goal, requirements and explicit deadline; available documents replace atomic-insight lists. Existing RequiredInput sufficiency remains authoritative after acceptance. Controlled AI/service/UI regressions pass; live proposal quality, the prior unknown-ID FAIL, Windows/browser checks and affected Drive mirrors remain open. Concrete acceptance scenarios: `docs/situation-right-panels.md`.

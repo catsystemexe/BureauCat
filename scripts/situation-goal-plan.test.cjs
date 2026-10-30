@@ -10,6 +10,7 @@ const ts = require("typescript");
 const { PrismaClient } = require("@prisma/client");
 const { hookRenderer, elements, byClass, environment } = require("./insight-hover-bookmark-positions.test.cjs");
 const root = path.resolve(__dirname, "..");
+const manualBrief = { trigger: { description: "Vlastní záměr uživatele", documentIds: [] }, requirements: [], deadline: null };
 function loader(overrides = {}) {
   const cache = new Map();
   function load(file) {
@@ -42,9 +43,9 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
   const db = new PrismaClient({ datasourceUrl: url, log: [{ emit: "event", level: "query" }] });
   const queries = []; db.$on("query", ({ query }) => queries.push(query));
   const previous = globalThis.prisma; globalThis.prisma = db;
-  let aiReply, aiCalls = 0, deferredAI = null;
+  let aiReply, aiCalls = 0, deferredAI = null, lastPrompt = "";
   const load = loader({ "@/lib/ai/jsonResponse": { requestAIJson: async (_prompt, schema) => {
-    aiCalls++; const result = deferredAI ? await deferredAI : aiReply; return schema.parse(result);
+    aiCalls++; lastPrompt = _prompt; const result = deferredAI ? await deferredAI : aiReply; return schema.parse(result);
   } } });
   const { getSituationPlanning: read, executePlanningCommand: execute } = load("src/lib/services/situationPlanning.ts");
   const { createCase } = load("src/lib/services/cases.ts");
@@ -116,7 +117,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
     });
     await t.test("AI candidates remain saved drafts, never authoritative or a Step transition", async () => {
       state = await read(sid, caseId);
-      aiReply = { goals: [{ title: "Doložit rozměry pro vyjádření", reason: "Je vyžadován údaj", insightIds: [width.id] }, { title: "Vyjasnit rozpor měření", reason: "Podklady se rozcházejí", insightIds: [conflict.id] }] };
+      aiReply = { brief: manualBrief, goals: [{ title: "Doložit rozměry pro vyjádření", reason: "Je vyžadován údaj", insightIds: [width.id] }, { title: "Vyjasnit rozpor měření", reason: "Podklady se rozcházejí", insightIds: [conflict.id] }] };
       const c = command(state, { action: "suggestGoals" }); const result = await send(c);
       assert.equal(result.status, 200); state = result.planning;
       assert.equal(state.goal, null); assert.equal(state.goals.length, 2); assert.ok(state.goals.every((g) => g.status === "draft"));
@@ -124,6 +125,53 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       assert.equal(state.steps.find((s) => s.status === "ACTIVE").step_key, "ANALYSIS");
       const calls = aiCalls; await send(c); assert.equal(aiCalls, calls, "completed request retry has no new AI call");
       assert.equal(await db.goal.count({ where: { situation_id: sid } }), 2);
+    });
+    await t.test("request, sketch and issued application produce one umbrella Goal with separately sourced requirements and deadline", async () => {
+      const target = await createSituation(caseId, { title: "Doplnění žádosti" });
+      const documents = [];
+      const references = [];
+      for (const [name, body] of [["Odeslaná žádost", "Žádám o povolení umístění stojanu."], ["Novější náčrt", "Šířka 1,80 m a hloubka 1,20 m."], ["Výzva", "Doplňte poštovní adresu a rozměry do 11. září."]]) {
+        const d = await db.document.create({ data: { case_id: caseId, filename: name, filetype: "txt", original_file: "", processed_text: body } });
+        documents.push(d); await db.situationDocument.create({ data: { situation_id: target.id, document_id: d.id } });
+        references.push(await db.documentInsight.create({ data: { document_id: d.id, source_document_id: d.id, title: name, content: body, source_text: body, source_start_offset: 0, source_end_offset: body.length, insight_type: "fact", evidence_state: "verified", target_section: "description", target_item_type: "FACT", status: "approved" } }));
+      }
+      const brief = { trigger: { description: "Doručená výzva k doplnění žádosti", documentIds: [documents[2].id] }, requirements: [{ text: "Úplná poštovní adresa", insightIds: [references[2].id] }, { text: "Šířka a hloubka stojanu", insightIds: [references[2].id] }], deadline: { text: "do 11. září", insightIds: [references[2].id] } };
+      aiReply = { brief, goals: [{ title: "Připravit a odeslat doplnění žádosti podle výzvy", reason: "Reakce občana na výzvu", insightIds: [references[2].id] }] };
+      let current = await read(target.id, caseId);
+      const response = await send(command(current, { action: "suggestGoals" }), target.id);
+      assert.equal(response.status, 200); current = response.planning;
+      assert.equal(current.goals.length, 1); assert.deepEqual(current.brief, brief); assert.equal(current.documents.length, 3);
+      const promptData = JSON.parse(lastPrompt.slice(lastPrompt.lastIndexOf('\n') + 1));
+      assert.deepEqual(promptData.allowedInsightIds, references.map((r) => r.id).sort());
+      assert.ok(lastPrompt.includes("Dílčí požadavky nejsou alternativní cíle")); assert.ok(lastPrompt.includes("novější datum přílohy automaticky neurčuje podnět"));
+      current = (await send(command(current, { action: "confirmGoal", goalId: current.goals[0].id, title: current.goals[0].title }), target.id)).planning;
+      assert.deepEqual((await read(target.id, caseId)).brief, brief);
+      assert.ok(!current.inputs.length, "request does not declare existing sketch data missing");
+      const event = await db.workflowEvent.findFirst({ where: { situation_id: target.id, event_type: "PLANNING_confirmGoal" } });
+      assert.deepEqual(JSON.parse(event.payload_json).brief, brief);
+      // Different Situation's existing insight/document IDs are still foreign.
+      for (const invalid of [{ ...brief, trigger: { description: "Foreign", documentIds: [doc.id] } }, { ...brief, requirements: [{ text: "Foreign", insightIds: [width.id] }] }]) {
+        aiReply = { brief: invalid, goals: [{ title: "No write", reason: "No", insightIds: [] }] };
+        assert.equal((await send(command(current, { action: "suggestGoals" }), target.id)).status, 409);
+      }
+      const { situationBriefSchema } = loader()("src/lib/workflow/planning.ts");
+      assert.deepEqual(situationBriefSchema.parse({ ...brief, trigger: { ...brief.trigger, documentIds: [documents[2].id, documents[2].id] } }).trigger.documentIds, [documents[2].id]);
+      aiReply = content;
+      const draftResponse = await send(command(current, { action: "suggestPlan", goalId: current.goal.id }), target.id);
+      assert.equal(draftResponse.status, 200); current = draftResponse.planning;
+      const planContext = JSON.parse(lastPrompt.slice(lastPrompt.lastIndexOf('\n') + 1));
+      assert.deepEqual(planContext.situationBrief, brief); assert.ok(planContext.findings.some((finding) => finding.value.includes("1,80 m")));
+      assert.ok(lastPrompt.includes("Nezadávej získávání informace, která již je doložená"));
+      current = (await send(command(current, { action: "acceptPlan", planId: current.plan.id }), target.id)).planning;
+      const oldPlanId = current.plan.id;
+      current = (await send(command(current, { action: "confirmGoal", goalId: current.goal.id, title: current.goal.title, brief: { ...brief, trigger: { ...brief.trigger, description: "Výslovně změněný podnět" } } }), target.id)).planning;
+      assert.equal(current.plan, null); assert.equal(current.history.find((plan) => plan.id === oldPlanId).status, "SUPERSEDED", "changed brief revokes old Plan consent even with same Goal title");
+      const ambiguous = { ...manualBrief, trigger: { description: "Nejasné, zda reagovat na žádost či výzvu", documentIds: documents.slice(0, 1).map((d) => d.id) } };
+      const result = await send(command(current, { action: "confirmGoal", title: "Vlastní Akce", brief: manualBrief }), target.id);
+      assert.equal(result.status, 200); assert.deepEqual(result.planning.brief, manualBrief);
+      const choice = await send(command(result.planning, { action: "confirmGoal", title: "Upravený podnět", brief: ambiguous }), target.id);
+      assert.equal(choice.status, 200); assert.deepEqual(choice.planning.brief, ambiguous);
+      await invariant(target.id);
     });
     await t.test("explicit edited goal confirmation is atomic, unique and idempotent under concurrent requests", async () => {
       const c = command(state, { action: "confirmGoal", goalId: state.goals[0].id, title: "Doložit skutečné rozměry a vypořádat rozdíl" });
@@ -329,7 +377,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
     });
     await t.test("known Goal AI failure for unknown insight ID remains explicit and creates no draft", async () => {
       state = await read(sid, caseId); const before = state.goals.length;
-      aiReply = { goals: [{ title: "A", reason: "Reason", insightIds: ["unknown-insight"] }, { title: "B", reason: "Reason", insightIds: [] }] };
+      aiReply = { brief: manualBrief, goals: [{ title: "A", reason: "Reason", insightIds: ["unknown-insight"] }, { title: "B", reason: "Reason", insightIds: [] }] };
       const result = await send(command(state, { action: "suggestGoals" }));
       assert.equal(result.status, 409); assert.match(result.error, /neznámý poznatek/);
       state = await read(sid, caseId); assert.equal(state.goals.length, before);
@@ -371,7 +419,7 @@ test("real Responses transport uses existing configuration, validates JSON and f
   const previousFetch = globalThis.fetch, previousKey = process.env.OPENAI_API_KEY, previousModel = process.env.OPENAI_MODEL;
   const { requestAIJson } = loader()("src/lib/ai/jsonResponse.ts");
   const { goalSuggestionsSchema } = loader()("src/lib/workflow/planning.ts");
-  const answer = { goals: [{ title: "Cíl A", reason: "Uložený požadavek", insightIds: [] }, { title: "Cíl B", reason: "Uložená nejasnost", insightIds: [] }] };
+  const answer = { brief: manualBrief, goals: [{ title: "Cíl A", reason: "Uložený požadavek", insightIds: [] }, { title: "Cíl B", reason: "Uložená nejasnost", insightIds: [] }] };
   let calls = 0;
   try {
     delete process.env.OPENAI_API_KEY;
@@ -436,7 +484,7 @@ test("actual planning UI callbacks reject double clicks and stale responses; edi
       await settle(); assert.match(calls.at(-1).url, /s2/); respond(snapshot); await settle();
       assert.equal(elements(next.tree, (e) => e.type === "textarea")[0].props.value, "");
       // A pending read is also ignored after leaving the Situation.
-      elements(next.tree, (e) => e.type === "button" && e.props.children === "Navrhnout cíle pomocí AI")[0].props.onClick(); await settle(); next.dispose(); respond(snapshot); await settle();
+      elements(next.tree, (e) => e.type === "button" && e.props.children === "Navrhnout cíl a podnět pomocí AI")[0].props.onClick(); await settle(); next.dispose(); respond(snapshot); await settle();
     });
   } finally {
     for (const r of allRenderers) if (!r.disposed) r.dispose();
@@ -625,4 +673,35 @@ test("right tabs keep one planning component, center only Journal, and Plan draf
     workspace.dispose(); planner?.dispose();
     for (const [key, descriptor] of previous) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key]; }
   }
+});
+
+
+test("Analysis lists each document once, keeps requirements separate and legacy Plan silently readable", async () => {
+  const env = environment(); const oldWindow = globalThis.window, oldFetch = globalThis.fetch;
+  globalThis.window = env.window;
+  const brief = { trigger: { description: "Reagovat na výzvu", documentIds: ["request"] }, requirements: [{ text: "Rozměry stojanu", insightIds: ["i1"] }], deadline: { text: "11. září", insightIds: ["i2"] } };
+  const snapshot = { revision: 1, contextHash: "a".repeat(64), goal: null, goalSelectionRequired: false, goals: [], plan: { id: "p", goal_id: "g", status: "ACCEPTED", content: { expectedOutput: "Starý výstup", procedure: ["Starý bod"], inputs: [] } }, history: [], inputs: [], evidence: [{ id: "i1", documentId: "sketch", title: "Repeated atom", value: "1,80 m" }, { id: "i2", documentId: "sketch", title: "Repeated atom", value: "1,20 m" }], brief, documents: [{ id: "request", name: "Výzva" }, { id: "sketch", name: "Náčrt" }], preliminary: [] };
+  const calls = [], opened = [];
+  globalThis.fetch = async (url, options) => { calls.push(options); return { ok: true, json: async () => ({ planning: snapshot }) }; };
+  const r = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "SituationPlanningPanel", { caseId: "c", situationId: "s", view: "ANALYSIS", onOpenSource: async () => true, onOpenDocument: (id) => opened.push(id) });
+  try {
+    for (let i = 0; i < 8; i++) { r.render(); await Promise.resolve(); }
+    const section = elements(r.tree, (e) => e.props["aria-label"] === "Analýza situace")[0];
+    const children = section.props.children.flat(Infinity).filter(Boolean);
+    const start = children.findIndex((e) => e.type === "h2" && e.props.children === "K dispozici");
+    const end = children.findIndex((e) => e.type === "h2" && e.props.children === "Chybí / potřebuje vyjasnit");
+    const available = children.slice(start, end);
+    const buttons = available.flatMap((e) => elements(e, (node) => node.type === "button"));
+    assert.deepEqual(buttons.map((e) => e.props.children), ["Výzva", "Náčrt"]);
+    buttons[1].props.onClick(); assert.deepEqual(opened, ["sketch"]);
+    assert.deepEqual(elements(section, (e) => e.type === "h2").map((e) => e.props.children), ["Řešíme", "Cíl situace", "Požadavky", "K dispozici", "Chybí / potřebuje vyjasnit"]);
+    assert.ok(!JSON.stringify(r.tree).includes("Výsledek a vazby nejsou"));
+    assert.ok(!JSON.stringify(available).includes("Repeated atom"));
+    assert.ok(calls.every((options) => !options?.method), "read and document selection never write planning");
+    const custom = elements(section, (e) => e.type === "button" && e.props.children === "Vlastní cíl")[0]; custom.props.onClick(); r.render();
+    const trigger = () => elements(r.tree, (e) => e.type === "label" && e.props.children?.[0] === "Podnět / co nyní řešíme")[0].props.children[1];
+    trigger().props.onChange({ target: { value: "Vlastní Akce bez dokumentu" } }); r.render();
+    for (const view of ["PLAN", "ANALYSIS"]) { r.update({ view }); r.render(); }
+    assert.equal(trigger().props.value, "Vlastní Akce bez dokumentu");
+  } finally { r.dispose(); globalThis.window = oldWindow; globalThis.fetch = oldFetch; }
 });

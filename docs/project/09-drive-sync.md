@@ -89,3 +89,6 @@ Semantic content parity is required. Drive formatting may be simpler than Markdo
 The initial mechanism is manual/operator-triggered and requires no Replit Agent credits, permanent service, or GitHub/Google service credentials.
 
 A GitHub Action or other automation may be evaluated later only after this manual contract is stable and the credential/maintenance burden is justified.
+
+
+The one-Goal/trigger/document-overview follow-up on PR #43 changes canonical 00, 01, 03, 04, 07 and 08 again. Their mirrors still await authorized synchronization/readback; no new Drive parity is claimed.
