@@ -116,11 +116,11 @@ export function SituationPlanningPanel({ caseId, situationId, view, onOpenSource
       </fieldset> : null}
       {view === "COLLECTION" && state.plan?.status !== "ACCEPTED" ? <p>Nejprve potvrďte cíl a přijměte aktuální plán v kroku Plán.</p> : null}
       {sourcesStale ? <p role="status">Podklady se změnily; ověřuji aktuální doložení…</p> : null}
-      {view === "COLLECTION" && state.plan?.status === "ACCEPTED" && !sourcesStale ? <>
+      {view === "COLLECTION" && state.plan?.status === "ACCEPTED" ? <>
         <p>Soubor sám informaci nesplňuje. AI navrhne doložení; dostatečnost konkrétních zdrojů potvrzujete vy. Nejisté a rozporné podklady zůstávají neúplné.</p>
         <button disabled={busy} type="button" onClick={() => void run({ action: "matchInputs", planId: state.plan!.id })}>Najít podklady v existujících analýzách pomocí AI</button>
-        {state.inputs.map((input) => <section className="planning-coverage" key={input.id}><h4>{input.title} — {labels[input.status]}</h4>
-          {input.criteria.map((criterion) => <CriterionReview key={`${criterion.id}:${state.revision}`} criterion={criterion} evidence={state.evidence} busy={busy}
+        {state.inputs.map((input) => <section className="planning-coverage" key={input.id}><h4>{input.title} — {sourcesStale ? "Ověřuji aktuální doložení…" : labels[input.status]}</h4>
+          {input.criteria.map((criterion) => <CriterionReview key={criterion.id} criterion={criterion} evidence={state.evidence} busy={busy} refreshing={sourcesStale}
             onOpenSource={onOpenSource} onSave={(value, insightIds, sufficient, explanation) => run({ action: "reviewCriterion", planId: state.plan!.id, criterionId: criterion.id, value, insightIds, sufficient, explanation })} />)}
         </section>)}
       </> : null}
@@ -138,19 +138,28 @@ export function SituationPlanningPanel({ caseId, situationId, view, onOpenSource
     </>}
   </div>;
 }
-export function CriterionReview({ criterion, evidence, busy, onSave, onOpenSource }: {
-  criterion: PlanningState["inputs"][number]["criteria"][number]; evidence: PlanningState["evidence"]; busy: boolean;
+export function CriterionReview({ criterion, evidence, busy, refreshing = false, onSave, onOpenSource }: {
+  criterion: PlanningState["inputs"][number]["criteria"][number]; evidence: PlanningState["evidence"]; busy: boolean; refreshing?: boolean;
   onSave: (value: string, ids: string[], sufficient: boolean, explanation: string) => Promise<void>;
   onOpenSource: (source: JournalSource) => Promise<boolean>;
 }) {
   const [value, setValue] = useState(criterion.value), [ids, setIds] = useState(criterion.insightIds);
   const [explanation, setExplanation] = useState(criterion.explanation);
+  const previousSaved = useRef(criterion);
+  const savedIdsKey = JSON.stringify(criterion.insightIds);
+  useEffect(() => {
+    const previous = previousSaved.current;
+    setValue((current) => current === previous.value ? criterion.value : current);
+    setExplanation((current) => current === previous.explanation ? criterion.explanation : current);
+    setIds((current) => JSON.stringify(current) === JSON.stringify(previous.insightIds) ? criterion.insightIds : current);
+    previousSaved.current = criterion;
+  }, [criterion.value, criterion.explanation, savedIdsKey]);
   const availableIdsKey = JSON.stringify(evidence.map((e) => e.id).sort());
   const selectedIds = ids.filter((id) => evidence.some((e) => e.id === id));
   useEffect(() => { setIds((current) => current.filter((id) => evidence.some((e) => e.id === id))); }, [availableIdsKey]);
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-  return <fieldset disabled={busy}><legend>{criterion.requirement_text} — {criterion.status === "SATISFIED" ? "Doloženo" : "Nutno doplnit / ověřit"}</legend>
+  return <fieldset disabled={busy || refreshing}><legend>{criterion.requirement_text} — {refreshing ? "Ověřuji aktuální doložení…" : criterion.status === "SATISFIED" ? "Doloženo" : "Nutno doplnit / ověřit"}</legend>
     {criterion.stale ? <p role="status">Původní zdroj byl odebrán nebo změněn. Dřívější potvrzení nyní neplatí.</p> : null}
     {criterion.historicalInsightIds?.some((id) => !evidence.some((e) => e.id === id)) ? <details>
       <summary>Historické vazby na odebrané poznatky</summary>
@@ -162,7 +171,7 @@ export function CriterionReview({ criterion, evidence, busy, onSave, onOpenSourc
       <input type="checkbox" checked={selectedIds.includes(e.id)} onChange={(event) => setIds(event.target.checked ? [...selectedIds, e.id] : selectedIds.filter((id) => id !== e.id))} />
       {e.documentName}: {e.title} — {e.value} ({evidenceLabels[e.evidenceState] ?? "neurčené doložení"}){!e.usable ? " — pasáž není ověřitelná" : ""}
     </label>)}</details>
-    {criterion.sources.map((e) => <p key={e.id}>{e.documentName}: {e.quote} <button type="button" onClick={async () => {
+    {!refreshing && criterion.sources.map((e) => <p key={e.id}>{e.documentName}: {e.quote} <button type="button" onClick={async () => {
       const opened = await onOpenSource({ documentId: e.documentId, documentName: e.documentName, pinId: e.pinId, insightId: e.id,
         startOffset: e.startOffset, endOffset: e.endOffset, quote: e.quote });
       if (!opened && alive.current) setExplanation("Zdroj se nepodařilo otevřít. " + explanation);

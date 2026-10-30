@@ -402,7 +402,8 @@ test("coverage refresh hides removed evidence immediately and rail reload follow
     answer("/workflow", { workflow: { goals: [{ id: "g", title: "Cíl", status: "active", confirmed_at: "2026-10-30T00:00:00Z" }], workflow_steps: [{ id: "a", step_key: "ANALYSIS", status: "COMPLETED" }, { id: "c", step_key: "COLLECTION", status: "ACTIVE" }] } });
     await settle(); assert.equal(selected.at(-1), "COLLECTION"); assert.equal(byClass(panel.tree, "planning-coverage").length, 1);
     env.window.dispatchEvent(new Event("bureaucat:journal-refresh")); await settle();
-    assert.equal(byClass(panel.tree, "planning-coverage").length, 0, "do not show old SATISFIED while evidence refresh is pending");
+    assert.equal(byClass(panel.tree, "planning-coverage").length, 1, "keep editors mounted while evidence refresh is pending");
+    assert.equal(byClass(panel.tree, "planning-coverage")[0].props.children[0].props.children.at(-1), "Ověřuji aktuální doložení…");
     answer("/planning", { planning: { ...snapshot, inputs: [{ ...snapshot.inputs[0], status: "INCOMPLETE" }] } }); await settle();
     assert.equal(byClass(panel.tree, "planning-coverage")[0].props.children[0].props.children.at(-1), "Neúplné");
     rail.update({ selectedSituationId: "s2" }); await settle();
@@ -423,6 +424,9 @@ test("open criterion editor prunes removed IDs on refresh without losing text or
   const settle = () => { for (let i = 0; i < 5; i++) renderer.render(); };
   try {
     settle();
+    renderer.update({ criterion: { ...criterion, value: "Aktualizovaná uložená hodnota" } }); settle();
+    assert.equal(elements(renderer.tree, (e) => e.type === "textarea")[0].props.value, "Aktualizovaná uložená hodnota", "pristine fields receive server updates without remount");
+    elements(renderer.tree, (e) => e.type === "textarea")[0].props.onChange({ target: { value: "1,80" } }); settle();
     elements(renderer.tree, (e) => e.type === "textarea")[1].props.onChange({ target: { value: "Rozepsaná poznámka" } }); settle();
     renderer.update({ criterion: { ...criterion, insightIds: [], sources: [], stale: true }, evidence: [] }); settle();
     button("Uložit jako neúplné / chybějící").props.onClick();
@@ -434,4 +438,63 @@ test("open criterion editor prunes removed IDs on refresh without losing text or
     button("Potvrdit doložení a dostatečnost").props.onClick();
     assert.deepEqual(saved.at(-1), ["1,80", ["new"], true, "Rozepsaná poznámka"]);
   } finally { renderer.dispose(); }
+});
+
+test("Collection parent and keyed criterion children retain drafts through pending GET, revision refresh and save", async () => {
+  const env = environment(), previous = new Map(["window", "fetch"].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  globalThis.window = env.window;
+  const requests = [], calls = [], children = new Map(); let mounts = 0;
+  globalThis.fetch = (url, options = {}) => { calls.push({ url, options }); return new Promise((resolve) => requests.push(resolve)); };
+  const old = { id: "old", documentName: "Removed", title: "Old", value: "stored", evidenceState: "verified", usable: true };
+  const valid = { ...old, id: "valid", documentName: "Retained" };
+  const criterion = { id: "criterion", requirement_text: "Rozměr", value: "stored", explanation: "stored note", insightIds: [old.id], sources: [old], stale: false, status: "SATISFIED" };
+  const snapshot = { revision: 3, contextHash: "a".repeat(64), goal: { id: "g", title: "Cíl" }, goalSelectionRequired: false, goals: [], history: [],
+    plan: { id: "p", status: "ACCEPTED", content: { expectedOutput: "Výstup", procedure: ["Postup"], inputs: [] } },
+    inputs: [{ id: "input", title: "Údaj", status: "SATISFIED", criteria: [criterion, { ...criterion, id: "second" }] }], evidence: [old, valid] };
+  const parent = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "SituationPlanningPanel", { caseId: "case", situationId: "s1", view: "COLLECTION", onOpenSource: async () => true });
+  // Reconcile actual children from the actual parent's output by key/presence.
+  // Unlike the former isolated child test, conditional removal disposes hooks
+  // and a changed revision key remounts them, just as React reconciliation does.
+  async function settle() {
+    for (let i = 0; i < 12; i++) {
+      parent.render();
+      const nodes = elements(parent.tree, (e) => e.type?.name === "CriterionReview");
+      const keys = new Set(nodes.map((node) => node.key));
+      for (const [key, child] of children) if (!keys.has(key)) { child.dispose(); children.delete(key); }
+      for (const node of nodes) {
+        if (!children.has(node.key)) { children.set(node.key, hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "CriterionReview", node.props)); mounts++; }
+        else children.get(node.key).update(node.props);
+        children.get(node.key).render();
+      }
+      await Promise.resolve(); await Promise.resolve();
+    }
+  }
+  const respond = (state) => requests.shift()({ ok: true, json: async () => ({ planning: state }) });
+  const editors = () => [...children.values()];
+  const fields = (editor) => elements(editor.tree, (e) => e.type === "textarea");
+  try {
+    await settle(); respond(snapshot); await settle(); assert.equal(mounts, 2);
+    fields(editors()[0])[0].props.onChange({ target: { value: "Rozpracovaná hodnota" } });
+    fields(editors()[0])[1].props.onChange({ target: { value: "Rozpracované vysvětlení" } });
+    fields(editors()[1])[0].props.onChange({ target: { value: "Druhý rozepsaný údaj" } });
+    elements(editors()[0].tree, (e) => e.type === "input")[1].props.onChange({ target: { checked: true } }); await settle();
+    env.window.dispatchEvent(new Event("bureaucat:journal-refresh")); await settle();
+    assert.equal(requests.length, 1); assert.equal(mounts, 2);
+    assert.equal(editors()[0].tree.props.disabled, true);
+    assert.ok(!JSON.stringify(editors()[0].tree).includes('"Doloženo"'));
+    assert.equal(fields(editors()[0])[0].props.value, "Rozpracovaná hodnota");
+    const refreshed = { ...snapshot, revision: 4, contextHash: "b".repeat(64), evidence: [valid], inputs: [{ ...snapshot.inputs[0], status: "INCOMPLETE", criteria: snapshot.inputs[0].criteria.map((c) => ({ ...c, insightIds: [], sources: [], stale: true, status: "MISSING" })) }] };
+    respond(refreshed); await settle(); assert.equal(mounts, 2, "revision must not remount criteria");
+    assert.equal(fields(editors()[0])[0].props.value, "Rozpracovaná hodnota");
+    assert.equal(fields(editors()[0])[1].props.value, "Rozpracované vysvětlení");
+    assert.equal(elements(editors()[0].tree, (e) => e.type === "input")[0].props.checked, true);
+    elements(editors()[0].tree, (e) => e.type === "button" && e.props.children === "Uložit jako neúplné / chybějící")[0].props.onClick(); await settle();
+    const body = JSON.parse(calls.at(-1).options.body);
+    assert.deepEqual(body.insightIds, [valid.id]); assert.equal(body.value, "Rozpracovaná hodnota"); assert.equal(body.explanation, "Rozpracované vysvětlení"); assert.equal(body.expectedRevision, 4);
+    respond({ ...refreshed, revision: 5 }); await settle();
+    assert.equal(mounts, 2); assert.equal(fields(editors()[1])[0].props.value, "Druhý rozepsaný údaj", "saving one criterion preserves the other editor");
+  } finally {
+    parent.dispose(); for (const child of children.values()) child.dispose();
+    for (const [key, descriptor] of previous) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key]; }
+  }
 });
