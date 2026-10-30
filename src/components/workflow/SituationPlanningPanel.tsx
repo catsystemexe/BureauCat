@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { analysisOverview } from "@/lib/workflow/analysisOverview";
+import type { AnalysisQuestion, QuestionSource } from "@/lib/workflow/analysisOverview";
 import type { JournalSource } from "@/lib/journal/overview";
 import { uniqueInsights, editPlan, currentBrief } from "@/lib/workflow/planning";
 import type { EditablePlan, PlanningCommand, PlanningState, SituationBrief } from "@/lib/workflow/planning";
 const emptyPlan = () => editPlan(null);
 const lines = (value: string) => value.split("\n");
-const labels: Record<string, string> = { SATISFIED: "Máme", INCOMPLETE: "Neúplné", MISSING: "Chybí" };
+const labels: Record<string, string> = { SATISFIED: "Máme", INCOMPLETE: "K ověření", MISSING: "K ověření" };
 const evidenceLabels: Record<string, string> = { verified: "ověřené", inferred: "odvozené", unverified: "neověřené", conflict: "rozpor" };
 type Action = PlanningCommand extends infer C ? C extends PlanningCommand ? Omit<C, "caseId" | "requestKey" | "expectedRevision" | "contextHash"> : never : never;
 
@@ -90,23 +92,27 @@ export function SituationPlanningPanel({ caseId, situationId, view, onOpenSource
   }
   const canEdit = !busy && !sourcesStale;
   const startPlanEdit = () => { setDraft(editPlan(state?.plan?.content ?? null)); setPlanEditing(true); };
-  const brief = (value: string) => value.length > 180 ? `${value.slice(0, 180)}…` : value;
   const coverageLabel = (input: PlanningState["inputs"][number]) => input.criteria.some((c) => c.assessed === false) ? "Dosud nevyhodnoceno" : labels[input.status];
   const displayedBrief = goalEditing ? briefDraft : state?.brief;
-  const questions = state?.evidence.filter((e) => ["question", "conflict"].includes(e.type) || e.evidenceState === "conflict") ?? [];
-  const journalQuestions = state?.preliminary?.filter((e) => e.type === "QUESTION" || e.evidenceState === "conflict") ?? [];
+  const overview = state ? analysisOverview(state) : null;
   const suggestPlan = () => state?.goal && void run({ action: "suggestPlan", goalId: state.goal.id });
   return <div className="situation-planning">
     {error ? <p role="alert" className="planning-error">{error} <button disabled={busy} type="button" onClick={() => void refresh(true)}>Zkusit znovu načíst</button></p> : null}
     {busy ? <p role="status">Zpracovávám…</p> : null}
     {!state ? <p>Načítám pracovní stav…</p> : <>
       <section hidden={view === "PLAN"} aria-label="Analýza situace">
-        <h2>Řešíme</h2>
+        <h2>Situace</h2>
+        <div className="planning-situation-brief">
         {displayedBrief ? <><p>{displayedBrief.trigger.description}</p>
-          {state.briefStale ? <p role="status">Kontext přijatého návrhu je historický; podklady se změnily. Požadavky nejsou potvrzením dostatečnosti.</p> : null}
+          {state.briefStale ? <p role="status">Historický kontext — podklady se změnily.</p> : null}
           {displayedBrief.trigger.documentIds.map((id) => { const doc = state.documents?.find((d) => d.id === id); return doc ? <button key={id} type="button" onClick={() => onOpenDocument?.(id)}>{doc.name}</button> : <p key={id}>Původní dokument podnětu již není v situaci.</p>; })}
         </> : <p>Podnět zatím není určený. Navrhněte jej pomocí AI nebo zadejte vlastní.</p>}
-        <h2>Cíl situace</h2>
+        {displayedBrief?.requirements.length ? <ul className="planning-situation-requirements">{displayedBrief.requirements.map((item, i) => <li key={`requirement:${i}`}>
+          {item.text}<BriefSources ids={item.insightIds} state={state} onOpenSource={onOpenSource} />
+        </li>)}</ul> : null}
+        {displayedBrief?.deadline ? <div><strong>{!goalEditing && !sourcesStale && state.deadlineVerified ? "Doložený explicitní termín" : "Termín — doložení není potvrzené"}: {displayedBrief.deadline.text}</strong><BriefSources ids={displayedBrief.deadline.insightIds} state={state} onOpenSource={onOpenSource} /></div> : null}
+        </div>
+        <h2>Cíl</h2>
         {state.goal ? <article className="planning-goal-card"><strong>{state.goal.title}</strong>
           <button disabled={!canEdit} type="button" onClick={() => { setBriefDraft(state.brief ?? null); setGoalEditing(true); }}>Změnit</button></article> : <>
           <p>Cíl zatím není potvrzený.</p>
@@ -139,30 +145,29 @@ export function SituationPlanningPanel({ caseId, situationId, view, onOpenSource
             <button type="button" onClick={() => setGoalEditing(false)}>Zavřít úpravu</button>
           </fieldset>
         </div>
-        <h2>Požadavky</h2>
-        <p>Požadavek neznamená, že údaj chybí. Bez posouzení není doložená dostatečnost.</p>
-        {displayedBrief?.requirements.map((item, i) => <div key={`requirement:${i}`}><p>{item.text}</p><BriefSources ids={item.insightIds} state={state} onOpenSource={onOpenSource} /></div>)}
-        {displayedBrief?.deadline ? <div><strong>{!goalEditing && !sourcesStale && state.deadlineVerified ? "Doložený explicitní termín" : "Termín — doložení není potvrzené"}: {displayedBrief.deadline.text}</strong><BriefSources ids={displayedBrief.deadline.insightIds} state={state} onOpenSource={onOpenSource} /></div> : null}
-        {!displayedBrief?.requirements.length ? <p>Konkrétní požadavky zatím nejsou určené.</p> : null}
-        <h2>K dispozici</h2>
-        <p>Dokumenty aktuální situace. Přítomnost souboru sama nepotvrzuje splnění požadavku.</p>
-        {state.documents?.map((doc) => <p key={doc.id}><button type="button" onClick={() => onOpenDocument?.(doc.id)}>{doc.name}</button></p>)}
-        {!state.documents?.length ? <p>V situaci nejsou připojené dokumenty.</p> : null}
-        <h2>Chybí / potřebuje vyjasnit</h2>
-        {state.plan?.status !== "ACCEPTED" ? <p>Předběžné otázky a rozpory z podkladů. Požadavky plánu zatím nejsou vyhodnocené.</p> : <>
-          {state.inputs.filter((i) => i.status !== "SATISFIED").map((i) => <details key={i.id}><summary>{i.title} — {sourcesStale ? "Ověřuji doložení…" : coverageLabel(i)}</summary>
-            {i.criteria.map((c) => <p key={c.id}>{c.requirement_text}: {c.stale ? "Původní doložení již neplatí. " : ""}{c.explanation || "Dostatečnost zatím nebyla posouzena."}</p>)}
-          </details>)}
-        </>}
-        {questions.map((e) => <details key={e.id}><summary>{e.title}: {brief(e.value)}</summary><p>{e.value}</p><p>Uložená otázka / rozpor, relevance vůči cíli není odvozena.</p><p>{e.documentName}: {e.quote}</p></details>)}
-        {journalQuestions.map((e) => <details key={e.id}><summary>{e.title}</summary><p>{e.value}</p><p>Uložená otázka / rozpor zápisníku; předběžné, bez automatického posouzení.</p></details>)}
-        {!questions.length && !journalQuestions.length && state.plan?.status !== "ACCEPTED" ? <p>Žádné výslovně uložené otázky nebo rozpory. Neznamená to úplnost podkladů.</p> : null}
+        <h2>K doplnění a ověření</h2>
+        {overview!.openCriteria.length ? <div className="planning-open-criteria"><h3>K ověření</h3><ul aria-label="Otevřená kritéria plánu">
+          {overview!.openCriteria.map(({ criterion, sources }) => <li key={criterion.id}><details>
+            <summary>{criterion.requirement_text}</summary>
+            {sourcesStale ? <p>Ověřuji aktuální doložení…</p> : <>
+              {criterion.value ? <p>{criterion.value}</p> : null}
+              {criterion.stale ? <p>Původní doložení již neplatí.</p> : criterion.assessed === false ? <p>Dostatečnost zatím nebyla posouzena.</p> : null}
+              {criterion.explanation ? <p>{criterion.explanation}</p> : null}
+              <QuestionSources sources={sources} onOpenSource={onOpenSource} onOpenDocument={onOpenDocument} />
+            </>}
+          </details></li>)}
+        </ul></div> : null}
+        {overview!.questions.length ? state.plan?.status === "ACCEPTED" ? <details className="planning-additional-questions"><summary>Další otázky z podkladů</summary>
+          <AnalysisQuestions questions={overview!.questions} onOpenSource={onOpenSource} onOpenDocument={onOpenDocument} />
+        </details> : <div className="planning-preliminary-questions"><h3>K ověření</h3>
+          <AnalysisQuestions questions={overview!.questions} onOpenSource={onOpenSource} onOpenDocument={onOpenDocument} />
+        </div> : null}
         {sourcesStale ? <p role="status">Podklady se změnily; ověřuji aktuální doložení…</p> : null}
-        <details hidden={state.plan?.status !== "ACCEPTED"}><summary>Posoudit požadavky přijatého plánu</summary>
+        <details hidden={state.plan?.status !== "ACCEPTED" || !state.inputs.some((input) => input.criteria.length)}><summary>Posoudit požadavky přijatého plánu</summary>
           <button disabled={!canEdit} type="button" onClick={() => state.plan && void run({ action: "matchInputs", planId: state.plan.id })}>Najít podklady v existujících analýzách pomocí AI</button>
           {state.inputs.map((input) => <section className="planning-coverage" key={input.id}><h4>{input.title} — {sourcesStale ? "Ověřuji aktuální doložení…" : coverageLabel(input)}</h4>
-            {input.criteria.map((criterion) => <CriterionReview key={criterion.id} criterion={criterion} evidence={state.evidence} busy={busy} refreshing={sourcesStale}
-              onOpenSource={onOpenSource} onSave={(value, insightIds, sufficient, explanation) => run({ action: "reviewCriterion", planId: state.plan!.id, criterionId: criterion.id, value, insightIds, sufficient, explanation })} />)}
+            {input.criteria.map((criterion) => <details key={criterion.id}><summary>{criterion.requirement_text}</summary><CriterionReview key={criterion.id} criterion={criterion} evidence={state.evidence} busy={busy} refreshing={sourcesStale}
+              onOpenSource={onOpenSource} onSave={(value, insightIds, sufficient, explanation) => run({ action: "reviewCriterion", planId: state.plan!.id, criterionId: criterion.id, value, insightIds, sufficient, explanation })} /></details>)}
           </section>)}
         </details>
         <footer><button disabled={!state.goal || !canEdit || planEditing} type="button" onClick={suggestPlan}>Navrhnout plán</button>
@@ -241,7 +246,7 @@ export function CriterionReview({ criterion, evidence, busy, refreshing = false,
   useEffect(() => { setIds((current) => [...new Set(current)].filter((id) => currentEvidence.some((e) => e.id === id))); }, [availableIdsKey]);
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-  return <fieldset disabled={busy || refreshing}><legend>{criterion.requirement_text} — {refreshing ? "Ověřuji aktuální doložení…" : criterion.assessed === false ? "Dostatečnost dosud neposouzena" : criterion.status === "SATISFIED" ? "Doloženo" : "Nutno doplnit / ověřit"}</legend>
+  return <fieldset disabled={busy || refreshing}><legend>{criterion.requirement_text} — {refreshing ? "Ověřuji aktuální doložení…" : criterion.assessed === false ? "Dostatečnost dosud neposouzena" : criterion.status === "SATISFIED" ? "Doloženo" : "Nutno ověřit"}</legend>
     {criterion.stale ? <p role="status">Původní zdroj byl odebrán nebo změněn. Dřívější potvrzení nyní neplatí.</p> : null}
     {criterion.historicalInsightIds?.some((id) => !currentEvidence.some((e) => e.id === id)) ? <details>
       <summary>Historické vazby na odebrané poznatky</summary>
@@ -264,10 +269,10 @@ export function CriterionReview({ criterion, evidence, busy, refreshing = false,
 }
 
 function BriefSources({ ids, state, onOpenSource }: { ids: string[]; state: PlanningState; onOpenSource: (source: JournalSource) => Promise<boolean> }) {
-  return <details><summary>Zdroje požadavku</summary>{[...new Set(ids)].map((id) => {
+  return ids.length ? <details><summary>Zdroje požadavku</summary>{[...new Set(ids)].map((id) => {
     const e = state.evidence.find((source) => source.id === id);
     return e?.usable && !state.briefStale ? <button key={id} type="button" onClick={() => void onOpenSource({ documentId: e.documentId, documentName: e.documentName, pinId: e.pinId, insightId: id, startOffset: e.startOffset, endOffset: e.endOffset, quote: e.quote })}>{e.documentName}: {e.quote}</button> : <p key={id}>Původní pasáž vyžaduje nové ověření.</p>;
-  })}</details>;
+  })}</details> : null;
 }
 
 function BriefSourceSelection({ ids, evidence, onChange }: { ids: string[]; evidence: PlanningState["evidence"]; onChange: (ids: string[]) => void }) {
@@ -277,4 +282,17 @@ function BriefSourceSelection({ ids, evidence, onChange }: { ids: string[]; evid
     <input type="checkbox" checked={selected.includes(source.id)} onChange={(e) => onChange(e.target.checked ? [...selected, source.id] : selected.filter((id) => id !== source.id))} />
     {source.documentName}: {source.title} — {source.quote}
   </label>)}</details>;
+}
+
+function QuestionSources({ sources, onOpenSource, onOpenDocument }: { sources: QuestionSource[]; onOpenSource: (source: JournalSource) => Promise<boolean>; onOpenDocument?: (id: string) => void }) {
+  return sources.length ? <details><summary>Zdroje</summary>{sources.map((source) => <p key={source.key}>
+    {source.passage ? <button type="button" onClick={() => void onOpenSource(source.passage!)}>{source.label}: {source.quote}</button> : source.documentId ? <button type="button" onClick={() => onOpenDocument?.(source.documentId!)}>{source.label}</button> : <span>{source.label}</span>}
+  </p>)}</details> : null;
+}
+function AnalysisQuestions({ questions, onOpenSource, onOpenDocument }: { questions: AnalysisQuestion[]; onOpenSource: (source: JournalSource) => Promise<boolean>; onOpenDocument?: (id: string) => void }) {
+  return <ul>{questions.map((question) => <li key={question.key}><details><summary>{question.title || question.value}</summary>
+    {question.value && question.value !== question.title ? <p>{question.value}</p> : null}
+    {question.conflict ? <p>Rozpor — je potřeba ověřit.</p> : null}
+    <QuestionSources sources={question.sources} onOpenSource={onOpenSource} onOpenDocument={onOpenDocument} />
+  </details></li>)}</ul>;
 }

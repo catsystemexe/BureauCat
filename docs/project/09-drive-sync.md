@@ -95,3 +95,6 @@ The one-Goal/trigger/document-overview follow-up on PR #43 changes canonical 00,
 
 
 The brief source-removal repair additionally updates 00, 07 and 08; these mirrors remain pending along with the already listed unsynchronized documents. No Drive write or current parity is asserted.
+
+
+The three-section Analysis simplification updates canonical 00, 01, 03, 04, 07 and 08; their mirrors remain pending. Earlier snapshot-specific synchronization is historical, not parity with this follow-up. No Drive write was performed.

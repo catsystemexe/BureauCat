@@ -143,6 +143,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       assert.equal(current.goals.length, 1); assert.deepEqual(current.brief, brief); assert.equal(current.documents.length, 3);
       const promptData = JSON.parse(lastPrompt.slice(lastPrompt.lastIndexOf('\n') + 1));
       assert.deepEqual(promptData.allowedInsightIds, references.map((r) => r.id).sort());
+      assert.ok(promptData.findings.every((finding) => !Object.hasOwn(finding, "journalItemId")), "presentation-only metadata must not alter AI context");
       assert.ok(lastPrompt.includes("Dílčí požadavky nejsou alternativní cíle")); assert.ok(lastPrompt.includes("novější datum přílohy automaticky neurčuje podnět"));
       current = (await send(command(current, { action: "confirmGoal", goalId: current.goals[0].id, title: current.goals[0].title }), target.id)).planning;
       assert.deepEqual((await read(target.id, caseId)).brief, brief);
@@ -257,6 +258,24 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
         assert.equal((await db.workflowEvent.findUnique({ where: { id: original.id } })).payload_json, original.payload_json);
         await invariant(target.id);
       } finally { panel.dispose(); globalThis.window = previousWindow; globalThis.fetch = previousFetch; }
+    });
+    await t.test("Analysis question source metadata is read-only and keeps Journal links and insight identity", async () => {
+      const target = await createSituation(caseId, { title: "Question source projection" });
+      const ownDoc = await db.document.create({ data: { case_id: caseId, filename: "isolated-question.txt", filetype: "txt", original_file: "", processed_text: "Šířka je 1,80 m." } });
+      await db.situationDocument.create({ data: { situation_id: target.id, document_id: ownDoc.id } });
+      const ownInsight = await db.documentInsight.create({ data: { document_id: ownDoc.id, source_document_id: ownDoc.id, title: "Šířka", content: "Šířka je 1,80 m.", source_text: "Šířka je 1,80 m.", source_start_offset: 0, source_end_offset: 15, insight_type: "fact", evidence_state: "verified", target_section: "description", target_item_type: "FACT", status: "approved" } });
+      const links = [{ insightId: ownInsight.id, documentId: ownDoc.id, sourceText: ownInsight.source_text }];
+      const item = await db.journalItem.create({ data: { case_id: caseId, situation_id: target.id, section: "open_questions", item_type: "QUESTION", title: "Ověřit šířku", value: "Je míra doložená?", source_links_json: JSON.stringify(links) } });
+      await db.documentInsight.update({ where: { id: ownInsight.id }, data: { journal_item_id: item.id } });
+      await new Promise((resolve) => setImmediate(resolve)); queries.length = 0;
+      const current = await read(target.id, caseId);
+      const { analysisOverview } = loader()("src/lib/workflow/analysisOverview.ts");
+      const overview = analysisOverview(current); analysisOverview(current);
+      assert.deepEqual(current.preliminary[0].sourceLinks, links);
+      assert.equal(current.evidence.find((e) => e.id === ownInsight.id).journalItemId, item.id);
+      assert.equal(overview.questions[0].sources[0].key, `insight:${ownInsight.id}`);
+      assert.ok(!queries.some((q) => /^\s*(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(q)), queries.join("\n"));
+      assert.equal((await db.journalItem.findUnique({ where: { id: item.id } })).source_links_json, JSON.stringify(links));
     });
     await t.test("explicit edited goal confirmation is atomic, unique and idempotent under concurrent requests", async () => {
       const c = command(state, { action: "confirmGoal", goalId: state.goals[0].id, title: "Doložit skutečné rozměry a vypořádat rozdíl" });
@@ -605,7 +624,7 @@ test("coverage refresh hides removed evidence immediately and rail reload follow
     assert.equal(byClass(panel.tree, "planning-coverage").length, 1, "keep editors mounted while evidence refresh is pending");
     assert.equal(byClass(panel.tree, "planning-coverage")[0].props.children[0].props.children.at(-1), "Ověřuji aktuální doložení…");
     answer("/planning", { planning: { ...snapshot, inputs: [{ ...snapshot.inputs[0], status: "INCOMPLETE" }] } }); await settle();
-    assert.equal(byClass(panel.tree, "planning-coverage")[0].props.children[0].props.children.at(-1), "Neúplné");
+    assert.equal(byClass(panel.tree, "planning-coverage")[0].props.children[0].props.children.at(-1), "K ověření");
     rail.update({ selectedSituationId: "s2" }); await settle();
     assert.equal(byClass(rail.tree, "workflow-step-button").length, 0, "old Situation's steps are cleared during scope switch");
   } finally {
@@ -761,7 +780,7 @@ test("right tabs keep one planning component, center only Journal, and Plan draf
 });
 
 
-test("Analysis lists each document once, keeps requirements separate and legacy Plan silently readable", async () => {
+test("Analysis has three main sections, compact sourced Situation and no repeated document list", async () => {
   const env = environment(); const oldWindow = globalThis.window, oldFetch = globalThis.fetch;
   globalThis.window = env.window;
   const brief = { trigger: { description: "Reagovat na výzvu", documentIds: ["request"] }, requirements: [{ text: "Rozměry stojanu", insightIds: ["i1"] }], deadline: { text: "11. září", insightIds: ["i2"] } };
@@ -772,21 +791,85 @@ test("Analysis lists each document once, keeps requirements separate and legacy 
   try {
     for (let i = 0; i < 8; i++) { r.render(); await Promise.resolve(); }
     const section = elements(r.tree, (e) => e.props["aria-label"] === "Analýza situace")[0];
-    const children = section.props.children.flat(Infinity).filter(Boolean);
-    const start = children.findIndex((e) => e.type === "h2" && e.props.children === "K dispozici");
-    const end = children.findIndex((e) => e.type === "h2" && e.props.children === "Chybí / potřebuje vyjasnit");
-    const available = children.slice(start, end);
-    const buttons = available.flatMap((e) => elements(e, (node) => node.type === "button"));
-    assert.deepEqual(buttons.map((e) => e.props.children), ["Výzva", "Náčrt"]);
-    buttons[1].props.onClick(); assert.deepEqual(opened, ["sketch"]);
-    assert.deepEqual(elements(section, (e) => e.type === "h2").map((e) => e.props.children), ["Řešíme", "Cíl situace", "Požadavky", "K dispozici", "Chybí / potřebuje vyjasnit"]);
+    assert.deepEqual(elements(section, (e) => e.type === "h2").map((e) => e.props.children), ["Situace", "Cíl", "K doplnění a ověření"]);
+    const triggerButton = elements(section, (e) => e.type === "button" && e.props.children === "Výzva");
+    assert.equal(triggerButton.length, 1); triggerButton[0].props.onClick(); assert.deepEqual(opened, ["request"]);
+    assert.equal(elements(section, (e) => e.type === "button" && e.props.children === "Náčrt").length, 0);
+    assert.equal(byClass(section, "planning-situation-requirements").length, 1);
+    assert.ok(JSON.stringify(byClass(section, "planning-situation-requirements")[0]).includes("Rozměry stojanu"));
+    assert.equal(elements(section, (e) => e.type?.name === "BriefSources").length, 2, "requirement and deadline retain source menus");
+    assert.ok(JSON.stringify(section).includes("11. září"));
+    assert.ok(!JSON.stringify(section).includes('"K dispozici"'));
     assert.ok(!JSON.stringify(r.tree).includes("Výsledek a vazby nejsou"));
-    assert.ok(!JSON.stringify(available).includes("Repeated atom"));
     assert.ok(calls.every((options) => !options?.method), "read and document selection never write planning");
     const custom = elements(section, (e) => e.type === "button" && e.props.children === "Vlastní cíl")[0]; custom.props.onClick(); r.render();
     const trigger = () => elements(r.tree, (e) => e.type === "label" && e.props.children?.[0] === "Podnět / co nyní řešíme")[0].props.children[1];
     trigger().props.onChange({ target: { value: "Vlastní Akce bez dokumentu" } }); r.render();
     for (const view of ["PLAN", "ANALYSIS"]) { r.update({ view }); r.render(); }
     assert.equal(trigger().props.value, "Vlastní Akce bez dokumentu");
+  } finally { r.dispose(); globalThis.window = oldWindow; globalThis.fetch = oldFetch; }
+});
+
+test("Analysis overview groups exact question content only and preserves distinct values and all source identities", () => {
+  const { analysisOverview } = loader()("src/lib/workflow/analysisOverview.ts");
+  const evidence = (id, title, value, type = "question") => ({ id, title, value, type, evidenceState: type === "conflict" ? "conflict" : "unverified", documentId: "doc", documentName: "Podklad", quote: "Same passage", pinId: null, startOffset: 0, endOffset: 12, usable: true, fingerprint: id });
+  const shared = evidence("a", "Ověřit adresu", "Ověřit adresu");
+  const state = { evidence: [shared, { ...shared, id: "b" }, evidence("c", "Rozměry", "1,80 m", "conflict"), evidence("d", "Rozměry", "1,20 m", "conflict"), evidence("e", "Ověřit adresy", "Ověřit adresy")],
+    documents: [{ id: "doc", name: "Podklad" }, { id: "extra", name: "Další zdroj" }], inputs: [],
+    preliminary: [{ id: "journal", title: shared.title, value: shared.value, type: "QUESTION", evidenceState: "unverified", sourceLinks: [{ insightId: shared.id }, { documentId: "extra", sourceText: "Extra quote" }] }] };
+  const before = JSON.stringify(state); const view = analysisOverview(state);
+  assert.equal(view.questions.length, 4, "only the complete identical statement groups");
+  const same = view.questions.find((q) => q.title === shared.title); assert.equal(same.sources.length, 3);
+  assert.ok(same.sources.some((source) => source.key === "insight:a")); assert.ok(same.sources.some((source) => source.key === "insight:b"));
+  assert.deepEqual(view.questions.filter((q) => q.conflict).map((q) => q.value), ["1,80 m", "1,20 m"]);
+  assert.equal(JSON.stringify(state), before); assert.deepEqual(analysisOverview(state), view);
+});
+
+test("accepted criteria remain separate, omit SATISFIED and move uncertain questions to additional details", () => {
+  const { analysisOverview } = loader()("src/lib/workflow/analysisOverview.ts");
+  const criterion = (id, requirement_text, status = "MISSING") => ({ id, requirement_text, status, sources: [], value: "", explanation: "Dosud nezjištěno", assessed: false, stale: false, insightIds: [] });
+  const criteria = [criterion("done", "Potvrzené rozměry", "SATISFIED"), criterion("address", "Poštovní adresa"), criterion("combined", "Adresa a rozměry", "INCOMPLETE")];
+  const q = (id, title, value = title, type = "question") => ({ id, title, value, type, evidenceState: type === "conflict" ? "conflict" : "unverified", documentId: "doc", documentName: "Doc", quote: title, usable: true });
+  const state = { plan: { status: "ACCEPTED" }, inputs: [{ id: "parent", title: "Společný název", status: "INCOMPLETE", criteria }],
+    evidence: [q("same", "Poštovní adresa"), q("satisfied", "Potvrzené rozměry"), q("uncertain", "Poštovní adresa", "Není jasné, zda je úplná"), q("conflict", "Adresa a rozměry", "Adresa a rozměry", "conflict")], preliminary: [] };
+  const view = analysisOverview(state);
+  assert.deepEqual(view.openCriteria.map(({ criterion: c }) => c.id), ["address", "combined"]);
+  assert.equal(view.openCriteria[1].criterion.requirement_text, "Adresa a rozměry", "combined criterion is neither split nor merged");
+  assert.deepEqual(view.questions.map((q) => q.title), ["Poštovní adresa", "Adresa a rozměry"]);
+  assert.equal(view.openCriteria[0].sources[0].key, "insight:same", "exact duplicate's source stays with the criterion");
+  assert.equal(criteria[0].status, "SATISFIED");
+  const ambiguous = analysisOverview({ ...state, inputs: [{ ...state.inputs[0], criteria: [...criteria, criterion("another-address", "Poštovní adresa")] }] });
+  assert.equal(ambiguous.questions.filter((question) => question.title === "Poštovní adresa").length, 2, "even exact text stays additional when multiple distinct criteria could own it");
+});
+
+test("actual Analysis displays criterion-level verification and collapses additional questions without navigation writes", async () => {
+  const env = environment(), oldWindow = globalThis.window, oldFetch = globalThis.fetch;
+  globalThis.window = env.window;
+  const calls = [];
+  const criterion = (id, text, status, assessed) => ({ id, requirement_text: text, status, assessed, value: "", explanation: "Bez závěru o absenci", sources: [], stale: false, insightIds: [] });
+  let snapshot = { revision: 1, contextHash: "a".repeat(64), goal: { id: "g", title: "Odpovědět" }, goalSelectionRequired: false, goals: [],
+    plan: { id: "plan", status: "ACCEPTED", content: { expectedOutput: "Odpověď", procedure: ["Ověřit"], inputs: [] } }, history: [],
+    inputs: [{ id: "input", title: "Společný název", status: "INCOMPLETE", criteria: [criterion("yes", "Hotový rozměr", "SATISFIED", true), criterion("new", "Posoudit adresu a rozměry", "MISSING", false), criterion("partial", "Druhý samostatný požadavek", "INCOMPLETE", true)] }],
+    evidence: [{ id: "uncertain", title: "Jiná otázka", value: "Kontext není jistý", type: "question", evidenceState: "unverified" }], preliminary: [] };
+  globalThis.fetch = async (_url, options = {}) => { calls.push(options); return { ok: true, json: async () => ({ planning: snapshot }) }; };
+  const r = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "SituationPlanningPanel", { caseId: "case", situationId: "s", view: "ANALYSIS", onOpenSource: async () => true });
+  try {
+    const settle = async () => { for (let i = 0; i < 10; i++) { r.render(); await Promise.resolve(); } };
+    await settle();
+    const main = elements(r.tree, (e) => e.props["aria-label"] === "Otevřená kritéria plánu")[0];
+    assert.deepEqual(elements(main, (e) => e.type === "summary").map((e) => e.props.children), ["Posoudit adresu a rozměry", "Druhý samostatný požadavek"]);
+    assert.ok(!JSON.stringify(main).includes("Hotový rozměr")); assert.ok(!JSON.stringify(main).includes("Společný název"));
+    assert.ok(!JSON.stringify(main).includes("Chybí"));
+    assert.equal(byClass(r.tree, "planning-open-criteria")[0].props.children[0].props.children, "K ověření");
+    const extra = byClass(r.tree, "planning-additional-questions")[0]; assert.equal(extra.type, "details"); assert.ok(!extra.props.open);
+    assert.equal(elements(r.tree, (e) => e.type?.name === "CriterionReview").length, 3, "reviewers stay mounted once each in collapsed assessment details");
+    for (const view of ["PLAN", "ANALYSIS"]) { r.update({ view }); await settle(); }
+    assert.ok(calls.every((c) => !c.method));
+    snapshot = { ...snapshot, evidence: [], inputs: snapshot.inputs.map((input) => ({ ...input, criteria: input.criteria.map((c) => ({ ...c, status: "SATISFIED" })) })) };
+    env.window.dispatchEvent(new Event("bureaucat:journal-refresh")); await settle();
+    assert.equal(byClass(r.tree, "planning-open-criteria").length, 0);
+    assert.equal(byClass(r.tree, "planning-additional-questions").length, 0);
+    const section = elements(r.tree, (e) => e.props["aria-label"] === "Analýza situace")[0];
+    assert.equal(elements(section, (e) => e.type === "h3").length, 0, "empty subsections do not render");
   } finally { r.dispose(); globalThis.window = oldWindow; globalThis.fetch = oldFetch; }
 });

@@ -86,11 +86,11 @@ export type PlanningState = {
     assessed?: boolean; stale: boolean; historicalInsightIds?: string[]; insightIds: string[]; sources: PlanningEvidence[];
   }[] }[];
   evidence: PlanningEvidence[];
-  preliminary?: { id: string; title: string; value: string; type: string; evidenceState: string }[];
+  preliminary?: { id: string; title: string; value: string; type: string; evidenceState: string; sourceLinks?: Record<string, unknown>[] }[];
   reviewHistory?: { id: string; createdAt: string; changes: { criterionId: string; requirement?: string; before: { value: string | null; refs: string }; after: { value: string; explanation: string; reviewed: boolean } }[] }[];
 };
 export type PlanningEvidence = {
-  id: string; documentId: string; documentName: string; title: string; value: string; quote: string;
+  journalItemId?: string | null; id: string; documentId: string; documentName: string; title: string; value: string; quote: string;
   startOffset: number | null; endOffset: number | null; pinId: string | null;
   type: string; evidenceState: string; fingerprint: string; usable: boolean;
 };

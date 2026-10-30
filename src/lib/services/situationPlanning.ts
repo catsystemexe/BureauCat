@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { WORKFLOW_STEP_DEFINITIONS } from "@/lib/workflow/constants";
-import { resolveSourceRange } from "@/lib/journal/overview";
+import { resolveSourceRange, parseJournalLinks } from "@/lib/journal/overview";
 import { requestAIJson } from "@/lib/ai/jsonResponse";
 import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema, newPlanContentSchema, situationBriefSchema, currentBrief, uniqueInsights } from "@/lib/workflow/planning";
 import type { PlanningCommand, PlanningEvidence, PlanningState } from "@/lib/workflow/planning";
@@ -44,7 +44,7 @@ async function load(db: DB, situationId: string, caseId: string) {
   const contextHash = hash([situation.title, situation.description, documents, insights, journal]);
   const active = goals.filter((g) => g.status === "active");
   const goal = active.length === 1 && active[0].confirmed_at ? active[0] : null;
-  return { situation, goals, plans, steps, evidence, contextHash, goal, journal, documents, reviews, proposals, caseIntent };
+  return { situation, goals, plans, steps, evidence, contextHash, goal, journal, documents, insights, reviews, proposals, caseIntent };
 }
 type Loaded = Awaited<ReturnType<typeof load>>;
 type SavedEvidence = { sources: { insightId: string; fingerprint: string }[]; explanation: string; reviewed: boolean; assessed?: boolean; stale?: boolean; historicalInsightIds?: string[] };
@@ -97,8 +97,8 @@ function project(data: Loaded): PlanningState {
     steps: data.steps.map((s) => ({ step_key: s.step_key, status: s.status })),
     plan: current ? { id: current.id, goal_id: current.goal_id, status: current.status, revision: current.revision,
       accepted_at: current.accepted_at?.toISOString() ?? null, content: planContentSchema.parse(JSON.parse(current.content_json)) } : null,
-    history: data.plans.map((p) => ({ id: p.id, goal_id: p.goal_id, status: p.status, revision: p.revision, content: planContentSchema.parse(JSON.parse(p.content_json)) })), inputs, evidence: data.evidence,
-    preliminary: data.journal.map((j) => ({ id: j.id, title: j.title, value: j.value ?? j.explanation ?? "", type: j.item_type, evidenceState: j.evidence_state })),
+    history: data.plans.map((p) => ({ id: p.id, goal_id: p.goal_id, status: p.status, revision: p.revision, content: planContentSchema.parse(JSON.parse(p.content_json)) })), inputs, evidence: data.evidence.map((e) => ({ ...e, journalItemId: data.insights.find((i) => i.id === e.id)?.journal_item_id ?? null })),
+    preliminary: data.journal.map((j) => ({ id: j.id, title: j.title, value: j.value ?? j.explanation ?? "", type: j.item_type, evidenceState: j.evidence_state, sourceLinks: parseJournalLinks(j.source_links_json) })),
     reviewHistory: data.reviews.map((review) => ({ id: review.id, createdAt: review.created_at.toISOString(), changes: JSON.parse(review.payload_json).changes ?? [] })) };
 }
 export function getSituationPlanning(situationId: string, caseId: string) {

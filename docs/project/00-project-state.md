@@ -146,3 +146,6 @@ Follow-up from `396b4861416e950aa98b0ac1bb286d27a24dfe3f`, same branch/draft PR 
 
 
 PR #43 brief-source repair separates historical confirmation references from current editable selection. After source removal/refresh, users can clear or replace requirement/deadline references and explicitly reconfirm the Goal. Deadline text without current confirmed support is marked unverified. Event history and read-only GET are preserved; foreign IDs still fail. Controlled parent/editor/service regression covers removal, pending refresh, unsaved text, empty-source save and explicit replacement. Windows/browser verification and Drive synchronization remain pending.
+
+
+PR #43 Analysis presentation now uses only Situace / Cíl / K doplnění a ověření. Stored trigger/requirements/deadline remain a compact sourced block; the repeated document list is removed without narrowing context. Accepted Plan open items are criterion-level, with SATISFIED excluded and uncertain preliminary questions collapsed. Exact duplicate questions retain all sources; different/conflicting values stay distinct. MISSING does not prove absence: current unassessed/partial/stale items conservatively display K ověření. This pure presentation creates no additional AI call or sufficiency ledger. Source repair/draft regressions remain covered; actual Windows/browser acceptance and Drive sync are pending.

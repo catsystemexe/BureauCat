@@ -286,3 +286,6 @@ Designer decisions create or revise backlog items. IMPLEMENTATION completion upd
 ### One Situation Goal, trigger and document overview (2026-10-30)
 
 BC-012/BC-015 remain In Progress. PR #43 now separates case intent, editable Situation trigger, one default umbrella Goal, requirements and explicit deadline; available documents replace atomic-insight lists. Existing RequiredInput sufficiency remains authoritative after acceptance. Controlled AI/service/UI regressions pass; live proposal quality, the prior unknown-ID FAIL, Windows/browser checks and affected Drive mirrors remain open. Concrete acceptance scenarios: `docs/situation-right-panels.md`.
+
+
+BC-012/BC-015 follow-up in PR #43: simplify Analysis to Situace / Cíl / K doplnění a ověření, remove the repeated documents, and prioritize individual accepted criteria without SATISFIED/duplicate preliminary rows. Preserve exact sources, compound requirements, uncertain/conflicting variants, manual assessment and draft/source-removal repairs. A proven-absence indicator is not available in the current MISSING/INCOMPLETE data; no guessing from explanations. Browser acceptance, live AI quality (prior unknown-ID FAIL) and Drive sync remain open; this is not completion of either backlog item.
