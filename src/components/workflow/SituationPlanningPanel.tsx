@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { JournalSource } from "@/lib/journal/overview";
+import { uniqueInsights } from "@/lib/workflow/planning";
 import type { PlanContent, PlanningCommand, PlanningState } from "@/lib/workflow/planning";
 const emptyPlan = (): PlanContent => ({ expectedOutput: "", procedure: [""], inputs: [{ title: "", description: "", criteria: [""] }] });
 const lines = (value: string) => value.split("\n");
@@ -143,35 +144,36 @@ export function CriterionReview({ criterion, evidence, busy, refreshing = false,
   onSave: (value: string, ids: string[], sufficient: boolean, explanation: string) => Promise<void>;
   onOpenSource: (source: JournalSource) => Promise<boolean>;
 }) {
-  const [value, setValue] = useState(criterion.value), [ids, setIds] = useState(criterion.insightIds);
+  const currentEvidence = uniqueInsights(evidence);
+  const [value, setValue] = useState(criterion.value), [ids, setIds] = useState([...new Set(criterion.insightIds)]);
   const [explanation, setExplanation] = useState(criterion.explanation);
   const previousSaved = useRef(criterion);
-  const savedIdsKey = JSON.stringify(criterion.insightIds);
+  const savedIdsKey = JSON.stringify([...new Set(criterion.insightIds)]);
   useEffect(() => {
     const previous = previousSaved.current;
     setValue((current) => current === previous.value ? criterion.value : current);
     setExplanation((current) => current === previous.explanation ? criterion.explanation : current);
-    setIds((current) => JSON.stringify(current) === JSON.stringify(previous.insightIds) ? criterion.insightIds : current);
+    setIds((current) => JSON.stringify(current) === JSON.stringify([...new Set(previous.insightIds)]) ? [...new Set(criterion.insightIds)] : current);
     previousSaved.current = criterion;
   }, [criterion.value, criterion.explanation, savedIdsKey]);
-  const availableIdsKey = JSON.stringify(evidence.map((e) => e.id).sort());
-  const selectedIds = ids.filter((id) => evidence.some((e) => e.id === id));
-  useEffect(() => { setIds((current) => current.filter((id) => evidence.some((e) => e.id === id))); }, [availableIdsKey]);
+  const availableIdsKey = JSON.stringify(currentEvidence.map((e) => e.id).sort());
+  const selectedIds = [...new Set(ids)].filter((id) => currentEvidence.some((e) => e.id === id));
+  useEffect(() => { setIds((current) => [...new Set(current)].filter((id) => currentEvidence.some((e) => e.id === id))); }, [availableIdsKey]);
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   return <fieldset disabled={busy || refreshing}><legend>{criterion.requirement_text} — {refreshing ? "Ověřuji aktuální doložení…" : criterion.status === "SATISFIED" ? "Doloženo" : "Nutno doplnit / ověřit"}</legend>
     {criterion.stale ? <p role="status">Původní zdroj byl odebrán nebo změněn. Dřívější potvrzení nyní neplatí.</p> : null}
-    {criterion.historicalInsightIds?.some((id) => !evidence.some((e) => e.id === id)) ? <details>
+    {criterion.historicalInsightIds?.some((id) => !currentEvidence.some((e) => e.id === id)) ? <details>
       <summary>Historické vazby na odebrané poznatky</summary>
-      {criterion.historicalInsightIds.filter((id) => !evidence.some((e) => e.id === id)).map((id) => <p key={id}>Poznatek {id} — již není v aktuálních zdrojích.</p>)}
+      {[...new Set(criterion.historicalInsightIds)].filter((id) => !currentEvidence.some((e) => e.id === id)).map((id) => <p key={id}>Poznatek {id} — již není v aktuálních zdrojích.</p>)}
     </details> : null}
     <label>Hodnota / zjištění<textarea value={value} onChange={(e) => setValue(e.target.value)} /></label>
     <label>Co chybí nebo potřebuje vyjasnit<textarea value={explanation} onChange={(e) => setExplanation(e.target.value)} /></label>
-    <details><summary>Vybrat konkrétní doložení z aktuální situace</summary>{evidence.map((e) => <label key={e.id}>
-      <input type="checkbox" checked={selectedIds.includes(e.id)} onChange={(event) => setIds(event.target.checked ? [...selectedIds, e.id] : selectedIds.filter((id) => id !== e.id))} />
+    <details><summary>Vybrat konkrétní doložení z aktuální situace</summary>{currentEvidence.map((e) => <label key={e.id}>
+      <input type="checkbox" checked={selectedIds.includes(e.id)} onChange={(event) => setIds(event.target.checked ? [...new Set([...selectedIds, e.id])] : selectedIds.filter((id) => id !== e.id))} />
       {e.documentName}: {e.title} — {e.value} ({evidenceLabels[e.evidenceState] ?? "neurčené doložení"}){!e.usable ? " — pasáž není ověřitelná" : ""}
     </label>)}</details>
-    {!refreshing && criterion.sources.map((e) => <p key={e.id}>{e.documentName}: {e.quote} <button type="button" onClick={async () => {
+    {!refreshing && uniqueInsights(criterion.sources).map((e) => <p key={e.id}>{e.documentName}: {e.quote} <button type="button" onClick={async () => {
       const opened = await onOpenSource({ documentId: e.documentId, documentName: e.documentName, pinId: e.pinId, insightId: e.id,
         startOffset: e.startOffset, endOffset: e.endOffset, quote: e.quote });
       if (!opened && alive.current) setExplanation("Zdroj se nepodařilo otevřít. " + explanation);

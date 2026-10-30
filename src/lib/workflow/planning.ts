@@ -60,3 +60,13 @@ export function effectiveRequiredInputs<T extends { id: string; criteria: { id: 
     }) }];
   });
 }
+
+/** Source identity is the insight ID, never its document or passage. */
+export function uniqueInsights<T extends { id: string }>(sources: readonly T[]): T[] {
+  const seen = new Set<string>();
+  return sources.filter((source) => {
+    if (seen.has(source.id)) return false;
+    seen.add(source.id);
+    return true;
+  });
+}

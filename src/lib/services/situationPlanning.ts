@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { WORKFLOW_STEP_DEFINITIONS } from "@/lib/workflow/constants";
 import { resolveSourceRange } from "@/lib/journal/overview";
 import { requestAIJson } from "@/lib/ai/jsonResponse";
-import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema } from "@/lib/workflow/planning";
+import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema, uniqueInsights } from "@/lib/workflow/planning";
 import type { PlanningCommand, PlanningEvidence, PlanningState } from "@/lib/workflow/planning";
 
 type DB = Prisma.TransactionClient;
@@ -61,13 +61,13 @@ function project(data: Loaded): PlanningState {
   const inputs = current?.status === "ACCEPTED" ? current.required_inputs.map((input) => {
     const criteria = input.criteria.map((criterion) => {
       const saved = savedEvidence(criterion.evidence_refs_json);
-      const sources = saved.sources.flatMap((r) => data.evidence.filter((e) => e.id === r.insightId && e.fingerprint === r.fingerprint && e.usable));
-      const stale = saved.stale === true || saved.sources.length !== sources.length;
+      const sources = uniqueInsights(saved.sources.flatMap((r) => data.evidence.filter((e) => e.id === r.insightId && e.fingerprint === r.fingerprint && e.usable)));
+      const stale = saved.stale === true || saved.sources.some((r) => !data.evidence.some((e) => e.id === r.insightId && e.fingerprint === r.fingerprint && e.usable));
       const satisfied = !stale && sources.length > 0 && saved.reviewed && criterion.status === "SATISFIED";
       return { id: criterion.id, requirement_text: criterion.requirement_text, status: satisfied ? "SATISFIED" : "MISSING",
         value: criterion.matched_value ?? "", explanation: saved.explanation,
         stale, historicalInsightIds: [...new Set([...(saved.historicalInsightIds ?? []), ...saved.sources.map((s) => s.insightId)])],
-        insightIds: saved.sources.filter((s) => data.evidence.some((e) => e.id === s.insightId)).map((s) => s.insightId), sources };
+        insightIds: [...new Set(saved.sources.filter((s) => data.evidence.some((e) => e.id === s.insightId)).map((s) => s.insightId))], sources };
     });
     return { id: input.id, title: input.title, status: criteria.every((c) => c.status === "SATISFIED") ? "SATISFIED" :
       criteria.some((c) => c.sources.length || c.value || c.stale) ? "INCOMPLETE" : "MISSING", criteria };
@@ -207,7 +207,7 @@ export async function executePlanningCommand(situationId: string, command: Plann
         if (!input || !criterion) fail("Kritérium není součástí tohoto plánu.");
         // Automated proposals never replace an explicit user's saved review.
         if (command.action === "matchInputs" && savedEvidence(criterion!.evidence_refs_json).reviewed) continue;
-        const sources = change.insightIds.map((id) => data.evidence.find((e) => e.id === id) ?? fail("Zdroj nepatří k této situaci."));
+        const sources = [...new Set(change.insightIds)].map((id) => data.evidence.find((e) => e.id === id) ?? fail("Zdroj nepatří k této situaci."));
         const sufficient = command.action === "reviewCriterion" && command.sufficient;
         if (sufficient && (!change.value || !sources.length || sources.some((e) => !e.usable || ["conflict", "unverified"].includes(e.evidenceState) || ["conflict", "question", "claim"].includes(e.type)))) fail("Nejasný, rozporný nebo neověřitelný zdroj nelze potvrdit jako dostatečný. Zachovejte Neúplné a vyjasněte podklady.");
         const previous = savedEvidence(criterion!.evidence_refs_json);

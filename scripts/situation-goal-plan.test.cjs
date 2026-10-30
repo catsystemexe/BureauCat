@@ -150,10 +150,13 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
     });
     await t.test("AI matches expose conflicting variants, absent data is not a negative fact, no automatic SATISFIED", async () => {
       const [a, b] = state.inputs[0].criteria;
-      aiReply = { matches: [{ criterionId: a.id, value: "1,80 m / 1,20 m", insightIds: [width.id, conflict.id], explanation: "Rozpor hodnot; nutné vyjasnit" }, { criterionId: b.id, value: "", insightIds: [], explanation: "Hloubka není doložena, nelze tvrdit nulovou hloubku" }] };
+      aiReply = { matches: [{ criterionId: a.id, value: "1,80 m / 1,20 m", insightIds: [width.id, width.id, conflict.id, conflict.id], explanation: "Rozpor hodnot; nutné vyjasnit" }, { criterionId: b.id, value: "", insightIds: [], explanation: "Hloubka není doložena, nelze tvrdit nulovou hloubku" }] };
       state = (await send(command(state, { action: "matchInputs", planId: state.plan.id }))).planning;
       assert.equal(state.inputs[0].status, "INCOMPLETE"); assert.match(state.inputs[0].criteria[0].value, /1,80.*1,20/);
       assert.equal(state.inputs[0].criteria[1].value, "");
+      assert.deepEqual(state.inputs[0].criteria[0].insightIds, [width.id, conflict.id]);
+      const storedAI = JSON.parse((await db.requiredInputCriterion.findUnique({ where: { id: a.id } })).evidence_refs_json);
+      assert.deepEqual(storedAI.sources.map((source) => source.insightId), [width.id, conflict.id]);
       const rejected = await send(command(state, { action: "reviewCriterion", planId: state.plan.id, criterionId: a.id, value: "1,80 m", insightIds: [conflict.id], sufficient: true, explanation: "test" }));
       assert.equal(rejected.status, 409);
       state = await read(sid, caseId);
@@ -236,6 +239,34 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       assert.deepEqual(c.insightIds, [replacement.id]); assert.ok(c.historicalInsightIds.includes(width.id));
       assert.equal(c.value, oldValue); assert.equal(c.explanation, oldExplanation);
       assert.ok(state.reviewHistory.some((entry) => entry.changes.some((change) => change.before.refs.includes(width.id))));
+    });
+    await t.test("manual duplicate IDs normalize; legacy duplicate references project read-only without merging different insights", async () => {
+      const c = state.inputs[0].criteria[0]; const id = c.insightIds[0];
+      const original = await db.documentInsight.findUnique({ where: { id } });
+      const { id: ignored, created_at, updated_at, ...fields } = original;
+      const twin = await db.documentInsight.create({ data: { ...fields, title: "Jiný poznatek stejné pasáže" } });
+      state = await read(sid, caseId);
+      const action = { action: "reviewCriterion", planId: state.plan.id, criterionId: c.id, value: c.value, explanation: c.explanation, sufficient: true, insightIds: [id, id, twin.id, twin.id] };
+      state = (await send(command(state, action))).planning;
+      assert.deepEqual(state.inputs[0].criteria[0].sources.map((source) => source.id), [id, twin.id]);
+      const row = await db.requiredInputCriterion.findUnique({ where: { id: c.id } });
+      const refs = JSON.parse(row.evidence_refs_json); assert.equal(refs.sources.length, 2);
+      refs.sources = [refs.sources[0], refs.sources[0], refs.sources[1], refs.sources[1]];
+      const json = JSON.stringify(refs);
+      await db.requiredInputCriterion.update({ where: { id: c.id }, data: { evidence_refs_json: json } });
+      queries.length = 0; state = await read(sid, caseId);
+      let current = state.inputs[0].criteria[0];
+      assert.deepEqual(current.insightIds, [id, twin.id]); assert.deepEqual(current.sources.map((source) => source.id), [id, twin.id]);
+      assert.equal(current.status, "SATISFIED"); assert.equal(current.stale, false);
+      assert.ok(!queries.some((q) => /^\s*(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(q)));
+      assert.equal((await db.requiredInputCriterion.findUnique({ where: { id: c.id } })).evidence_refs_json, json);
+      refs.sources.push({ insightId: id, fingerprint: "outdated" });
+      await db.requiredInputCriterion.update({ where: { id: c.id }, data: { evidence_refs_json: JSON.stringify(refs) } });
+      current = (await read(sid, caseId)).inputs[0].criteria[0];
+      assert.equal(current.stale, true, "a duplicate with a wrong fingerprint must not be hidden by a valid one"); assert.equal(current.status, "MISSING");
+      assert.deepEqual(current.sources.map((source) => source.id), [id, twin.id]);
+      for (const invalid of ["missing", conflict.id]) assert.equal((await send(command(state, { ...action, insightIds: [id, id, invalid, invalid] }))).status, 409);
+      state = await read(sid, caseId);
     });
     await t.test("editing accepted Plan preserves history, cancels consent and rejects old acceptance", async () => {
       const oldPlan = state.plan.id; const changed = { ...content, expectedOutput: "Nový uživatelský výstup" };
@@ -497,4 +528,21 @@ test("Collection parent and keyed criterion children retain drafts through pendi
     parent.dispose(); for (const child of children.values()) child.dispose();
     for (const [key, descriptor] of previous) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key]; }
   }
+});
+
+test("actual source siblings and form selections are unique by insight ID, not passage", () => {
+  const a = { id: "a", documentId: "doc", documentName: "Document", quote: "Same passage", title: "A", usable: true };
+  const b = { ...a, id: "b", title: "B" }, saves = [];
+  const editor = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "CriterionReview", {
+    criterion: { id: "criterion", requirement_text: "Údaj", value: "Value", explanation: "Note", insightIds: ["a", "a", "b", "b"], sources: [a, a, b, b], stale: false },
+    evidence: [a, a, b, b], busy: false, onSave: (...args) => saves.push(args), onOpenSource: async () => true
+  });
+  try {
+    for (let i = 0; i < 5; i++) editor.render();
+    const rows = editor.tree.props.children.find((child) => Array.isArray(child) && child.length && child.every((item) => item?.type === "p"));
+    assert.deepEqual(rows.map((row) => row.key), ["a", "b"], "inspect real immediate source siblings, not flattened text");
+    assert.equal(elements(editor.tree, (e) => e.type === "input").length, 2);
+    elements(editor.tree, (e) => e.type === "button" && e.props.children === "Uložit jako neúplné / chybějící")[0].props.onClick();
+    assert.deepEqual(saves[0][1], ["a", "b"]);
+  } finally { editor.dispose(); }
 });
