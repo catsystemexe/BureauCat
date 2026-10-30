@@ -292,3 +292,6 @@ BC-012/BC-015 follow-up in PR #43: simplify Analysis to Situace / Cíl / K dopln
 
 
 BC-012/BC-015 remain In Progress after PR #43's one-form K doplnění revision: atomic multi-criterion Save, direct USER assertions, explicit attachment dependencies and retained source-removal/draft protections are implemented. Prior read-only lists/duplicate assessment controls are superseded. Pending acceptance includes native upload, compact/expanded editing, failure/reload, actual AI-generated separable requirements and Windows browser checks; no product-completion or Drive-sync claim.
+
+
+BC-012/BC-015 remain In Progress after the PR #43 minimal-information revision: one field per concrete information, independent task reporting, sourced deadline metadata and explicit-only paperclips replace criterion-sentence fields and technical Analysis detail. Legacy replacement/new consent is explicit. Runtime/browser/new AI proposal quality, prior Goal unknown-ID FAIL and Drive synchronization remain open; no general execution/Timeline engine is complete.

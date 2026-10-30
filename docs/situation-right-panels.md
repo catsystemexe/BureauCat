@@ -125,3 +125,6 @@ Initial metadata-regression fixture used a shared insight and invalidated the ea
 ## Superseding completion form
 
 The later approved K doplnění form replaces this document's open-criteria overview, K ověření subheadings and separate assessment instructions. Situace/Cíl, Journal, Document and Plan structure remain unchanged. Current form behavior, USER provenance, upload dependencies, atomic Save and concrete pending acceptance are specified in `docs/required-inputs-form.md`. Historical verification records above are not acceptance of this new form.
+
+
+The later minimal K doplnění contract (2026-10-31) removes History and additional-question rendering from Analysis and uses concrete RequiredInput names, optional paperclips and independent WorkflowTask checkboxes. Persistence/source validation remain; History is rendered only in Plan. Follow the current `docs/minimal-required-inputs.md` acceptance scenarios.

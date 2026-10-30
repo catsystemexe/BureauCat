@@ -13,7 +13,7 @@ The repository currently includes:
 - A three-region workspace evolving around Situation workflow.
 - Persisted Situations and Goals, with saved editable proposals and explicit confirmation.
 - Goal → Plan → Collection MVP: versioned draft/accepted Plans, required information/criteria and source-backed coverage review; see [implementation and Windows handoff](docs/situation-goal-plan.md).
-- One **K doplnění** form: draft values/checkboxes, a single atomic Save, explicitly confirmed user assertions and item-linked uploads; see [verification and VS handoff](docs/required-inputs-form.md).
+- Minimal **K doplnění**: concrete information names/fields, separate explicit task checkboxes and a single atomic Save. Paperclips appear only for explicit attachment requirements; see [current verification and VS handoff](docs/minimal-required-inputs.md).
 - Situation workflow persistence for ordered Steps, Required Inputs/criteria, Tasks, overrides, and workflow events.
 - A compact left workflow rail, unchanged central Journal, and right Dokument / Analýza / Plán tabs; see [right-panel behavior and VS handoff](docs/situation-right-panels.md).
 - Journal APIs and evidence-state handling.

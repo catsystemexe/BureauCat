@@ -2,12 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { uploadToSituation } from "@/lib/documents/uploadToSituation";
-import { uniqueInsights } from "@/lib/workflow/planning";
 import type { InputReview, PlanningState } from "@/lib/workflow/planning";
-import { evidenceSource } from "@/lib/workflow/analysisOverview";
-import type { QuestionSource } from "@/lib/workflow/analysisOverview";
-import type { JournalSource } from "@/lib/journal/overview";
-
 type Draft = InputReview & { editing: boolean; proof: string };
 const content = (row: InputReview) => JSON.stringify([row.value, row.explanation, [...row.insightIds].sort(), [...row.documentIds].sort(), row.origin, row.sufficient]);
 const proof = (row: InputReview, state: PlanningState) => JSON.stringify([row.value, row.explanation, row.origin,
@@ -23,14 +18,22 @@ function savedRows(state: PlanningState): Record<string, Draft> {
   }));
 }
 
-export function RequiredInputsForm({ state, caseId, situationId, disabled, refreshing, onSave, onUploaded, onOpenSource, onOpenDocument, sourceDetails }: {
-  sourceDetails?: Record<string, QuestionSource[]>; onOpenDocument?: (id: string) => void;
+export function RequiredInputsForm({ state, caseId, situationId, disabled, refreshing, onSave, onUploaded }: {
   state: PlanningState; caseId: string; situationId: string; disabled: boolean; refreshing: boolean;
-  onSave: (reviews: InputReview[]) => Promise<PlanningState | null>;
-  onUploaded: () => void; onOpenSource: (source: JournalSource) => Promise<boolean>;
+  onSave: (reviews: InputReview[], tasks: { taskId: string; completed: boolean }[]) => Promise<PlanningState | null>;
+  onUploaded: () => void;
 }) {
   const [drafts, setDrafts] = useState(() => savedRows(state));
   const previous = useRef(savedRows(state));
+  const [taskDrafts, setTaskDrafts] = useState<Record<string, boolean>>(() => Object.fromEntries((state.tasks ?? []).map((task) => [task.id, task.completed])));
+  const previousTasks = useRef(taskDrafts);
+  const pickers = useRef<Record<string, HTMLInputElement | null>>({});
+  useEffect(() => {
+    const before = previousTasks.current;
+    const next = Object.fromEntries((state.tasks ?? []).map((task) => [task.id, task.completed]));
+    previousTasks.current = next;
+    setTaskDrafts((current) => Object.fromEntries(Object.entries(next).map(([id, completed]) => [id, current[id] === before[id] || current[id] === undefined ? completed : current[id]])));
+  }, [JSON.stringify(state.tasks)]);
   const [uploading, setUploading] = useState(false), [saving, setSaving] = useState(false), [message, setMessage] = useState("");
   const [uploaded, setUploaded] = useState<{ id: string; name: string }[]>([]);
   const pending = useRef(false), alive = useRef(true);
@@ -68,57 +71,54 @@ export function RequiredInputsForm({ state, caseId, situationId, disabled, refre
       return { ...current, [id]: { ...row, proof: proof(row, state) } };
     });
   }
-  async function attach(id: string, file: File) {
+  async function attach(ids: string[], file: File) {
     if (pending.current || blocked) return;
     pending.current = true; setUploading(true); setMessage("");
     try {
       const document = await uploadToSituation(caseId, situationId, file);
       if (!alive.current) return;
       setUploaded((current) => [...current, document]);
-      setDrafts((current) => ({ ...current, [id]: { ...current[id], documentIds: [...new Set([...current[id].documentIds, document.id])], sufficient: false, editing: true } }));
+      setDrafts((current) => { const next = { ...current }; for (const id of ids) next[id] = { ...next[id], documentIds: [...new Set([...next[id].documentIds, document.id])], sufficient: false, editing: true }; return next; });
       setMessage("Soubor přiložen. Vazbu k položce uložte tlačítkem Uložit."); onUploaded();
     } catch (error) { if (alive.current) setMessage(error instanceof Error ? error.message : "Soubor se nepodařilo přiložit."); }
     finally { pending.current = false; if (alive.current) setUploading(false); }
   }
   const changed = Object.values(drafts).filter((row) => !previous.current[row.criterionId] || content(row) !== content(previous.current[row.criterionId]));
+  const changedTasks = (state.tasks ?? []).filter((task) => taskDrafts[task.id] !== undefined && taskDrafts[task.id] !== previousTasks.current[task.id]).map((task) => ({ taskId: task.id, completed: taskDrafts[task.id] }));
   async function save() {
-    if (pending.current || blocked || !changed.length) return;
+    if (pending.current || blocked || (!changed.length && !changedTasks.length)) return;
     pending.current = true; setSaving(true); setMessage("");
     const reviews = changed.map(({ editing: _editing, proof: _proof, ...row }) => row);
     try {
-      const next = await onSave(reviews);
+      const next = await onSave(reviews, changedTasks);
       if (!alive.current) return;
       if (!next) { setMessage("Uložení se nezdařilo. Rozepsané hodnoty zůstaly zachované."); return; }
-      const saved = savedRows(next); previous.current = saved; setDrafts(saved); setMessage("Uloženo.");
+      const saved = savedRows(next); previous.current = saved; setDrafts(saved); const tasks = Object.fromEntries((next.tasks ?? []).map((task) => [task.id, task.completed])); previousTasks.current = tasks; setTaskDrafts(tasks); setMessage("Uloženo.");
     } catch { if (alive.current) setMessage("Uložení se nezdařilo. Rozepsané hodnoty zůstaly zachované."); }
     finally { pending.current = false; if (alive.current) setSaving(false); }
   }
   return <form className="required-inputs-form" aria-label="K doplnění" onSubmit={(e) => { e.preventDefault(); void save(); }}>
-    {criteria(state).map((criterion) => {
-      const row = drafts[criterion.id]; if (!row) return null;
-      const dirty = content(row) !== content(previous.current[criterion.id] ?? row);
-      const compact = criterion.status === "SATISFIED" && row.sufficient && !dirty && !row.editing && !refreshing;
-      return <fieldset key={criterion.id} className="required-input-row" aria-label={criterion.requirement_text} disabled={blocked}>
-        <label className="required-input-title"><input type="checkbox" checked={row.sufficient} onChange={(e) => edit(criterion.id, { sufficient: e.target.checked })} />{criterion.requirement_text}</label>
-        {compact ? <div><p>{row.value}</p><p>{row.origin === "USER" ? "Zadal uživatel" : "Doloženo zdroji"}</p><button type="button" onClick={() => setDrafts((current) => ({ ...current, [criterion.id]: { ...row, editing: true } }))}>Upravit</button></div> : <>
-          <label>Doplnit informaci<textarea aria-label={`Doplnit informaci: ${criterion.requirement_text}`} value={row.value} onChange={(e) => edit(criterion.id, { value: e.target.value, origin: "USER" })} /></label>
-          <label className="required-input-file">Přiložit soubor<input type="file" aria-label={`Přiložit soubor k položce ${criterion.requirement_text}`} accept=".pdf,.docx,.txt,.jpg,.jpeg,.png,.rtf" onChange={(e) => { const file = e.target.files?.[0]; if (file) void attach(criterion.id, file); e.target.value = ""; }} /></label>
-        </>}
-        {refreshing ? <p role="status">Ověřuji aktuální zdroje…</p> : dirty ? <p>Rozepsané — dosud neuloženo.</p> : criterion.stale ? <p>Původní zdroj byl odebrán nebo změněn. Potvrďte doplnění znovu.</p> : null}
-        <details><summary>Zdroje a podrobnosti</summary>
-          <p>{row.origin === "USER" ? "Zadal uživatel — uživatelské tvrzení, nikoli ověření dokumentem." : "Dokumentové zdroje a další doložení."}</p>
-          <label>Původ hodnoty<select value={row.origin} onChange={(e) => edit(criterion.id, { origin: e.target.value === "USER" ? "USER" : "DOCUMENT" })}><option value="USER">Zadal uživatel</option><option value="DOCUMENT">Dokumentové zdroje</option></select></label>
-          <label>Vysvětlení<textarea value={row.explanation} onChange={(e) => edit(criterion.id, { explanation: e.target.value })} /></label>
-          {uniqueInsights(state.evidence).map((source) => <label key={source.id}><input type="checkbox" checked={row.insightIds.includes(source.id)} onChange={(e) => edit(criterion.id, { insightIds: e.target.checked ? [...row.insightIds, source.id] : row.insightIds.filter((id) => id !== source.id) })} />{source.documentName}: {source.title} — {source.value}</label>)}
-          {row.documentIds.map((id) => <p key={id}>{state.documents?.find((doc) => doc.id === id)?.name ?? uploaded.find((doc) => doc.id === id)?.name ?? "Přiložený dokument"}<button type="button" onClick={() => edit(criterion.id, { documentIds: row.documentIds.filter((docId) => docId !== id) })}>Odebrat vazbu</button></p>)}
-          {!refreshing && (sourceDetails?.[criterion.id] ?? uniqueInsights(criterion.sources).map(evidenceSource)).map((source) => <p key={source.key}>
-            {source.passage ? <button type="button" onClick={() => void onOpenSource(source.passage!)}>{source.label}: {source.quote}</button> : source.documentId ? <button type="button" onClick={() => onOpenDocument?.(source.documentId!)}>{source.label}</button> : <span>{source.label}</span>}
-          </p>)}
-          {criterion.historicalInsightIds?.length || criterion.historicalDocumentIds?.length ? <details><summary>Historické vazby</summary><p>{[...new Set([...(criterion.historicalInsightIds ?? []), ...(criterion.historicalDocumentIds ?? [])])].join(", ")}</p></details> : null}
-        </details>
+    {state.inputs.map((input) => {
+      const rows = input.criteria.flatMap((criterion) => drafts[criterion.id] ? [drafts[criterion.id]] : []);
+      if (!rows.length) return null;
+      const values = [...new Set(rows.map((row) => row.value).filter(Boolean))];
+      const value = values.length === 1 ? values[0] : "";
+      const dirty = rows.some((row) => content(row) !== content(previous.current[row.criterionId] ?? row));
+      const checked = rows.every((row) => row.sufficient);
+      const update = (patch: Partial<InputReview>) => { for (const row of rows) edit(row.criterionId, patch); };
+      return <fieldset key={input.id} className="required-input-row" aria-label={input.title} disabled={blocked}>
+        <label className="required-input-title"><input type="checkbox" checked={checked && values.length <= 1} disabled={values.length > 1} onChange={(e) => update({ sufficient: e.target.checked, ...(e.target.checked ? { value, ...(rows.some((row) => !row.insightIds.length) ? { origin: "USER" as const } : {}) } : {}) })} />{input.title}</label>
+        <input type="text" aria-label={input.title} value={value} onChange={(e) => update({ value: e.target.value, origin: "USER", insightIds: [] })} />
+        {input.attachmentRequired === true ? <><button type="button" aria-label={`Přiložit požadovanou přílohu: ${input.title}`} onClick={() => pickers.current[input.id]?.click()}>📎</button>
+          <input type="file" hidden aria-hidden="true" tabIndex={-1} ref={(element) => { pickers.current[input.id] = element; }} accept=".pdf,.docx,.txt,.jpg,.jpeg,.png,.rtf" onChange={(e) => { const file = e.target.files?.[0]; if (file) void attach(rows.map((row) => row.criterionId), file); e.target.value = ""; }} />
+        </> : null}
+        {refreshing ? <p role="status">Ověřuji aktuální doložení…</p> : dirty ? <p>Změny nejsou uložené.</p> : input.criteria.some((criterion) => criterion.stale) ? <p>Doložení se změnilo; potvrďte znovu.</p> : values.length > 1 ? <p>Uložené hodnoty se liší. Doplňte jednoznačnou informaci.</p> : null}
       </fieldset>;
     })}
-    <button type="submit" disabled={blocked || !changed.length}>Uložit</button>
+    {(state.tasks ?? []).map((task) => <fieldset key={`task:${task.id}`} className="required-task-row" disabled={blocked}>
+      <label className="required-input-title"><input type="checkbox" checked={taskDrafts[task.id] ?? task.completed} onChange={(e) => { setMessage(""); setTaskDrafts((current) => ({ ...current, [task.id]: e.target.checked })); }} />{task.title}{task.deadline ? <span> — {task.deadline}</span> : task.deadlineStale ? <span> — termín vyžaduje ověření</span> : null}</label>
+    </fieldset>)}
+    <button type="submit" disabled={blocked || (!changed.length && !changedTasks.length)}>Uložit</button>
     {message ? <p role="status">{message}</p> : null}
   </form>;
 }

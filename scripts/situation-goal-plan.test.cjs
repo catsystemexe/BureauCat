@@ -54,6 +54,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
   const content = { version: 2, expectedOutput: "Připravit doloženou odpověď", procedure: [{ id: "action-a", title: "Ověřit údaje", expectedResult: "Ověřené hodnoty", inputIds: ["input-a"] }], inputs: [
     { id: "input-a", title: "Ověřené rozměry", description: "Dvě hodnoty a jejich zdroje", criteria: ["Doložená šířka", "Doložená hloubka"] }
   ] };
+  const suggestedContent = { ...content, version: 3, inputs: content.inputs.map((input) => ({ ...input, attachmentRequired: false, suggestedValue: "", insightIds: [] })), procedure: content.procedure.map((action) => ({ ...action, task: null })) };
   let request = 0, caseId, sid;
   const command = (state, action) => ({ caseId, expectedRevision: state.revision, contextHash: state.contextHash, requestKey: `request-${++request}`, ...action });
   const send = async (body, target = sid) => {
@@ -157,7 +158,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       }
       const { situationBriefSchema } = loader()("src/lib/workflow/planning.ts");
       assert.deepEqual(situationBriefSchema.parse({ ...brief, trigger: { ...brief.trigger, documentIds: [documents[2].id, documents[2].id] } }).trigger.documentIds, [documents[2].id]);
-      aiReply = content;
+      aiReply = suggestedContent;
       const draftResponse = await send(command(current, { action: "suggestPlan", goalId: current.goal.id }), target.id);
       assert.equal(draftResponse.status, 200); current = draftResponse.planning;
       const planContext = JSON.parse(lastPrompt.slice(lastPrompt.lastIndexOf('\n') + 1));
@@ -360,6 +361,90 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       assert.equal(await db.requiredInputCriterion.count({ where: { required_input: { plan_id: oldPlan } } }), 2);
       await invariant(target.id);
     });
+    await t.test("v3 information names, criteria, explicit files and WorkflowTasks stay distinct with sourced deadlines", async () => {
+      const target = await createSituation(caseId, { title: "Information and tasks" });
+      const body = "Adresa: Testovací 12. Rozměry: 1,80 x 1,20 m. Doplnění do 11. září. Přiložte náčrt.";
+      const doc = await db.document.create({ data: { case_id: caseId, filename: "arbitrary-fixture.txt", filetype: "txt", original_file: "", processed_text: body } });
+      await db.situationDocument.create({ data: { situation_id: target.id, document_id: doc.id } });
+      const finding = async (title, quote, value = quote) => db.documentInsight.create({ data: { document_id: doc.id, source_document_id: doc.id, title, content: value, source_text: quote, source_start_offset: body.indexOf(quote), source_end_offset: body.indexOf(quote) + quote.length, insight_type: "fact", evidence_state: "verified", status: "approved", target_section: "description", target_item_type: "FACT" } });
+      const address = await finding("Adresa", "Adresa: Testovací 12.", "Testovací 12");
+      const dimensions = await finding("Rozměry", "Rozměry: 1,80 x 1,20 m.", "1,80 x 1,20 m");
+      const due = await finding("Termín", "Doplnění do 11. září.");
+      let current = await read(target.id, caseId);
+      const brief = { trigger: { description: "Výzva k doplnění", documentIds: [doc.id] }, requirements: [{ text: "Poštovní adresa a rozměry", insightIds: [address.id, dimensions.id] }], deadline: { text: "do 11. září", insightIds: [due.id] } };
+      current = (await send(command(current, { action: "confirmGoal", title: "Připravit a odeslat doplnění", brief }), target.id)).planning;
+      const legacy = { ...content, inputs: [{ ...content.inputs[0], criteria: ["Adresa a rozměry jsou uvedeny úplně"] }] };
+      current = (await send(command(current, { action: "savePlan", goalId: current.goal.id, content: legacy }), target.id)).planning;
+      current = (await send(command(current, { action: "acceptPlan", planId: current.plan.id }), target.id)).planning;
+      const oldPlan = current.plan.id, oldCriterion = current.inputs[0].criteria[0].id;
+      current = (await send(command(current, { action: "reviewInputs", planId: oldPlan, reviews: [{ criterionId: oldCriterion, value: "Staré kombinované doplnění", sufficient: true, origin: "USER", insightIds: [], documentIds: [], explanation: "Historie" }] }), target.id)).planning;
+      const original = await db.requiredInputCriterion.findUnique({ where: { id: oldCriterion } });
+      assert.equal(current.needsPlanRevision, true);
+      const { editPlan } = load("src/lib/workflow/planning.ts");
+      const editing = editPlan(current.plan.content); assert.equal(editing.inputs.length, 1); assert.deepEqual(editing.inputs[0].criteria, legacy.inputs[0].criteria);
+      const modern = { version: 3, expectedOutput: "Doplnění žádosti", inputs: [
+        { id: "postal", title: "Poštovní adresa žadatele", description: "", criteria: ["Adresa je úplná"], attachmentRequired: false, suggestedValue: address.content, insightIds: [address.id] },
+        { id: "sizes", title: "Rozměry stojanu", description: "", criteria: ["Šířka a hloubka jsou určeny"], attachmentRequired: false, suggestedValue: dimensions.content, insightIds: [dimensions.id] },
+        { id: "sketch", title: "Vyžádaný náčrt", description: "", criteria: ["Příloha zachycuje umístění"], attachmentRequired: true, suggestedValue: "", insightIds: [] }
+      ], procedure: [
+        { id: "prepare", title: "Připravit odpověď", expectedResult: "Připravená odpověď", inputIds: ["postal", "sizes"], task: null },
+        { id: "send", title: "Odeslat doplnění", expectedResult: "Uchovaný doklad o odeslání", inputIds: ["postal", "sizes"], task: { stepKey: "EXECUTION", deadlineFromBrief: true } }
+      ] };
+      aiReply = { ...modern, inputs: modern.inputs.map((input, index) => index === 0 ? { ...input, suggestedValue: "Invented value" } : input) };
+      assert.equal((await send(command(current, { action: "suggestPlan", goalId: current.goal.id }), target.id)).status, 409, "AI cannot invent a prefilled value");
+      assert.equal((await send(command(current, { action: "savePlan", goalId: current.goal.id, content: { ...modern, inputs: modern.inputs.map((input, index) => index === 0 ? { ...input, insightIds: [width.id] } : input) } }), target.id)).status, 409, "references remain Situation-scoped");
+      current = (await send(command(current, { action: "savePlan", goalId: current.goal.id, content: modern }), target.id)).planning;
+      assert.equal(current.inputs.length, 0); assert.equal(await db.workflowTask.count({ where: { situation_id: target.id } }), 0);
+      const acceptance = command(current, { action: "acceptPlan", planId: current.plan.id });
+      current = (await send(acceptance, target.id)).planning; assert.equal((await send(acceptance, target.id)).status, 200);
+      assert.equal(current.needsPlanRevision, false); assert.deepEqual(current.inputs.map((input) => input.title), modern.inputs.map((input) => input.title));
+      assert.deepEqual(current.inputs.map((input) => input.attachmentRequired), [false, false, true]);
+      assert.ok(current.inputs.every((input) => input.criteria.every((criterion) => criterion.status === "MISSING")));
+      assert.equal(current.inputs[0].criteria[0].value, address.content); assert.equal(current.inputs[1].criteria[0].value, dimensions.content);
+      assert.equal((await db.requiredInputCriterion.findUnique({ where: { id: oldCriterion } })).evidence_refs_json, original.evidence_refs_json);
+      assert.equal((await db.requiredInputCriterion.findUnique({ where: { id: oldCriterion } })).status, "SATISFIED");
+      assert.equal(current.tasks.length, 1); assert.equal(current.tasks[0].deadline, "do 11. září"); assert.equal(current.tasks[0].completed, false);
+      const execution = await db.workflowStep.findUnique({ where: { situation_id_step_key: { situation_id: target.id, step_key: "EXECUTION" } } });
+      assert.equal((await db.workflowTask.findUnique({ where: { id: current.tasks[0].id } })).workflow_step_id, execution.id); assert.equal(execution.status, "INACTIVE");
+      const form = hookRenderer("src/components/workflow/RequiredInputsForm.tsx", "RequiredInputsForm", { state: current, caseId, situationId: target.id, disabled: false, refreshing: false, onUploaded() {}, onSave: async () => null });
+      try {
+        form.render(); const rows = byClass(form.tree, "required-input-row"); assert.deepEqual(rows.map((row) => row.props["aria-label"]), modern.inputs.map((input) => input.title));
+        assert.equal(elements(form.tree, (e) => e.type === "details" || e.type === "select").length, 0);
+        assert.ok(!JSON.stringify(form.tree).includes("Adresa je úplná"));
+        const taskRow = byClass(form.tree, "required-task-row")[0]; assert.equal(elements(taskRow, (e) => e.type === "input" && e.props.type === "text").length, 0);
+        assert.equal(elements(form.tree, (e) => e.type === "button" && e.props.children === "📎").length, 1);
+        const file = elements(form.tree, (e) => e.type === "input" && e.props.type === "file")[0]; assert.equal(file.props.hidden, true);
+        let picked = 0; file.props.ref({ click() { picked++; } });
+        elements(form.tree, (e) => e.type === "button" && e.props.children === "📎")[0].props.onClick(); assert.equal(picked, 1);
+      } finally { form.dispose(); }
+      const reviews = current.inputs.slice(0, 2).flatMap((input) => input.criteria.map((criterion) => ({ criterionId: criterion.id, value: criterion.value, sufficient: true, origin: "USER", insightIds: [], documentIds: [], explanation: "Výslovné doplnění" })));
+      current = (await send(command(current, { action: "reviewInputs", planId: current.plan.id, reviews }), target.id)).planning;
+      assert.equal(current.tasks[0].completed, false, "filling information never confirms sending");
+      const taskId = current.tasks[0].id, steps = JSON.stringify(current.steps);
+      const done = command(current, { action: "reviewInputs", planId: current.plan.id, reviews: [], tasks: [{ taskId, completed: true }] });
+      current = (await send(done, target.id)).planning; assert.equal((await send(done, target.id)).status, 200);
+      assert.equal(current.tasks[0].completed, true); assert.equal(JSON.stringify(current.steps), steps);
+      assert.equal((await db.situation.findUnique({ where: { id: target.id } })).status, "active");
+      assert.equal(await db.workflowTask.count({ where: { situation_id: target.id } }), 1);
+      const before = current.inputs[0].criteria[0].value;
+      const foreignStep = await db.workflowStep.findUnique({ where: { situation_id_step_key: { situation_id: other.id, step_key: "EXECUTION" } } });
+      const foreignTask = await db.workflowTask.create({ data: { situation_id: other.id, workflow_step_id: foreignStep.id, title: "Foreign work" } });
+      assert.equal((await send(command(current, { action: "reviewInputs", planId: current.plan.id, reviews: [], tasks: [{ taskId: foreignTask.id, completed: true }] }), target.id)).status, 409);
+      assert.equal((await db.workflowTask.findUnique({ where: { id: foreignTask.id } })).status, "PENDING");
+      const invalid = await send(command(current, { action: "reviewInputs", planId: current.plan.id, reviews: [{ ...reviews[0], value: "Must roll back" }], tasks: [{ taskId: "foreign-task", completed: true }] }), target.id);
+      assert.equal(invalid.status, 409); assert.equal((await read(target.id, caseId)).inputs[0].criteria[0].value, before);
+      const noFile = await send(command(current, { action: "reviewInputs", planId: current.plan.id, reviews: [{ ...reviews[0], documentIds: [doc.id], sufficient: false }] }), target.id); assert.equal(noFile.status, 409);
+      await db.situationDocument.deleteMany({ where: { situation_id: target.id, document_id: doc.id } });
+      await new Promise((resolve) => setImmediate(resolve)); queries.length = 0; current = await read(target.id, caseId);
+      assert.equal(current.tasks[0].deadline, null); assert.equal(current.tasks[0].deadlineStale, true); assert.equal(current.tasks[0].completed, true);
+      assert.ok(!queries.some((q) => /^\s*(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(q)));
+      const changed = await send(command(current, { action: "savePlan", goalId: current.goal.id, content: { ...modern, inputs: modern.inputs.map((input) => ({ ...input, suggestedValue: "", insightIds: [] })) } }), target.id);
+      assert.equal(changed.status, 200); current = changed.planning;
+      const countBefore = await db.workflowTask.count({ where: { situation_id: target.id } });
+      assert.equal((await send(command(current, { action: "acceptPlan", planId: current.plan.id }), target.id)).status, 409, "deadline cannot be invented from a removed source");
+      assert.equal(await db.workflowTask.count({ where: { situation_id: target.id } }), countBefore);
+      assert.equal((await read(target.id, caseId)).inputs.length, 0);
+    });
     await t.test("explicit edited goal confirmation is atomic, unique and idempotent under concurrent requests", async () => {
       const c = command(state, { action: "confirmGoal", goalId: state.goals[0].id, title: "Doložit skutečné rozměry a vypořádat rozdíl" });
       const results = await Promise.all([send(c), send(c)]);
@@ -377,7 +462,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       assert.deepEqual(state.plan.content, legacy); assert.ok(!queries.some((q) => /^\s*(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(q)), queries.join("\n"));
       const { editPlan } = load("src/lib/workflow/planning.ts");
       const editing = editPlan(state.plan.content);
-      assert.equal(editing.version, 2); assert.equal(editing.procedure[0].expectedResult, ""); assert.deepEqual(editing.procedure[0].inputIds, []);
+      assert.equal(editing.version, 3); assert.equal(editing.procedure[0].expectedResult, ""); assert.deepEqual(editing.procedure[0].inputIds, []);
       assert.notEqual(editing.inputs[0].id, editing.inputs[0].title);
       assert.equal((await send(command(state, { action: "savePlan", goalId: state.goal.id, content: legacy }))).status, 400);
       state = (await send(command(state, { action: "acceptPlan", planId: plan.id }))).planning;
@@ -578,7 +663,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       const pending = send(command(state, { action: "suggestPlan", goalId: state.goal.id }));
       await new Promise((r) => setTimeout(r, 30));
       await db.situation.update({ where: { id: sid }, data: { description: "Podklady se změnily během AI" } });
-      resolve(content); assert.equal((await pending).status, 409); deferredAI = null;
+      resolve(suggestedContent); assert.equal((await pending).status, 409); deferredAI = null;
       state = await read(sid, caseId); assert.equal(state.revision, revision); assert.equal(state.plan, null);
     });
     await t.test("legacy ambiguity requires selection; two concurrent different confirmations cannot both win", async () => {
@@ -724,7 +809,7 @@ test("parent and single RequiredInputsForm preserve drafts, prune removed source
   const row = { id: "first", requirement_text: "Adresa", status: "MISSING", value: "", explanation: "", origin: "DOCUMENT", insightIds: [source.id], sources: [source], stale: false };
   const state = { revision: 1, contextHash: "a".repeat(64), goal: { id: "goal", title: "Goal" }, goals: [], goalSelectionRequired: false,
     plan: { id: "plan", status: "ACCEPTED", content: { expectedOutput: "Output", procedure: ["Procedure"], inputs: [] } }, history: [],
-    inputs: [{ id: "input", title: "Input", status: "MISSING", criteria: [row, { ...row, id: "second", requirement_text: "Rozměry" }] }], evidence: [source], documents: [{ id: "doc", name: "Old", fingerprint: "doc-hash" }] };
+    tasks: [{ id: "send-task", title: "Odeslat odpověď", completed: false, deadline: null, deadlineStale: false }], inputs: [{ id: "input", title: "Adresa", status: "MISSING", criteria: [row] }, { id: "second-input", title: "Rozměry", status: "MISSING", criteria: [{ ...row, id: "second", requirement_text: "Rozměry" }] }], evidence: [source], documents: [{ id: "doc", name: "Old", fingerprint: "doc-hash" }] };
   const parent = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "SituationPlanningPanel", { caseId: "case", situationId: "s", view: "ANALYSIS", onOpenSource: async () => true });
   let child, key, mounts = 0;
   async function settle() {
@@ -737,44 +822,42 @@ test("parent and single RequiredInputsForm preserve drafts, prune removed source
   }
   const respond = (planning, ok = true) => pending.shift()({ ok, json: async () => ok ? { planning } : { error: "Controlled save failure" } });
   const rows = () => byClass(child.tree, "required-input-row");
-  const value = (i) => elements(rows()[i], (e) => e.type === "textarea")[0];
+  const value = (i) => elements(rows()[i], (e) => e.type === "input" && e.props.type === "text")[0];
   try {
     await settle(); respond(state); await settle(); assert.equal(mounts, 1);
     value(0).props.onChange({ target: { value: "Rozepsaná adresa" } }); value(1).props.onChange({ target: { value: "Rozepsané rozměry" } }); await settle();
+    elements(byClass(child.tree, "required-task-row")[0], (element) => element.type === "input")[0].props.onChange({ target: { checked: true } }); await settle();
     for (const view of ["PLAN", "ANALYSIS"]) { parent.update({ view }); await settle(); }
     assert.equal(value(0).props.value, "Rozepsaná adresa");
     env.window.dispatchEvent(new Event("bureaucat:journal-refresh")); await settle();
     assert.equal(child.props.refreshing, true); assert.equal(value(1).props.value, "Rozepsané rozměry");
-    const refreshed = { ...state, revision: 2, contextHash: "b".repeat(64), evidence: [], documents: [], inputs: [{ ...state.inputs[0], criteria: state.inputs[0].criteria.map((c) => ({ ...c, insightIds: [], sources: [], stale: true })) }] };
+    const refreshed = { ...state, revision: 2, contextHash: "b".repeat(64), evidence: [], documents: [], inputs: state.inputs.map((input) => ({ ...input, criteria: input.criteria.map((c) => ({ ...c, insightIds: [], sources: [], stale: true })) })) };
     respond(refreshed); await settle(); assert.equal(mounts, 1); assert.equal(value(0).props.value, "Rozepsaná adresa");
     const submit = () => child.tree.props.onSubmit({ preventDefault() {} });
     submit(); submit(); await settle(); assert.equal(calls.filter((c) => c.options.method).length, 1);
-    const body = JSON.parse(calls.at(-1).options.body); assert.equal(body.action, "reviewInputs"); assert.equal(body.reviews.length, 2);
+    const body = JSON.parse(calls.at(-1).options.body); assert.equal(body.action, "reviewInputs"); assert.equal(body.reviews.length, 2); assert.deepEqual(body.tasks, [{ taskId: "send-task", completed: true }]);
     assert.deepEqual(body.reviews[0].insightIds, []); assert.equal(body.expectedRevision, 2);
     respond(null, false); await settle(); assert.equal(value(0).props.value, "Rozepsaná adresa"); assert.ok(JSON.stringify(child.tree).includes("Uložení se nezdařilo"));
     assert.ok(!JSON.stringify(child.tree).includes('"Uloženo."'));
-    submit(); await settle(); const saved = { ...refreshed, revision: 3, inputs: [{ ...refreshed.inputs[0], criteria: refreshed.inputs[0].criteria.map((c, i) => ({ ...c, value: body.reviews[i].value, origin: "USER" })) }] };
+    submit(); await settle(); const saved = { ...refreshed, revision: 3, tasks: [{ ...refreshed.tasks[0], completed: true }], inputs: refreshed.inputs.map((input, i) => ({ ...input, criteria: input.criteria.map((c) => ({ ...c, value: body.reviews[i].value, origin: "USER" })) })) };
     respond(saved); await settle(); assert.equal(mounts, 1); assert.equal(value(1).props.value, "Rozepsané rozměry");
   } finally { parent.dispose(); child?.dispose(); globalThis.window = oldWindow; globalThis.fetch = oldFetch; }
 });
 
-test("form source siblings are unique by insight ID and checkbox confirmation is only a draft until Save", async () => {
+test("minimal form hides source controls and preserves explicit draft confirmation until Save", async () => {
   const a = { id: "a", documentId: "doc", documentName: "Doc", quote: "Same", title: "A", usable: true, fingerprint: "a" }, b = { ...a, id: "b", title: "B", fingerprint: "b" };
   const state = { plan: { id: "plan" }, documents: [], evidence: [a, a, b, b], inputs: [{ id: "input", criteria: [{ id: "criterion", requirement_text: "Údaj", value: "Value", explanation: "Note", insightIds: ["a", "a", "b", "b"], sources: [a, a, b, b], status: "MISSING", stale: false }] }] };
   const saves = [];
   const form = hookRenderer("src/components/workflow/RequiredInputsForm.tsx", "RequiredInputsForm", { state, caseId: "case", situationId: "s", disabled: false, refreshing: false, onSave: async (reviews) => { saves.push(reviews); return null; }, onOpenSource: async () => true, onUploaded() {} });
   const settle = () => { for (let i = 0; i < 5; i++) form.render(); };
   try {
-    settle(); const row = byClass(form.tree, "required-input-row")[0];
-    const details = elements(row, (e) => e.type === "details")[0];
-    const labels = details.props.children.find((part) => Array.isArray(part) && part[0]?.type === "label");
-    assert.deepEqual(labels.map((label) => label.key), ["a", "b"]);
+    settle(); assert.equal(elements(form.tree, (e) => e.type === "details" || e.type === "select").length, 0, "technical source controls are not rendered");
     const checkbox = () => byClass(form.tree, "required-input-title")[0].props.children[0];
     checkbox().props.onChange({ target: { checked: true } }); settle(); assert.equal(saves.length, 0); assert.equal(checkbox().props.checked, true);
-    elements(form.tree, (e) => e.type === "textarea")[0].props.onChange({ target: { value: "User value" } }); settle(); assert.equal(checkbox().props.checked, false);
+    elements(form.tree, (e) => e.type === "input" && e.props.type === "text")[0].props.onChange({ target: { value: "User value" } }); settle(); assert.equal(checkbox().props.checked, false);
     checkbox().props.onChange({ target: { checked: true } }); settle();
     form.tree.props.onSubmit({ preventDefault() {} }); await Promise.resolve(); settle();
-    assert.deepEqual(saves[0][0].insightIds, ["a", "b"]); assert.equal(saves[0][0].origin, "USER"); assert.equal(saves[0][0].sufficient, true);
+    assert.deepEqual(saves[0][0].insightIds, []); assert.equal(saves[0][0].origin, "USER"); assert.equal(saves[0][0].sufficient, true);
   } finally { form.dispose(); }
 });
 
@@ -914,25 +997,24 @@ test("attachment uses only existing upload and Situation-link endpoints, with no
   } finally { globalThis.fetch = previous; }
 });
 
-test("confirmed USER rows stay compact, editing requires reconfirmation and failed saves retain the checked draft", async () => {
-  let state = { documents: [{ id: "doc", name: "Attached", fingerprint: "one" }], evidence: [], inputs: [{ id: "input", criteria: [{ id: "c", requirement_text: "Poštovní adresa", value: "Původní adresa", explanation: "", origin: "USER", status: "SATISFIED", stale: false, insightIds: [], sources: [], documentIds: ["doc"] }] }] };
+test("confirmed USER values remain visible, editing requires reconfirmation and failed saves retain the checked draft", async () => {
+  let state = { documents: [{ id: "doc", name: "Attached", fingerprint: "one" }], evidence: [], inputs: [{ id: "input", title: "Poštovní adresa", criteria: [{ id: "c", requirement_text: "Poštovní adresa", value: "Původní adresa", explanation: "", origin: "USER", status: "SATISFIED", stale: false, insightIds: [], sources: [], documentIds: ["doc"] }] }] };
   let succeed = false;
   const form = hookRenderer("src/components/workflow/RequiredInputsForm.tsx", "RequiredInputsForm", { state, caseId: "case", situationId: "s", disabled: false, refreshing: false, onUploaded() {}, onOpenSource: async () => true,
     onSave: async ([review]) => { if (!succeed) return null; state = { ...state, inputs: [{ ...state.inputs[0], criteria: [{ ...state.inputs[0].criteria[0], ...review, status: review.sufficient ? "SATISFIED" : "MISSING" }] }] }; return state; } });
   const settle = async () => { for (let i = 0; i < 8; i++) { form.render(); await Promise.resolve(); } };
   const check = () => byClass(form.tree, "required-input-title")[0].props.children[0];
-  const valueField = () => elements(form.tree, (e) => e.type === "label" && e.props.children?.[0] === "Doplnit informaci")[0]?.props.children[1];
+  const valueField = () => elements(form.tree, (e) => e.type === "input" && e.props.type === "text")[0];
   try {
-    await settle(); assert.equal(check().props.checked, true); assert.equal(valueField(), undefined);
-    assert.ok(JSON.stringify(form.tree).includes("Zadal uživatel"));
+    await settle(); assert.equal(check().props.checked, true); assert.ok(valueField());
+    assert.equal(elements(form.tree, (e) => e.type === "select" || e.type === "details").length, 0);
     state = { ...state, inputs: [{ ...state.inputs[0], criteria: [{ ...state.inputs[0].criteria[0], value: "Aktuálně uložená adresa" }] }] };
     form.update({ state }); await settle(); assert.ok(JSON.stringify(form.tree).includes("Aktuálně uložená adresa")); assert.equal(check().props.checked, true);
-    elements(form.tree, (e) => e.type === "button" && e.props.children === "Upravit")[0].props.onClick(); await settle();
     valueField().props.onChange({ target: { value: "Nová adresa" } }); await settle(); assert.equal(check().props.checked, false);
     check().props.onChange({ target: { checked: true } }); await settle();
     form.tree.props.onSubmit({ preventDefault() {} }); await settle(); assert.equal(valueField().props.value, "Nová adresa"); assert.equal(check().props.checked, true);
     assert.ok(JSON.stringify(form.tree).includes("Uložení se nezdařilo")); assert.ok(!JSON.stringify(form.tree).includes('"Uloženo."'));
-    succeed = true; form.tree.props.onSubmit({ preventDefault() {} }); await settle(); assert.equal(valueField(), undefined); assert.equal(check().props.checked, true);
+    succeed = true; form.tree.props.onSubmit({ preventDefault() {} }); await settle(); assert.ok(valueField()); assert.equal(check().props.checked, true);
     form.update({ state: { ...state, documents: [{ id: "doc", name: "Attached", fingerprint: "changed" }] } }); await settle();
     assert.equal(check().props.checked, false, "changed attached source cannot retain draft consent"); assert.equal(valueField().props.value, "Nová adresa");
   } finally { form.dispose(); }
@@ -940,7 +1022,7 @@ test("confirmed USER rows stay compact, editing requires reconfirmation and fail
 
 test("actual file control attaches to only its row without confirming and waits for refreshed source context", async () => {
   const oldFetch = globalThis.fetch, calls = [], saves = [];
-  const state = { documents: [], evidence: [], inputs: [{ id: "input", criteria: ["a", "b"].map((id) => ({ id, requirement_text: id, value: "", explanation: "", status: "MISSING", stale: false, insightIds: [], sources: [] })) }] };
+  const state = { documents: [], evidence: [], inputs: ["a", "b"].map((id) => ({ id: `input-${id}`, title: id, attachmentRequired: id === "a", criteria: [{ id, requirement_text: id, value: "", explanation: "", status: "MISSING", stale: false, insightIds: [], sources: [] }] })) };
   globalThis.fetch = async (url, options) => { calls.push({ url, options }); return { ok: true, json: async () => ({ document: { id: "upload", filename: "proof.txt" } }) }; };
   let notices = 0;
   const form = hookRenderer("src/components/workflow/RequiredInputsForm.tsx", "RequiredInputsForm", { state, caseId: "case", situationId: "s", disabled: false, refreshing: false, onUploaded() { notices++; form.update({ refreshing: true }); }, onOpenSource: async () => true, onSave: async (reviews) => { saves.push(reviews); return null; } });
@@ -955,4 +1037,42 @@ test("actual file control attaches to only its row without confirming and waits 
     form.update({ state: fresh, refreshing: false }); await settle(); form.tree.props.onSubmit({ preventDefault() {} }); await settle();
     assert.equal(saves.length, 1); assert.equal(saves[0].length, 1); assert.equal(saves[0][0].criterionId, "a"); assert.deepEqual(saves[0][0].documentIds, ["upload"]); assert.equal(saves[0][0].sufficient, false);
   } finally { form.dispose(); globalThis.fetch = oldFetch; }
+});
+
+test("one information field has its concrete RequiredInput name, even with multiple validation conditions", async () => {
+  const criterion = (id, text) => ({ id, requirement_text: text, value: "", explanation: "", status: "MISSING", origin: "USER", insightIds: [], sources: [], stale: false });
+  const state = { documents: [], evidence: [], inputs: [{ id: "postal", title: "Poštovní adresa žadatele", attachmentRequired: false, criteria: [criterion("street", "Adresa je úplná"), criterion("delivery", "Adresa umožňuje doručení")] }] };
+  const saves = [];
+  const form = hookRenderer("src/components/workflow/RequiredInputsForm.tsx", "RequiredInputsForm", { state, caseId: "case", situationId: "s", disabled: false, refreshing: false, onUploaded() {}, onSave: async (...args) => { saves.push(args); return null; } });
+  const settle = async () => { for (let i = 0; i < 7; i++) { form.render(); await Promise.resolve(); } };
+  try {
+    await settle(); assert.equal(byClass(form.tree, "required-input-row").length, 1);
+    const fields = elements(form.tree, (e) => e.type === "input" && e.props.type === "text"); assert.equal(fields.length, 1); assert.equal(fields[0].props["aria-label"], state.inputs[0].title);
+    assert.ok(!JSON.stringify(form.tree).includes("Adresa je úplná")); assert.equal(elements(form.tree, (e) => e.type === "input" && e.props.type === "file").length, 0);
+    fields[0].props.onChange({ target: { value: "Testovací 12, Praha" } }); await settle();
+    byClass(form.tree, "required-input-title")[0].props.children[0].props.onChange({ target: { checked: true } }); await settle();
+    form.tree.props.onSubmit({ preventDefault() {} }); await settle();
+    assert.deepEqual(saves[0][0].map((review) => [review.criterionId, review.value, review.sufficient]), [["street", "Testovací 12, Praha", true], ["delivery", "Testovací 12, Praha", true]]);
+    assert.deepEqual(saves[0][1], []);
+  } finally { form.dispose(); }
+});
+
+test("legacy combined consent has an explicit new-Plan editor instead of renamed or split Analysis rows", async () => {
+  const env = environment(), oldWindow = globalThis.window, oldFetch = globalThis.fetch, calls = []; globalThis.window = env.window;
+  const state = { revision: 1, contextHash: "a".repeat(64), goal: { id: "g", title: "Goal" }, goals: [], history: [], evidence: [], needsPlanRevision: true,
+    plan: { id: "old", status: "ACCEPTED", content: { version: 2, expectedOutput: "Output", procedure: [{ id: "action", title: "Procedure", expectedResult: "Result", inputIds: ["old-input"] }], inputs: [{ id: "old-input", title: "Adresa a rozměry", description: "", criteria: ["Adresa a rozměry jsou uvedeny úplně"] }] } },
+    inputs: [{ id: "old-row", title: "Adresa a rozměry", status: "SATISFIED", criteria: [{ id: "old-criterion", requirement_text: "Adresa a rozměry jsou uvedeny úplně", status: "SATISFIED", value: "Old consent", insightIds: [], sources: [] }] }] };
+  const before = JSON.stringify(state); let selected = 0;
+  globalThis.fetch = async (_url, options = {}) => { calls.push(options); return { ok: true, json: async () => ({ planning: state }) }; };
+  const panel = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "SituationPlanningPanel", { caseId: "case", situationId: "s", view: "ANALYSIS", onOpenSource: async () => true, onSelectPlan() { selected++; } });
+  const settle = async () => { for (let i = 0; i < 10; i++) { panel.render(); await Promise.resolve(); } };
+  try {
+    await settle(); assert.equal(elements(panel.tree, (e) => e.props.state && e.props.onSave).length, 0);
+    for (const label of ["Historie", "Další otázky z podkladů", "Zdroje a podrobnosti"]) assert.equal(elements(panel.tree, (e) => e.type === "summary" && e.props.children === label).length, 0);
+    elements(panel.tree, (e) => e.type === "button" && e.props.children === "Upravit požadavky v nové verzi Plánu")[0].props.onClick(); await settle(); assert.equal(selected, 1);
+    panel.update({ view: "PLAN" }); await settle();
+    assert.equal(elements(panel.tree, (e) => e.type === "label" && e.props.children?.[0] === "Potřebná informace").length, 1);
+    const flags = elements(panel.tree, (e) => e.type === "label" && e.props.children?.[1] === "Vyžaduje soubor / přílohu"); assert.equal(flags[0].props.children[0].props.checked, false);
+    assert.equal(JSON.stringify(state), before); assert.ok(calls.every((options) => !options.method));
+  } finally { panel.dispose(); globalThis.window = oldWindow; globalThis.fetch = oldFetch; }
 });

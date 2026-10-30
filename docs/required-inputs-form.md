@@ -45,3 +45,8 @@ Use disposable local SQLite and synthetic files; do not run migration/start laun
 9. Recheck keyboard labels/focus/native checkbox/file control, compact rows, small viewport, source navigation/index hover/drag, Journal visibility and deletion isolation. UI geometry/native upload/conversion are not covered by controlled tests. GET, navigation, row expansion and local edits never write statuses; only explicit Save does.
 
 No merge, deployment, Drive write, bulk data repair or user DB/uploads modification by Codex.
+
+
+## Superseding minimal-information revision
+
+The 2026-10-31 revision supersedes the criterion-sentence row labels, universal visible file inputs, compact-card reopening and source-detail controls described above. Current concrete-information fields, separate WorkflowTask reporting, explicit-only hidden-picker paperclips and legacy Plan upgrade are specified in `docs/minimal-required-inputs.md`. Earlier runtime checks are historical and do not establish browser acceptance of this revision.

@@ -251,4 +251,7 @@
 
 .situation-planning .required-input-title { display: flex; align-items: baseline; gap: 7px; font-weight: 600; }
 .required-input-title input[type="checkbox"] { flex: none; margin: 0; }
-.required-inputs-form .required-input-file { font-size: .82rem; }
+.required-inputs-form .required-input-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; gap: 6px; }
+.required-inputs-form .required-input-title { margin: 0; }
+.required-input-row > p { grid-column: 1 / -1; margin: 0; font-size: .78rem; }
+.required-task-row .required-input-title { flex-wrap: wrap; }

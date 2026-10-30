@@ -101,3 +101,6 @@ The three-section Analysis simplification updates canonical 00, 01, 03, 04, 07 a
 
 
 The K doplnění completion-form revision again changes canonical 00, 01, 03, 04, 07 and 08. Their mirror alignment/readback remains pending; this work performs no Drive synchronization.
+
+
+The 2026-10-31 minimal-information revision changes canonical 00, 01, 03, 04, 07 and 08 again; existing mirror alignment/readback remains pending. No Drive write or current parity is claimed.

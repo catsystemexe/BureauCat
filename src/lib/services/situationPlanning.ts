@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { WORKFLOW_STEP_DEFINITIONS } from "@/lib/workflow/constants";
 import { resolveSourceRange, parseJournalLinks } from "@/lib/journal/overview";
 import { requestAIJson } from "@/lib/ai/jsonResponse";
-import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema, newPlanContentSchema, situationBriefSchema, currentBrief, uniqueInsights } from "@/lib/workflow/planning";
+import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema, informationPlanSchema, writablePlanSchema, situationBriefSchema, currentBrief, uniqueInsights } from "@/lib/workflow/planning";
 import type { InputReview, PlanningCommand, PlanningEvidence, PlanningState } from "@/lib/workflow/planning";
 
 type DB = Prisma.TransactionClient;
@@ -17,7 +17,7 @@ const fail = (message: string): never => { throw new PlanningError(message); };
 async function load(db: DB, situationId: string, caseId: string) {
   const situation = await db.situation.findFirst({ where: { id: situationId, case_id: caseId } });
   if (!situation) throw new PlanningError("Situace v tomto případu neexistuje.", 404);
-  const [goals, plans, steps, documents, journal, reviews, proposals, caseIntent] = await Promise.all([
+  const [goals, plans, steps, documents, journal, reviews, proposals, caseIntent, taskRows, planEvents] = await Promise.all([
     db.goal.findMany({ where: { situation_id: situationId }, orderBy: [{ created_at: "asc" }, { id: "asc" }] }),
     db.situationPlan.findMany({ where: { situation_id: situationId }, orderBy: { revision: "desc" }, include: { required_inputs: { orderBy: { display_order: "asc" }, include: { criteria: { orderBy: { display_order: "asc" } } } } } }),
     db.workflowStep.findMany({ where: { situation_id: situationId }, orderBy: { display_order: "asc" } }),
@@ -25,7 +25,9 @@ async function load(db: DB, situationId: string, caseId: string) {
     db.journalItem.findMany({ where: { situation_id: situationId, case_id: caseId, status: "active" }, orderBy: { id: "asc" } }),
     db.workflowEvent.findMany({ where: { situation_id: situationId, event_type: { in: ["PLANNING_reviewCriterion", "PLANNING_reviewInputs", "PLANNING_matchInputs"] } }, orderBy: [{ created_at: "asc" }, { id: "asc" }] }),
     db.workflowEvent.findMany({ where: { situation_id: situationId, event_type: { in: ["PLANNING_suggestGoals", "PLANNING_confirmGoal"] } }, orderBy: { created_at: "asc" } }),
-    db.case.findUniqueOrThrow({ where: { id: caseId }, select: { title: true, area: true } })
+    db.case.findUniqueOrThrow({ where: { id: caseId }, select: { title: true, area: true } }),
+    db.workflowTask.findMany({ where: { situation_id: situationId }, orderBy: [{ display_order: "asc" }, { id: "asc" }] }),
+    db.workflowEvent.findMany({ where: { situation_id: situationId, event_type: "PLANNING_acceptPlan" } })
   ]);
   const insights = await db.documentInsight.findMany({ where: {
     document: { case_id: caseId }, source_document_id: { in: documents.map((d) => d.id) }, status: { not: "rejected" }
@@ -44,7 +46,7 @@ async function load(db: DB, situationId: string, caseId: string) {
   const contextHash = hash([situation.title, situation.description, documents, insights, journal]);
   const active = goals.filter((g) => g.status === "active");
   const goal = active.length === 1 && active[0].confirmed_at ? active[0] : null;
-  return { situation, goals, plans, steps, evidence, contextHash, goal, journal, documents, insights, reviews, proposals, caseIntent };
+  return { situation, goals, plans, steps, evidence, contextHash, goal, journal, documents, insights, reviews, proposals, caseIntent, taskRows, planEvents };
 }
 type Loaded = Awaited<ReturnType<typeof load>>;
 type SavedEvidence = { origin?: "USER" | "DOCUMENT"; confirmedValueHash?: string; documents?: { documentId: string; fingerprint: string }[]; historicalDocumentIds?: string[]; sources: { insightId: string; fingerprint: string }[]; explanation: string; reviewed: boolean; assessed?: boolean; stale?: boolean; historicalInsightIds?: string[] };
@@ -60,6 +62,7 @@ function savedEvidence(json: string): SavedEvidence {
   } catch { /* Legacy refs remain unconfirmed. */ }
   return { sources: [], explanation: "Doložení zatím nebylo ověřeno.", reviewed: false };
 }
+function record(json: string): Record<string, unknown> { try { const value = JSON.parse(json); return value && !Array.isArray(value) && typeof value === "object" ? value : {}; } catch { return {}; } }
 function project(data: Loaded): PlanningState {
   const proposals = new Map<string, { reason: string; insightIds: string[]; brief?: PlanningState["brief"] }>();
   for (const event of data.proposals) {
@@ -77,6 +80,16 @@ function project(data: Loaded): PlanningState {
   const briefSnapshot = data.goal ? confirmations[0]?.contextHash : latestProposal?.contextHash;
   const briefStale = Boolean(selectedBrief && briefSnapshot !== data.contextHash);
   const current = data.goal ? data.plans.find((p) => p.goal_id === data.goal!.id && p.status !== "SUPERSEDED") ?? null : null;
+  const currentContent = current ? planContentSchema.parse(JSON.parse(current.content_json)) : null;
+  const tasks = current?.status === "ACCEPTED" ? data.planEvents.flatMap((event) => {
+    const bindings = JSON.parse(event.payload_json).taskBindings ?? [];
+    return bindings.flatMap((binding: { taskId: string; planId: string; deadline: { text: string; sources: { insightId: string; fingerprint: string }[] } | null }) => {
+      const task = data.taskRows.find((row) => row.id === binding.taskId && data.steps.some((step) => step.id === row.workflow_step_id));
+      if (!task || binding.planId !== current.id) return [];
+      const validDeadline = binding.deadline && binding.deadline.sources.length > 0 && binding.deadline.sources.every((ref) => data.evidence.some((source) => source.id === ref.insightId && source.fingerprint === ref.fingerprint && source.usable));
+      return [{ id: task.id, title: task.title, completed: task.status === "COMPLETED", deadline: validDeadline ? binding.deadline!.text : null, deadlineStale: Boolean(binding.deadline && !validDeadline) }];
+    });
+  }) : [];
   const inputs = current?.status === "ACCEPTED" ? current.required_inputs.map((input) => {
     const criteria = input.criteria.map((criterion) => {
       const saved = savedEvidence(criterion.evidence_refs_json);
@@ -96,10 +109,12 @@ function project(data: Loaded): PlanningState {
         stale, historicalInsightIds: [...new Set([...(saved.historicalInsightIds ?? []), ...saved.sources.map((s) => s.insightId)])],
         insightIds: [...new Set(saved.sources.filter((s) => data.evidence.some((e) => e.id === s.insightId)).map((s) => s.insightId))], sources };
     });
-    return { id: input.id, title: input.title, status: criteria.every((c) => c.status === "SATISFIED") ? "SATISFIED" :
+    const metadata = record(input.source_refs_json);
+    const definition = currentContent && "version" in currentContent && currentContent.version === 3 ? currentContent.inputs.find((entry) => entry.id === metadata.planInputId) : null;
+    return { id: input.id, title: input.title, attachmentRequired: definition?.attachmentRequired === true, status: criteria.every((c) => c.status === "SATISFIED") && (!definition || new Set(criteria.map((c) => c.value)).size === 1) ? "SATISFIED" :
       criteria.some((c) => c.sources.length || c.value || c.stale || c.attachments.length) ? "INCOMPLETE" : "MISSING", criteria };
   }) : [];
-  return { brief: currentBrief(selectedBrief, data.documents, data.evidence), historicalBrief: selectedBrief, briefStale,
+  return { tasks, needsPlanRevision: Boolean(current && !(currentContent && "version" in currentContent && currentContent.version === 3)), brief: currentBrief(selectedBrief, data.documents, data.evidence), historicalBrief: selectedBrief, briefStale,
     deadlineVerified: Boolean(!briefStale && selectedBrief?.deadline?.insightIds.length && selectedBrief.deadline.insightIds.every((id: string) => data.evidence.some((e) => e.id === id && e.usable))),
     briefHistory: data.proposals.flatMap((event) => { const payload = JSON.parse(event.payload_json); return payload.action === "confirmGoal" && payload.brief ? [{ id: event.id, brief: payload.brief }] : []; }), documents: data.documents.map((d) => ({ id: d.id, name: d.display_name ?? d.filename, fingerprint: hash(d) })), revision: data.situation.workflow_revision, contextHash: data.contextHash, goalSelectionRequired: !data.goal && data.goals.some((g) => g.status === "active"),
     goal: data.goal ? { id: data.goal.id, title: data.goal.title } : null,
@@ -160,7 +175,7 @@ export async function executePlanningCommand(situationId: string, command: Plann
   const initial = await load(prisma, situationId, command.caseId);
   if (initial.situation.workflow_revision !== command.expectedRevision || initial.contextHash !== command.contextHash) fail("Podklady nebo pracovní stav se změnily. Načtěte aktuální stav a znovu potvrďte změnu.");
   let goals: ReturnType<typeof goalSuggestionsSchema.parse> | null = null;
-  let proposedPlan: ReturnType<typeof newPlanContentSchema.parse> | null = null;
+  let proposedPlan: ReturnType<typeof informationPlanSchema.parse> | null = null;
   let matches: ReturnType<typeof inputMatchesSchema.parse> | null = null;
   // Network work stays outside the write transaction; its snapshot is rechecked.
   if (command.action === "suggestGoals") {
@@ -171,7 +186,7 @@ export async function executePlanningCommand(situationId: string, command: Plann
   }
   if (command.action === "suggestPlan") {
     requireGoal(initial, command.goalId);
-    proposedPlan = await requestAIJson(instructions + `Navrhni plán výhradně pro potvrzený cíl z perspektivy občana a požadavků situationBrief. Rozliš zjištění údajů, přípravu odpovědi, kontrolu požadavků a doloženého termínu, odeslání a uchování dokladu podle skutečného kontextu; nyní nic nevykonávej. Nezadávej získávání informace, která již je doložená; případné ověření označ jako ověření. Nevyhodnocené neznamená chybějící ani dostatečné. Postup jsou body obsahu, nikoli nové workflow kroky. Vstupy jsou informace, nikoli pouhá existence souboru. Každý vstup má konkrétní kritéria dostatečnosti. Nové požadované informace navrhuj samostatně doplnitelné: odlišné údaje jako adresa, šířka a hloubka mají vlastní kritéria, pokud jsou skutečně samostatné. Nedělitelné požadavky nerozděluj a nerozděluj automaticky existující uložená kritéria. Schéma: {"version":2,"expectedOutput":"...","procedure":[{"id":"action-uuid","title":"...","expectedResult":"...","explanation":"...","inputIds":["input-uuid"]}],"inputs":[{"id":"input-uuid","title":"...","description":"...","criteria":["..."]}]}. ID jsou jedinečné neprázdné identifikátory v rámci verze. Každý odkaz inputIds musí existovat v inputs; názvy ani pořadí neslouží jako identita.\n` + promptContext(initial), newPlanContentSchema);
+    proposedPlan = await requestAIJson(instructions + `Navrhni plán výhradně pro potvrzený cíl z perspektivy občana a požadavků situationBrief. Rozliš zjištění údajů, přípravu odpovědi, kontrolu požadavků a doloženého termínu, odeslání a uchování dokladu podle skutečného kontextu; nyní nic nevykonávej. Nezadávej získávání informace, která již je doložená; případné ověření označ jako ověření. Nevyhodnocené neznamená chybějící ani dostatečné. Postup jsou body obsahu, nikoli nové workflow kroky. Vstupy jsou informace, nikoli pouhá existence souboru. Každý vstup má konkrétní kritéria dostatečnosti. Každý vstup pojmenuj jako jednu samostatně doplnitelnou informaci. Její kontrolní podmínky patří do criteria; související činnosti do procedure. Nedělitelné požadavky nerozděluj a nerozděluj automaticky existující uložená kritéria. Názvy inputs.title jsou konkrétní požadované informace, nikoli kontrolní věty. Kritéria dostatečnosti patří pouze do criteria; činnosti (např. odeslání) pouze do procedure. task je null pro pouhý pracovní popis, nebo explicitní konkrétní úkol se stepKey a deadlineFromBrief. Termín se smí čerpat jen z aktuálně doloženého briefStatus.deadlineVerified, nikdy jej nevymýšlej ani nezapisuj do názvu vstupu či akce; UI ho připojí jen z doloženého údaje. suggestedValue vyplň pouze přesnou dostupnou uloženou hodnotou findings.value s explicitními insightIds. Pokud se vybrané hodnoty liší, nech hodnotu prázdnou; nepotvrzuj ji. attachmentRequired je true jen při výslovném požadavku na soubor/přílohu, ne podle názvu. Schéma: {"version":3,"expectedOutput":"...","procedure":[{"id":"action-uuid","title":"...","expectedResult":"...","explanation":"...","inputIds":["input-uuid"],"task":null}],"inputs":[{"id":"input-uuid","title":"...","description":"...","criteria":["..."],"attachmentRequired":false,"suggestedValue":"","insightIds":[]}]}. ID jsou jedinečné neprázdné identifikátory v rámci verze. Každý odkaz inputIds musí existovat v inputs; názvy ani pořadí neslouží jako identita.\n` + promptContext(initial), informationPlanSchema);
   }
   if (command.action === "matchInputs") {
     const plan = requirePlan(initial, command.planId);
@@ -180,6 +195,12 @@ export async function executePlanningCommand(situationId: string, command: Plann
     matches = await requestAIJson(instructions + `Pro každé kritérium navrhni nalezenou hodnotu a existující insightIds, nebo prázdné value a pole pro chybějící informaci. Popiš neúplnost, nejistotu a všechny varianty/rozpory. Neoznačuj splnění; hodnotí je uživatel. Schéma: {"matches":[{"criterionId":"...","value":"...","insightIds":[],"explanation":"..."}]}\nKritéria: ${JSON.stringify(criteria)}\n` + promptContext(initial), inputMatchesSchema);
     if (matches.matches.length !== criteria.length || new Set(matches.matches.map((m) => m.criterionId)).size !== criteria.length ||
         matches.matches.some((m) => !criteria.some((c) => c.id === m.criterionId) || m.insightIds.some((id) => !initial.evidence.some((e) => e.id === id)))) fail("AI vrátila neplatné párování kritérií nebo zdrojů.");
+  }
+  const proposed = command.action === "suggestPlan" ? proposedPlan : command.action === "savePlan" ? command.content : null;
+  if (proposed && proposed.version === 3) for (const input of proposed.inputs) {
+    const sources = [...new Set(input.insightIds)].map((id) => initial.evidence.find((entry) => entry.id === id) ?? fail("Zdroj požadované informace nepatří k situaci."));
+    if (sources.some((source) => !source.usable)) fail("Zdroj předvyplněné informace nemá přesnou pasáž.");
+    if (command.action === "suggestPlan" && input.suggestedValue && (!sources.length || sources.some((source) => source.value !== input.suggestedValue))) fail("AI předvyplnění neodpovídá shodným uloženým hodnotám. Zachovejte nejistotu.");
   }
   await prisma.$transaction(async (db) => {
     // First statement obtains SQLite's write lock and atomically compares the
@@ -231,7 +252,7 @@ export async function executePlanningCommand(situationId: string, command: Plann
     }
     if (command.action === "savePlan" || command.action === "suggestPlan") {
       const goal = requireGoal(data, command.goalId);
-      const content = newPlanContentSchema.parse(command.action === "savePlan" ? command.content : proposedPlan);
+      const content = writablePlanSchema.parse(command.action === "savePlan" ? command.content : proposedPlan);
       const previous = data.plans.find((p) => p.goal_id === goal.id && p.status !== "SUPERSEDED");
       if (command.action === "savePlan" && previous && previous.content_json === JSON.stringify(content) && previous.context_hash === data.contextHash) {
         event.planId = previous.id;
@@ -248,10 +269,34 @@ export async function executePlanningCommand(situationId: string, command: Plann
       if (p.context_hash !== data.contextHash) fail("Podklady plánu se změnily. Uložte nový návrh před přijetím.");
       if (p.status !== "ACCEPTED") {
         const content = planContentSchema.parse(JSON.parse(p.content_json));
-        for (const [index, input] of content.inputs.entries()) await db.requiredInput.create({ data: {
-          situation_id: situationId, plan_id: p.id, title: input.title, description: input.description, display_order: index,
-          criteria: { create: input.criteria.map((requirement_text, display_order) => ({ requirement_text, display_order })) }
-        } });
+        for (const [index, input] of content.inputs.entries()) {
+          const modern = "version" in content && content.version === 3 ? content.inputs[index] : null;
+          const seed = modern ? {
+            matched_value: modern.suggestedValue || null,
+            evidence_refs_json: JSON.stringify({ origin: modern.insightIds.length ? "DOCUMENT" : "USER", reviewed: false,
+              sources: [...new Set(modern.insightIds)].map((id) => {
+                const source = data.evidence.find((entry) => entry.id === id) ?? fail("Zdroj předvyplnění již není dostupný.");
+                return { insightId: id, fingerprint: source.fingerprint };
+              }), documents: [], explanation: "" })
+          } : {};
+          await db.requiredInput.create({ data: {
+            situation_id: situationId, plan_id: p.id, title: input.title, description: input.description, display_order: index,
+            source_refs_json: modern ? JSON.stringify({ planInputId: modern.id }) : "[]",
+            criteria: { create: input.criteria.map((requirement_text, display_order) => ({ requirement_text, display_order, ...seed })) }
+          } });
+        }
+        if ("version" in content && content.version === 3) {
+          const planning = project(data);
+          const taskBindings = [];
+          for (const [order, action] of content.procedure.entries()) if (action.task) {
+            const step = data.steps.find((entry) => entry.step_key === action.task!.stepKey) ?? fail("Krok úkolu nepatří této situaci.");
+            const deadline = action.task.deadlineFromBrief ? planning.brief?.deadline : null;
+            if (action.task.deadlineFromBrief && (!planning.deadlineVerified || !deadline)) fail("Termín úkolu nemá aktuální doložení. Upravte návrh Plánu.");
+            const task = await db.workflowTask.create({ data: { situation_id: situationId, workflow_step_id: step.id, title: action.title, description: action.expectedResult, display_order: order } });
+            taskBindings.push({ taskId: task.id, actionId: action.id, planId: p.id, deadline: deadline ? { text: deadline.text, sources: deadline.insightIds.map((id) => { const source = data.evidence.find((entry) => entry.id === id) ?? fail("Neplatný zdroj termínu."); return { insightId: id, fingerprint: source.fingerprint }; }) } : null });
+          }
+          event.taskBindings = taskBindings;
+        }
         await db.situationPlan.update({ where: { id: p.id }, data: { status: "ACCEPTED", accepted_at: new Date() } });
         await activate(db, data, "COLLECTION");
       }
@@ -261,6 +306,19 @@ export async function executePlanningCommand(situationId: string, command: Plann
       if (p.status !== "ACCEPTED") fail("Nejprve přijměte plán.");
       const changes: InputReview[] = command.action === "reviewInputs" ? command.reviews : command.action === "reviewCriterion" ? [{ criterionId: command.criterionId, value: command.value, insightIds: command.insightIds, explanation: command.explanation, origin: "DOCUMENT", documentIds: [], sufficient: command.sufficient }] : matches!.matches.map((match) => ({ ...match, origin: "DOCUMENT", documentIds: [], sufficient: false }));
       if (new Set(changes.map((change) => change.criterionId)).size !== changes.length) fail("Kritérium je uvedeno vícekrát.");
+      const accepted = planContentSchema.parse(JSON.parse(p.content_json));
+      if (command.action === "reviewInputs" && "version" in accepted && accepted.version === 3) {
+        const effective = project(data);
+        for (const input of effective.inputs) {
+          const updates = changes.filter((change) => input.criteria.some((criterion) => criterion.id === change.criterionId));
+          if (updates.some((change) => change.sufficient)) {
+            const resulting = input.criteria.map((criterion) => updates.find((change) => change.criterionId === criterion.id) ?? { value: criterion.value, sufficient: criterion.status === "SATISFIED" });
+            if (resulting.some((criterion) => !criterion.sufficient) || new Set(resulting.map((criterion) => criterion.value)).size !== 1) fail("Potvrďte celou požadovanou informaci jednou jednoznačnou hodnotou.");
+          }
+          const metadata = record(p.required_inputs.find((entry) => entry.id === input.id)!.source_refs_json);
+          if (!accepted.inputs.some((entry) => entry.id === metadata.planInputId && entry.attachmentRequired) && updates.some((change) => change.documentIds.length > 0)) fail("Tento požadavek nevyžaduje soubor. Upravte novou verzi Plánu.");
+        }
+      }
       const auditChanges = [];
       for (const change of changes) {
         const input = p.required_inputs.find((i) => i.criteria.some((c) => c.id === change.criterionId));
@@ -284,6 +342,16 @@ export async function executePlanningCommand(situationId: string, command: Plann
         auditChanges.push({ criterionId: criterion!.id, requirement: criterion!.requirement_text, before: { value: criterion!.matched_value, refs: criterion!.evidence_refs_json },
           after: { value: change.value, explanation: change.explanation, reviewed: saved.reviewed, refs: JSON.stringify(saved) } });
         await db.requiredInputCriterion.update({ where: { id: criterion!.id }, data: { matched_value: change.value || null, status: sufficient ? "SATISFIED" : "MISSING", evidence_refs_json: JSON.stringify(saved) } });
+      }
+      if (command.action === "reviewInputs") {
+        const allowed = project(data).tasks ?? [];
+        const taskChanges = [];
+        for (const change of command.tasks) {
+          const task = allowed.find((entry) => entry.id === change.taskId) ?? fail("Úkol nepatří k aktuálnímu přijatému Plánu.");
+          await db.workflowTask.update({ where: { id: task.id }, data: { status: change.completed ? "COMPLETED" : "PENDING" } });
+          taskChanges.push({ taskId: task.id, before: task.completed, after: change.completed });
+        }
+        event.taskChanges = taskChanges;
       }
       event.changes = auditChanges;
       const effective = project(await load(db, situationId, command.caseId));

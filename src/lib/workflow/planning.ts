@@ -21,15 +21,27 @@ export const newPlanContentSchema = z.object({
     }
   }
 });
-export const planContentSchema = z.union([newPlanContentSchema, legacyPlanContentSchema]);
+export const informationPlanSchema = z.object({
+  version: z.literal(3), expectedOutput: text,
+  procedure: z.array(z.object({ id: text, title: text, expectedResult: text,
+    explanation: z.string().trim().max(4000).optional(), inputIds: z.array(text).max(20),
+    task: z.object({ stepKey: z.enum(["COLLECTION", "PRODUCTION", "OUTPUT_REVIEW", "EXECUTION"]), deadlineFromBrief: z.boolean() }).strict().nullable()
+  }).strict()).min(1).max(20),
+  inputs: z.array(z.object({ id: text, ...inputFields, attachmentRequired: z.boolean(), suggestedValue: z.string().trim().max(4000), insightIds: z.array(text).max(20) }).strict()).min(1).max(20)
+}).strict().superRefine((plan, context) => {
+  const ids = new Set(plan.inputs.map((input) => input.id));
+  if (ids.size !== plan.inputs.length || new Set(plan.procedure.map((action) => action.id)).size !== plan.procedure.length || plan.procedure.some((action) => new Set(action.inputIds).size !== action.inputIds.length || action.inputIds.some((id) => !ids.has(id)))) context.addIssue({ code: "custom", message: "Neplatné nebo duplicitní ID vstupů/akcí Plánu." });
+});
+export const writablePlanSchema = z.union([informationPlanSchema, newPlanContentSchema]);
+export const planContentSchema = z.union([informationPlanSchema, newPlanContentSchema, legacyPlanContentSchema]);
 export type PlanContent = z.infer<typeof planContentSchema>;
-export type EditablePlan = z.infer<typeof newPlanContentSchema>;
-/** Explicit edit only. Missing old results/links remain blank for the user. */
+export type EditablePlan = z.infer<typeof informationPlanSchema>;
+/** Explicit edit only: no splitting, inferred file need or invented tasks. */
 export function editPlan(content: PlanContent | null): EditablePlan {
-  if (content && "version" in content) return content;
-  return { version: 2, expectedOutput: content?.expectedOutput ?? "",
-    procedure: (content?.procedure ?? [""]).map((title) => ({ id: crypto.randomUUID(), title, expectedResult: "", explanation: "", inputIds: [] })),
-    inputs: (content?.inputs ?? [{ title: "", description: "", criteria: [""] }]).map((input) => ({ ...input, id: crypto.randomUUID() })) };
+  if (content && "version" in content && content.version === 3) return content;
+  return { version: 3, expectedOutput: content?.expectedOutput ?? "",
+    procedure: (content?.procedure ?? [""]).map((action) => typeof action === "string" ? { id: crypto.randomUUID(), title: action, expectedResult: "", explanation: "", inputIds: [], task: null } : { ...action, task: null }),
+    inputs: (content?.inputs ?? [{ title: "", description: "", criteria: [""] }]).map((input) => ({ ...input, id: "id" in input && typeof input.id === "string" ? input.id : crypto.randomUUID(), attachmentRequired: false, suggestedValue: "", insightIds: [] })) };
 }
 export const situationBriefSchema = z.object({
   trigger: z.object({ description: text, documentIds: z.array(text).max(20) }).strict(),
@@ -64,10 +76,10 @@ export const planningCommandSchema = z.discriminatedUnion("action", [
   z.object({ ...base, action: z.literal("suggestGoals") }).strict(),
   z.object({ ...base, action: z.literal("confirmGoal"), goalId: z.string().optional(), title: text, brief: situationBriefSchema.optional() }).strict(),
   z.object({ ...base, action: z.literal("suggestPlan"), goalId: z.string() }).strict(),
-  z.object({ ...base, action: z.literal("savePlan"), goalId: z.string(), content: newPlanContentSchema }).strict(),
+  z.object({ ...base, action: z.literal("savePlan"), goalId: z.string(), content: writablePlanSchema }).strict(),
   z.object({ ...base, action: z.literal("acceptPlan"), planId: z.string() }).strict(),
   z.object({ ...base, action: z.literal("matchInputs"), planId: z.string() }).strict(),
-  z.object({ ...base, action: z.literal("reviewInputs"), planId: z.string(), reviews: z.array(inputReviewSchema).min(1).max(240).refine((rows) => new Set(rows.map((row) => row.criterionId)).size === rows.length, "Kritérium je uvedeno vícekrát.") }).strict(),
+  z.object({ ...base, action: z.literal("reviewInputs"), planId: z.string(), reviews: z.array(inputReviewSchema).max(240).refine((rows) => new Set(rows.map((row) => row.criterionId)).size === rows.length, "Kritérium je uvedeno vícekrát."), tasks: z.array(z.object({ taskId: z.string().min(1), completed: z.boolean() }).strict()).max(20).default([]) }).strict().refine((command) => command.reviews.length + command.tasks.length > 0 && new Set(command.tasks.map((task) => task.taskId)).size === command.tasks.length, "Prázdné nebo duplicitní položky."),
   z.object({ ...base, action: z.literal("reviewCriterion"), planId: z.string(), criterionId: z.string(),
     value: z.string().trim().max(4000), insightIds: z.array(z.string()).max(20),
     sufficient: z.boolean(), explanation: z.string().trim().max(4000) }).strict()
@@ -82,13 +94,15 @@ export type PlanningState = {
   historicalBrief?: SituationBrief | null; deadlineVerified?: boolean;
   briefHistory?: { id: string; brief: SituationBrief }[];
   brief?: SituationBrief | null; briefStale?: boolean; documents?: { id: string; name: string; fingerprint?: string }[];
+  needsPlanRevision?: boolean;
+  tasks?: { id: string; title: string; completed: boolean; deadline: string | null; deadlineStale: boolean }[];
   revision: number; contextHash: string; goalSelectionRequired: boolean;
   goal: { id: string; title: string } | null;
   goals: { id: string; title: string; status: string; confirmed_at: string | null; reason?: string | null; insightIds?: string[]; currentProposal?: boolean; brief?: SituationBrief | null }[];
   steps: { step_key: string; status: string }[];
   plan: { id: string; goal_id: string; status: string; content: PlanContent; revision: number; accepted_at: string | null } | null;
   history: { id: string; goal_id: string; status: string; revision: number; content: PlanContent }[];
-  inputs: { id: string; title: string; status: string; criteria: {
+  inputs: { id: string; title: string; status: string; attachmentRequired?: boolean; criteria: {
     id: string; requirement_text: string; status: string; value: string; explanation: string;
     origin?: "USER" | "DOCUMENT"; documentIds?: string[]; attachments?: { documentId: string; name: string; stale: boolean }[]; historicalDocumentIds?: string[];
     assessed?: boolean; stale: boolean; historicalInsightIds?: string[]; insightIds: string[]; sources: PlanningEvidence[];
