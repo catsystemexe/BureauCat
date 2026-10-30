@@ -1,3 +1,4 @@
+import { PlanningError } from "@/lib/services/situationPlanning";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { archiveGoal, updateGoal } from "@/lib/services/goals";
@@ -47,6 +48,7 @@ export async function PATCH(request: Request, context: GoalRouteContext) {
     const goal = await updateGoal(goalId, result.data);
     return NextResponse.json({ goal });
   } catch (error) {
+    if (error instanceof PlanningError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (isNotFoundError(error)) {
       return notFoundResponse();
     }
@@ -62,6 +64,7 @@ export async function DELETE(_request: Request, context: GoalRouteContext) {
     const goal = await archiveGoal(goalId);
     return NextResponse.json({ goal });
   } catch (error) {
+    if (error instanceof PlanningError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (isNotFoundError(error)) {
       return notFoundResponse();
     }

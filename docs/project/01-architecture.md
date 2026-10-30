@@ -32,6 +32,8 @@ A supporting Situation may arise while another Situation is being worked. If its
 
 Goal expresses the desired outcome of a Situation. Analysis may propose candidates, but the actual Goal is established by user decision. One confirmed Goal corresponds to one Situation for the prototype. Multiple materially distinct Goals should become multiple Situations after user confirmation/order.
 
+The bounded MVP stores proposals in existing `Goal` rows (`draft`) and explicit authority through `confirmed_at` plus `active`. Legacy active rows without confirmation are not authoritative; multiple legacy choices require explicit selection. A partial unique database index covers newly confirmed active authority without rewriting legacy data. Material changes create a new Goal and archive the old one, preserving its Plans.
+
 Goal describes **what** should be achieved, not **when**. Deadlines belong to Timeline.
 
 ## Situation Workflow Contract v1
@@ -51,6 +53,8 @@ Source-grounded Document Analysis may project compact traceable findings into Jo
 ### Plan
 
 Decision layer after Goal confirmation. Defines the working route plus Goal-dependent Required Inputs and their acceptance criteria. Required Inputs describe what information must be available; Tasks represent operational actions needed to obtain or resolve it.
+
+`SituationPlan` stores immutable content versions bound to Goal, revision and evidence snapshot, with `DRAFT / ACCEPTED / SUPERSEDED`. Content contains expected output, procedure and information requirements/criteria; procedure items are not new Steps. Explicit acceptance instantiates existing RequiredInput/RequiredInputCriterion rows for that version and activates Collection. Goal/Plan replacement preserves history and revokes previous consent. See D-027.
 
 ### Collection
 
@@ -111,6 +115,8 @@ Case Context is a reusable assembly layer for Case/Situation context. The active
 
 Consumers may include Situation Controller, AI capabilities, audit/briefing views, Timeline reasoning and output generation.
 
+Current MVP coverage uses all current Situation findings and Journal knowledge, independent of visibility checkboxes. AI provides schema-validated evidence proposals through the existing Responses API/configuration; it does not grant sufficiency. Explicit review records value, USER/DOCUMENT origin, value-confirmation fingerprint, source/attachment snapshots and explanation; uncertain/conflicting selected evidence cannot become SATISFIED. Effective GET coverage revalidates source membership, quote/range and fingerprint without writes, so removed/changed sources invalidate prior support. Workflow and Case Context expose this current coverage, while older plan-bound input rows remain historical. This is structural evidence review, not a semantic or legal resolver.
+
 ## Timeline
 
 Timeline is a planned first-class Case-level temporal/process layer. It owns structured process-relevant dates, deadlines, terms and intervals.
@@ -128,11 +134,13 @@ BureauCat may automate low-risk analysis, extraction, matching, readiness checks
 The target UI preserves the existing three-region language:
 
 - **Left:** narrow Situation/workflow rail with compact Situation selector, selected Goal and ordered Steps.
-- **Center:** selected/active Step workspace, not a permanent chat panel.
-- **Right:** contextual Document/Analysis evidence/tools surface; Timeline may become a peer tab.
+- **Center:** the existing Situation Journal, with its content and controls unchanged.
+- **Right:** Document (including detailed document analysis and linked source indices), Situation Analysis, and Plan. This approved 2026-10-30 allocation supersedes the former central Goal/Plan workspaces; no duplicate forms or new Timeline are introduced.
 - **Chat/assistant:** secondary contextual interaction surface.
 
-Detailed shell contract is in `08-ux-shell-direction.md`.
+Situation Analysis has three main sections: Situace (saved trigger, requirements and optional sourced deadline in one compact block), Cíl, and K doplnění. There is no repeated document list; documents remain available in Journal and all still participate in AI/planning context. Case intent (available Case title/area) is context, not another Situation Goal. Partial requirements/deadlines are not alternative Goals. Document dates do not automatically select the trigger. User can edit/select trigger documents or enter a document-free Action; confirmation preserves the accepted brief and evidence context in WorkflowEvents. Available documents are not automatic proof of sufficiency. Before an accepted Plan, gaps are explicitly preliminary; unassessed information is not classified as missing. After acceptance the minimal K doplnění form shows RequiredInput information names and one value field per information, not criterion sentences. Several checks of the same information stay separate criteria in storage; an explicit information checkbox confirms the same displayed value against those checks, without sharing consent across different inputs. Execution items use their own WorkflowTask rows/checkboxes, no value fields, and never automatically complete a Situation/Step. One Save commits changed information and task reports atomically. Paperclips require explicit accepted attachment metadata, never title heuristics. Sources/technical selectors, history and additional questions are not rendered in Analysis; their data/audit remain, with history available in Plan. USER provenance and source checks remain authoritative. Older formats require explicit new-version editing/acceptance rather than automatic splitting or renaming of combined criteria. Plan is read-first: confirmed Goal, expected output, numbered actions with expected results and expandable per-action input links. Edits and histories are hidden until requested; tab navigation is read-only and does not discard drafts.
+
+New Plan content uses version 3 with independent action/input IDs, concrete information titles, separate criteria, explicit attachment need, unconfirmed stored-value/source proposals and explicit optional task metadata. Version-2 content remains readable without inferred tasks or attachment flags; the current editor creates version 3 only on explicit save. Old string procedures remain readable/acceptable unchanged; missing results/links are not guessed or filled on GET. Goal proposal events explicitly associate created Goal IDs, reasons and insight IDs; legacy title-only reasons are not attached by inference. Detailed shell contract is in `08-ux-shell-direction.md`.
 
 ## AI boundary
 

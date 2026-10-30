@@ -321,6 +321,10 @@ test("workspace reference clicks open the right panels and reject late navigatio
     assert.equal(right().targetSourceRange.startOffset, 0); assert.equal(right().targetSourceRange.quote, "Alpha");
     env.window.dispatchEvent(new CustomEvent("bureaucat:open-analysis-reference", { detail: reference })); await settle();
     assert.equal(step().activeAnalysisDocument.id, "analysis-A");
+    assert.equal(right().activeTab, "documents"); assert.equal(right().showDocumentAnalysis, true);
+    assert.equal(right().documentAnalysis.props.activeAnalysisDocument.id, "analysis-A", "detailed document analysis now lives in the Document tab");
+    right().onShowDocumentAnalysis(false); await settle();
+    assert.equal(right().showDocumentAnalysis, false); assert.ok(right().documentAnalysis, "source/detail switching preserves detail access");
     assert.equal(step().targetAnalysisInsight.insightId, "i0"); assert.equal(step().selectedStepKey, "ANALYSIS");
     deferred = true;
     env.window.dispatchEvent(new CustomEvent("bureaucat:open-analysis-reference", { detail: { ...reference, analysisDocumentId: "analysis-B" } }));

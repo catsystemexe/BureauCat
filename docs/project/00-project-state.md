@@ -57,6 +57,8 @@ The documentation-only Windows report update was published as `681fa5b4f1d938dff
 
 ## Implemented on the active working branch
 
+- Approved right-panel revision on `feat/situation-goal-plan`, baseline `6699f1c55125223e418d2fc2ef68127d5fe9b19a`: center is unchanged Journal; right tabs are Dokument (including detailed document analysis), Situation Analýza, and Plán. Goal/Plan are single, read-first right-side surfaces with explicit edit/confirmation, collapsed history and drafts preserved on tab changes. Version-2 Plan actions/input IDs and references are server-validated; legacy string procedures and acceptance remain unchanged on GET. Goal reasons/sources are explicitly joined to created Goal IDs, never titles. Preliminary questions/conflicts are distinguished from effective accepted-plan coverage, with no new relevance heuristic. See D-027 and `docs/situation-right-panels.md`. Known user-reported FAIL for Goal AI proposals containing unknown insight IDs remains open: the server rejects them, and this block does not fix the provider's output quality. Windows/browser/live-AI acceptance and Drive synchronization remain pending.
+- Goal → Plan → Collection MVP on `feat/situation-goal-plan`, baseline `5595ad8fab84eec6d9040b6d4111145a471f2997`: editable AI Goal proposals remain `Goal` drafts until explicit confirmation activates PLAN. Confirmed authority is unique, legacy goals require explicit choice, and versioned draft/accepted Plans instantiate existing Required Inputs/criteria only on acceptance, atomically activating COLLECTION. Read-only coverage revalidates current Situation source passages; AI proposes evidence without declaring sufficiency, and explicit user review cannot accept selected conflict/question/claim or unverified/unresolvable evidence. Goal/Plan changes preserve historical rows and cancel old consent. Revision/snapshot guards and idempotency protect concurrent/repeated/stale commands. Case Context exposes current planning and effective coverage independently of Journal visibility checkboxes. A new additive migration is exercised only on temporary SQLite; no user data migration was run. See D-027 and `docs/situation-goal-plan.md` for checks and pending Windows/browser/live-AI acceptance. Existing OpenAI credentials remain only in VS runtime; no live/paid API call or Drive write occurred.
 - Analysis ↔ Document reference follow-up on `feat/analysis-document-references`, baseline `340fc410ee3a7a8c66ff38c12c6fb1929b0527dd` from PR #41: both panels derive compact indices from the actually linked pin's stored Case number and verified passage. A SELECT-only reference endpoint diagnoses missing/bad links and duplicate numbers without allocating or repairing pins. Inline display-only indices keep same-line/same-start references individually accessible; matching hover/focus and click navigation retain source ranges rather than dragged visual positions. Detailed Analysis now derives six categories with explicit sender/recipient subgroups, supporting materials, distinct temporal roles, risks/conflicts and questions, without prompt/model changes or reanalysis. The simplified Journal and its fixes remain intact. Targeted regressions, typecheck and build pass; real Windows/browser/clipboard acceptance and Drive synchronization remain pending. No Windows data snapshot was available, so synthetic overlap is not a confirmed diagnosis of those data. See `docs/analysis-document-references.md`, its read-only audit SQL and D-026.
 - Compact Situation Journal v1 on `feat/compact-situation-journal`, baseline `79ef398b1ef72af575a2ea07a74c6539ed83ca02` (draft PR #40 lineage): the existing AI analysis now retains `DocumentInsight.content`. A derived, read-only overview exposes concrete saved findings, requests, temporal meanings and unresolved variants before Goal/Plan. Stable identification and explicit shared contexts can group sources without merging records; uncertain matches remain separate. Identification/supplementary details are collapsible, manual notes retain their existing editor, and original document analyses remain available. After the 2026-10-29 human review, analytical cards show statements/variants without source or original-record menus and without replacement controls; saved originals, edits and evidence links remain intact. Native checkboxes in the existing Situation document list select any combination for Journal visibility only, initially all on; none shows a short empty state alongside manual notes. New documents start on, a single document has no checkbox and stays visible, and Situation changes/reload reset selection to all. This selection does not change application context. Document bookmarks can show contextual or all pins without changing saved offsets. PR #39 deletion isolation and PR #40 hover/drag measurement fixes are retained. Focused temporary-SQLite, pure-view and controlled component regressions, Prisma checks, typecheck and build pass; actual Windows/browser acceptance and Drive synchronization remain pending. See `docs/compact-situation-journal.md` and D-025. This is a bounded Journal improvement, not completion of BC-012/BC-015, Goal Resolver or Timeline.
 - Prisma + SQLite baseline with replayable migrations.
@@ -107,10 +109,9 @@ Evidence limits and open items:
 
 ## Incomplete / not yet implemented
 
-- Full Goal Candidate Resolver and Goal confirmation workflow.
+- Full Goal Candidate Resolver/archetype orchestration beyond the bounded, explicit-confirmation MVP.
 - D-014 automatic source-grounded Document Analysis → Journal projection semantics.
-- Plan acceptance and Required Input orchestration end-to-end.
-- Collection matching end-to-end.
+- Broader Required Input/task orchestration and automated validated matching beyond the MVP evidence-review coverage.
 - Input Validation readiness contract.
 - Full Situation Controller / transition logic.
 - Production and mandatory Output Review.
@@ -122,11 +123,7 @@ Evidence limits and open items:
 
 ## Important current implementation gaps
 
-Before dependent workflow implementation, explicitly address the minimum invariant strategy for:
-
-- one authoritative active Goal per Situation;
-- one `ACTIVE` WorkflowStep per Situation;
-- Situation lifecycle semantics needed for waiting/completed/superseded/blocked behavior.
+The bounded Goal/Plan MVP now enforces unique confirmed active Goal authority and transactionally selects one ACTIVE Step, with revision/snapshot checks and idempotent commands. Legacy ambiguity is not resolved automatically. Situation lifecycle semantics needed for waiting/completed/superseded/blocked behavior and progression beyond Collection coverage remain later work.
 
 Do not introduce generic workflow-engine complexity unless implementation evidence requires it.
 
@@ -141,3 +138,20 @@ Do not introduce generic workflow-engine complexity unless implementation eviden
 ## Authority
 
 For intended product direction, use this Project State together with `01-architecture.md` and active Decisions. For what currently exists, inspect the actual GitHub implementation. Historical `docs/bureaucat-mvp-v1.2.md` and older audits are not authoritative.
+
+
+### One Situation Goal, trigger and document overview (2026-10-30)
+
+Follow-up from `396b4861416e950aa98b0ac1bb286d27a24dfe3f`, same branch/draft PR #43: one citizen-side umbrella Goal is the AI default, with separate editable trigger, requirements and sourced explicit deadline. Analysis now lists available documents once instead of atomic insights; accepted context is preserved in existing events and Plan proposals receive it. Legacy Plans display without the missing-link commentary or stored-content changes. Controlled tests cover this contract and existing safeguards; real AI quality (including the reported unknown-insight FAIL), Windows/browser acceptance and Drive sync remain pending. See D-027 and `docs/situation-right-panels.md`.
+
+
+PR #43 brief-source repair separates historical confirmation references from current editable selection. After source removal/refresh, users can clear or replace requirement/deadline references and explicitly reconfirm the Goal. Deadline text without current confirmed support is marked unverified. Event history and read-only GET are preserved; foreign IDs still fail. Controlled parent/editor/service regression covers removal, pending refresh, unsaved text, empty-source save and explicit replacement. Windows/browser verification and Drive synchronization remain pending.
+
+
+PR #43 Analysis presentation now uses only Situace / Cíl / K doplnění a ověření. Stored trigger/requirements/deadline remain a compact sourced block; the repeated document list is removed without narrowing context. Accepted Plan open items are criterion-level, with SATISFIED excluded and uncertain preliminary questions collapsed. Exact duplicate questions retain all sources; different/conflicting values stay distinct. MISSING does not prove absence: current unassessed/partial/stale items conservatively display K ověření. This pure presentation creates no additional AI call or sufficiency ledger. Source repair/draft regressions remain covered; actual Windows/browser acceptance and Drive sync are pending.
+
+
+PR #43 completion-form follow-up replaces the open-criteria overview and separate assessment with one K doplnění form, one atomic Save, editable drafts and compact confirmed rows. Direct values carry Zadal uživatel provenance and may be explicitly confirmed without fabricated insights; linked uploads never satisfy automatically and removed sources invalidate dependent consent. Existing rows/history/concurrency and effective RequiredInput authority are retained. New Plan proposals request independently fillable information, while existing combined criteria require explicit new-version editing/acceptance. See `docs/required-inputs-form.md`; Windows/browser/real upload/AI quality and Drive synchronization remain pending.
+
+
+PR #43 minimal-information follow-up uses RequiredInput names with inline values, separate WorkflowTask checkboxes and sourced deadlines. Version-3 Plan metadata explicitly distinguishes file requirements/tasks and unconfirmed stored values; no title regex or new AI call classifies existing rows. Analysis hides technical/source/history/question views, while persistence/audit remain. Older combined plans offer explicit new-version editing/acceptance and retain old data/consent. Information Save cannot mark sending or the Situation completed. See `docs/minimal-required-inputs.md`; Windows/browser/native upload/AI acceptance and Drive sync remain pending.

@@ -51,11 +51,20 @@ export function WorkflowRail({
   selectedStepKey: WorkflowStepKey | null;
 }) {
   const [situations, setSituations] = useState<Situation[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [workflow, setWorkflow] = useState<SituationWorkflow | null>(null);
   const [isLoadingSituations, setIsLoadingSituations] = useState(true);
   const [isCreatingSituation, setIsCreatingSituation] = useState(false);
   const [situationError, setSituationError] = useState<string | null>(null);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const refresh = (event: Event) => {
+      if ((event as CustomEvent).detail?.situationId === selectedSituationId) setRefreshKey((key) => key + 1);
+    };
+    window.addEventListener("bureaucat:workflow-refresh", refresh);
+    return () => window.removeEventListener("bureaucat:workflow-refresh", refresh);
+  }, [selectedSituationId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -111,6 +120,7 @@ export function WorkflowRail({
       };
     }
 
+    setWorkflow(null);
     async function loadWorkflow() {
       try {
         const response = await fetch(`/api/situations/${selectedSituationId}/workflow`, {
@@ -149,16 +159,15 @@ export function WorkflowRail({
     return () => {
       isMounted = false;
     };
-  }, [onSelectStep, selectedSituationId, selectedStepKey]);
+  }, [onSelectStep, selectedSituationId, selectedStepKey, refreshKey]);
 
   const selectedSituation = useMemo(
     () => situations.find((situation) => situation.id === selectedSituationId) ?? null,
     [selectedSituationId, situations]
   );
 
-  const authoritativeGoal = workflow?.goals.find((goal) => goal.status === "active")
-    ?? workflow?.goals.find((goal) => goal.status !== "archived")
-    ?? null;
+  const activeGoals = workflow?.goals.filter((goal) => goal.status === "active") ?? [];
+  const authoritativeGoal = activeGoals.length === 1 && activeGoals[0].confirmed_at ? activeGoals[0] : null;
 
   async function handleCreateSituation() {
     const activeSituationCount = situations.filter((situation) => situation.status === "active").length;

@@ -35,6 +35,7 @@ model Situation {
   display_order Int      @default(0)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
+  workflow_revision Int @default(0)
 
   case               Case               @relation(fields: [case_id], references: [id], onDelete: Cascade)
   goals              Goal[]
@@ -45,6 +46,7 @@ model Situation {
   workflow_tasks     WorkflowTask[]
   workflow_overrides WorkflowOverride[]
   workflow_events    WorkflowEvent[]
+  plans              SituationPlan[]
 
   @@index([case_id])
   @@index([case_id, display_order])
@@ -54,16 +56,37 @@ model Goal {
   id            String   @id @default(cuid())
   situation_id  String
   title         String
-  /// Allowed values: active, completed, archived.
+  /// Allowed values: draft, active, completed, archived. Legacy active rows require explicit confirmation.
   status        String   @default("active")
   display_order Int      @default(0)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
+  confirmed_at  DateTime?
+  proposal_context_hash String?
 
   situation Situation @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  plans SituationPlan[]
 
   @@index([situation_id])
   @@index([situation_id, display_order])
+}
+
+model SituationPlan {
+  id String @id @default(cuid())
+  situation_id String
+  goal_id String
+  revision Int
+  /// DRAFT, ACCEPTED, SUPERSEDED. Each edit creates a new immutable version.
+  status String @default("DRAFT")
+  content_json String
+  context_hash String
+  accepted_at DateTime?
+  created_at DateTime @default(now())
+  situation Situation @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  goal Goal @relation(fields: [goal_id], references: [id], onDelete: Cascade)
+  required_inputs RequiredInput[]
+  @@unique([situation_id, revision])
+  @@index([goal_id])
 }
 
 model WorkflowStep {
@@ -99,8 +122,10 @@ model RequiredInput {
   source_refs_json String   @default("[]")
   created_at       DateTime @default(now())
   updated_at       DateTime @updatedAt
+  plan_id          String?
 
   situation Situation               @relation(fields: [situation_id], references: [id], onDelete: Cascade)
+  plan SituationPlan? @relation(fields: [plan_id], references: [id], onDelete: SetNull)
   criteria  RequiredInputCriterion[]
   tasks     WorkflowTask[]
   overrides WorkflowOverride[]
@@ -108,6 +133,7 @@ model RequiredInput {
   @@index([situation_id])
   @@index([situation_id, display_order])
   @@index([situation_id, status])
+  @@index([plan_id])
 }
 
 model RequiredInputCriterion {
@@ -181,6 +207,7 @@ model WorkflowEvent {
   event_type       String
   payload_json     String   @default("{}")
   created_at       DateTime @default(now())
+  request_key      String?
 
   situation     Situation     @relation(fields: [situation_id], references: [id], onDelete: Cascade)
   workflow_step WorkflowStep? @relation(fields: [workflow_step_id], references: [id], onDelete: SetNull)
@@ -188,6 +215,7 @@ model WorkflowEvent {
   @@index([situation_id, created_at])
   @@index([workflow_step_id])
   @@index([event_type])
+  @@unique([situation_id, request_key])
 }
 
 model Document {

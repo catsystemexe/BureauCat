@@ -144,13 +144,15 @@ Implemented foundation on `work/workflow-foundation-v01`:
 Still required for the slice:
 
 - D-014 automatic source-grounded Journal projection;
-- Goal Candidate Resolver and user Goal confirmation;
-- accepted Plan;
-- Required Input criteria orchestration;
-- Collection matching and Task creation/resolution;
+- Goal archetype/resolver extensions beyond the bounded MVP;
+- broader Required Input orchestration and Task creation/resolution;
 - transition/controller behavior needed by the slice.
 
 Bounded Journal follow-up on `feat/compact-situation-journal`, baseline `79ef398b1ef72af575a2ea07a74c6539ed83ca02`: retain existing AI `content` on creation and derive a concrete Situation overview before Goal/Plan, with conservative source-preserving grouping, distinct temporal meanings, unresolved value variants, preserved original/user-edited records and editable manual notes. No new AI calls, read-time writes, data backfill or workflow transitions. Focused regressions and static checks pass; Windows/browser acceptance is pending. This advances D-014 presentation/content preservation without claiming the full projection semantics or BC-012 complete. See D-025 and `docs/compact-situation-journal.md`.
+
+Goal/Plan follow-up (2026-10-30), `feat/situation-goal-plan`, baseline `5595ad8fab84eec6d9040b6d4111145a471f2997`: implemented saved editable Goal proposals/manual confirmation, legacy-choice handling, unique confirmed authority, immutable Plan versions and explicit acceptance, current RequiredInput/criterion coverage with concrete evidence review, stale-source invalidation, idempotency and transactional Step transitions. AI reuses existing configuration; core manual entry works without it. Temporary-SQLite migration/concurrency/rollback, controlled API/component regressions and static checks are documented in `docs/situation-goal-plan.md`. Actual Windows/browser and live-AI verification remain pending; no credential was copied or live call made. BC-012/BC-015 remain In Progress; this block ends at Collection coverage, with no Input Validation, Production, execution, override or Timeline. Affected Drive mirrors remain pending.
+
+Right-panel follow-up (2026-10-30), baseline `6699f1c55125223e418d2fc2ef68127d5fe9b19a`: approved screen keeps Journal centered and moves single Situation Analysis/Plan views to the right beside Document/detail analysis. Read-first cards, explicit gates, version-2 action/input identities and validated references, legacy read compatibility and tab-preserved drafts are implemented. No second coverage ledger or relevance inference; previous source/refresh/duplicate-ID repairs remain. Known user-reported Goal AI FAIL for unknown insight IDs remains open; rejection is tested, not claimed fixed. See `docs/situation-right-panels.md`; Windows/browser/live-AI and Drive sync remain pending. BC-012/BC-015 are not Done.
 
 ## BC-013 — Input Validation readiness slice
 
@@ -279,3 +281,17 @@ Reduce handwritten response typing and inconsistent validation.
 ## Maintenance rule
 
 Designer decisions create or revise backlog items. IMPLEMENTATION completion updates status and only the project documents affected by the change. Minor visual patches do not trigger broad documentation churn.
+
+
+### One Situation Goal, trigger and document overview (2026-10-30)
+
+BC-012/BC-015 remain In Progress. PR #43 now separates case intent, editable Situation trigger, one default umbrella Goal, requirements and explicit deadline; available documents replace atomic-insight lists. Existing RequiredInput sufficiency remains authoritative after acceptance. Controlled AI/service/UI regressions pass; live proposal quality, the prior unknown-ID FAIL, Windows/browser checks and affected Drive mirrors remain open. Concrete acceptance scenarios: `docs/situation-right-panels.md`.
+
+
+BC-012/BC-015 follow-up in PR #43: simplify Analysis to Situace / Cíl / K doplnění a ověření, remove the repeated documents, and prioritize individual accepted criteria without SATISFIED/duplicate preliminary rows. Preserve exact sources, compound requirements, uncertain/conflicting variants, manual assessment and draft/source-removal repairs. A proven-absence indicator is not available in the current MISSING/INCOMPLETE data; no guessing from explanations. Browser acceptance, live AI quality (prior unknown-ID FAIL) and Drive sync remain open; this is not completion of either backlog item.
+
+
+BC-012/BC-015 remain In Progress after PR #43's one-form K doplnění revision: atomic multi-criterion Save, direct USER assertions, explicit attachment dependencies and retained source-removal/draft protections are implemented. Prior read-only lists/duplicate assessment controls are superseded. Pending acceptance includes native upload, compact/expanded editing, failure/reload, actual AI-generated separable requirements and Windows browser checks; no product-completion or Drive-sync claim.
+
+
+BC-012/BC-015 remain In Progress after the PR #43 minimal-information revision: one field per concrete information, independent task reporting, sourced deadline metadata and explicit-only paperclips replace criterion-sentence fields and technical Analysis detail. Legacy replacement/new consent is explicit. Runtime/browser/new AI proposal quality, prior Goal unknown-ID FAIL and Drive synchronization remain open; no general execution/Timeline engine is complete.

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requestAIJson } from "@/lib/ai/jsonResponse";
 
 const insightTypeSchema = z.enum([
   "fact",
@@ -70,42 +71,5 @@ export async function analyzeDocumentWithAI(input: {
   documentTitle: string;
   documentText: string;
 }): Promise<AIDocumentAnalysis> {
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not set.");
-  }
-
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
-      input: buildPrompt(input.documentTitle, input.documentText),
-      text: {
-        format: {
-          type: "json_object"
-        }
-      }
-    })
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data?.error?.message ?? "AI analysis request failed.");
-  }
-
-  const outputText =
-    data?.output_text ??
-    data?.output?.flatMap((item: { content?: Array<{ text?: string }> }) => item.content ?? [])
-      ?.map((content: { text?: string }) => content.text ?? "")
-      ?.join("") ??
-    "";
-
-  const parsed = JSON.parse(outputText);
-  return aiDocumentAnalysisSchema.parse(parsed);
+  return requestAIJson(buildPrompt(input.documentTitle, input.documentText), aiDocumentAnalysisSchema);
 }

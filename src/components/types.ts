@@ -26,9 +26,10 @@ export type Situation = {
   updated_at: string;
 };
 
-export type GoalStatus = "active" | "completed" | "archived";
+export type GoalStatus = "draft" | "active" | "completed" | "archived";
 
 export type Goal = {
+  confirmed_at?: string | null;
   id: string;
   situation_id: string;
   title: string;
