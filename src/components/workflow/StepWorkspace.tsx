@@ -1,6 +1,7 @@
 "use client";
 
 import type { JournalSource } from "@/lib/journal/overview";
+import type { AnalysisReference } from "@/lib/analysis/references";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
 import type {
@@ -41,6 +42,8 @@ export function StepWorkspace({
   onCloseAnalysisDocument,
   onJournalRefreshRequested,
   onOpenAnalysisSourceDocument,
+  onOpenAnalysisSourceReference,
+  targetAnalysisInsight,
   onOpenBookmark,
   onOpenJournalSource,
   onContextualPinsChange,
@@ -61,6 +64,8 @@ export function StepWorkspace({
   onCloseAnalysisDocument: () => void;
   onJournalRefreshRequested: () => void;
   onOpenAnalysisSourceDocument: (documentId: string) => Promise<boolean>;
+  onOpenAnalysisSourceReference: (reference: AnalysisReference) => Promise<boolean>;
+  targetAnalysisInsight: { analysisDocumentId: string; insightId: string; token: number } | null;
   onOpenBookmark: (documentId: string, pinId: string) => void;
   onOpenJournalSource: (source: JournalSource) => Promise<boolean>;
   onContextualPinsChange: (situationId: string | null, pinIds: string[]) => void;
@@ -85,6 +90,8 @@ export function StepWorkspace({
             void onOpenAnalysisSourceDocument(documentId);
           }}
           onJournalRefreshRequested={onJournalRefreshRequested}
+          onOpenAnalysisSourceReference={onOpenAnalysisSourceReference}
+          targetAnalysisInsight={targetAnalysisInsight}
           selectedSituationId={selectedSituationId}
           hoveredBookmarkPinId={hoveredBookmarkPinId}
         />

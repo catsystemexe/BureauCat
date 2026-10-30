@@ -1,5 +1,6 @@
 import type { DocumentInsight, DocumentPin, JournalItem } from "@/components/types";
 import { getSourceLinkDocumentId } from "@/lib/documents/sourceLinks";
+import { hasExplicitRequest, hasExplicitResponseDeadline } from "@/lib/documents/deadlines";
 
 export type JournalEvidence = {
   documents: { id: string; filename: string; display_name: string | null }[];
@@ -65,12 +66,10 @@ function timeKind(title: string, body: string): TimeKind | null {
   const label = folded(title);
   const text = folded(`${title} ${body}`);
   const date = String.raw`(?:\d{4}-\d{2}-\d{2}\b|\d{1,2}\.\s*\d{1,2}\.(?:\s*\d{4}\b)?|\d{1,2}\.?\s+(?:ledna|unora|brezna|dubna|kvetna|cervna|cervence|srpna|zari|rijna|listopadu|prosince)\b)`;
-  const request = /\b(?:doloz\w*|dopln\w*|predloz\w*|dodat|dodani|dodej\w*|poskyt\w*|pozadavek|pozaduj\w*|vyzyvame|musite|povinnost)\b/.test(text);
+  const request = hasExplicitRequest(text);
   // A deadline for materials "k jednání" is not the hearing's date. A bare
   // quantity such as "do 10 osob" supplies no temporal evidence.
-  if (/\blhut(?:a|y|u|e|ou)\b|\btermin (?:reakce|odpovedi|doplneni|dodani|predlozeni)\b|\bnejpozdeji\b/.test(text) ||
-      new RegExp(String.raw`\bdo\s+${date}`).test(text) ||
-      (request && /\bdo\s+\d+\s+(?:pracovnich\s+)?(?:dnu|dne|dni|tydnu|tydne|tydny|mesicu|mesice|hodin|hodiny)\b/.test(text))) return "response";
+  if (hasExplicitResponseDeadline(text)) return "response";
   // Keep a notice's actual request visible even under a dated heading. Only
   // a dedicated date field without a request belongs in collapsed parameters.
   if (request) return null;

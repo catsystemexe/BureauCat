@@ -103,6 +103,8 @@ Documents are evidence sources. Current capabilities include normalized text/Mar
 
 Document Analysis describes what a source contains. Required Input criteria describe what the current Goal needs. Collection performs the Goal-dependent matching between them.
 
+Under D-026, Analysis/Document indices use the same actually attached `DocumentPin.case_bookmark_number` and a verified source document/quote/range. Link errors, duplicate Case numbers, geometric overlap and legitimate shared passages are separate diagnoses; no read/view action repairs or renumbers stored pins. Display-only indices must preserve source text, offsets, selection, annotations and clipboard content. Detailed Analysis categories are a bounded derived view of existing findings: identification with explicit roles, key facts, supporting materials/attachments, dates/deadlines/events, risks/conflicts and questions. This changes neither the persistence model/prompt nor the simplified Journal's controls. Actual browser/clipboard acceptance remains separate from controlled component regressions.
+
 ## Case Context
 
 Case Context is a reusable assembly layer for Case/Situation context. The active branch exposes authoritative Goal plus workflow Steps, Required Inputs/criteria, Tasks and active overrides alongside Journal, Documents, pins and approved insights.

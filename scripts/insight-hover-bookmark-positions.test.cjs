@@ -126,7 +126,7 @@ function environment() {
         setStart(node, offset) { start = node.start + offset; },
         setEnd(node, offset) { end = node.start + offset; },
         selectNodeContents() { start = 0; },
-        toString: () => "x".repeat(Math.max(0, end - start)),
+        toString: () => text.nodes.map((node) => node.textContent).join("").slice(start, end),
         getBoundingClientRect: () => text.measurable
           ? { top: 100 + Math.floor(start / 20) * 22 - text.scrollTop, width: 1, height: 22 }
           : { top: 0, width: 0, height: 0 }
@@ -164,7 +164,7 @@ function environment() {
   };
 }
 
-module.exports = { hookRenderer, elements, byClass };
+module.exports = { hookRenderer, elements, byClass, environment };
 
 if (require.main === module) test("actual insight/pin callbacks keep current positions without incidental writes", async (t) => {
   const env = environment();
@@ -176,10 +176,15 @@ if (require.main === module) test("actual insight/pin callbacks keep current pos
   const pin = (id, documentId, offset) => ({ id, document_id: documentId, start_offset: offset, end_offset: offset + 3,
     visual_offset: null, selected_text: "xxx", color: "green", created_at: "2026-10-27T00:00:00Z" });
   const pins = [pin("p1", "A", 10), pin("p2", "A", 210), pin("p3", "A", 410)];
-  const insights = pins.map((p, i) => ({ id: `i${i}`, title: `Insight ${i}`, insight_type: "fact", status: "pending",
+  const insights = pins.map((p, i) => ({ id: `i${i}`, document_id: "analysis-A", title: `Insight ${i}`, insight_type: "fact", status: "pending",
     source_document_id: "A", source_pin_id: p.id, source_start_offset: p.start_offset, source_end_offset: p.end_offset, source_text: "xxx" }));
   globalThis.fetch = (url, options = {}) => {
     calls.push({ url, options });
+    // This suite keeps the source pin feed in legacy/manual mode to isolate
+    // bookmark measurement/drag. The reference suite covers matched snapshots.
+    if (url === "/api/documents/analysis-A/references") return Promise.resolve({ ok: true, json: async () => ({ insights,
+      references: insights.map((insight, i) => ({ insightId: insight.id, insightTitle: insight.title, analysisDocumentId: "analysis-A", sourceDocumentId: "A", pinId: pins[i].id,
+        number: i + 7, color: "green", startOffset: insight.source_start_offset, endOffset: insight.source_end_offset, quote: "xxx" })), issues: [] }) });
     if (url.endsWith("/pins") && !options.method) return new Promise((resolve) => requests.push({ url, resolve }));
     return Promise.resolve({ ok: true, json: async () => ({ annotations: [], insights, messages: [] }) });
   };

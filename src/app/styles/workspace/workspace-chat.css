@@ -1060,6 +1060,39 @@
   display: inline !important;
 }
 
+/* Analysis-only reference row; keep the index beside the first title line. */
+.analysis-insight-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.analysis-insight-description {
+  flex: 1;
+  min-width: 0;
+}
+
+.analysis-insight-description > .analysis-inline-insight {
+  max-width: 100%;
+}
+
+.analysis-insight-description > .analysis-time-kind {
+  margin: 2px 3px 0;
+}
+
+.analysis-insight-heading > .analysis-reference-index {
+  flex: 0 0 auto;
+  margin: 5px 0 0;
+  vertical-align: baseline;
+}
+
+.analysis-insight-heading > .analysis-reference-index,
+.analysis-insight-heading > .analysis-reference-index:hover,
+.analysis-insight-heading > .analysis-reference-index:focus,
+.analysis-insight-heading > .analysis-reference-index:focus-visible {
+  color: #ffffff !important;
+}
+
 
 /* === ANALYSIS TITLE SOURCE DOCUMENT BUTTON === */
 
