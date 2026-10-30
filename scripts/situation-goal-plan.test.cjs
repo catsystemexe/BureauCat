@@ -212,6 +212,31 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       }
       assert.ok(!queries.some((q) => /^\s*(INSERT|UPDATE|DELETE|REPLACE|CREATE|ALTER)\b/i.test(q))); assert.deepEqual(await snapshot(), before);
     });
+    await t.test("removed evidence stays historical but refresh permits clearing and explicit replacement", async () => {
+      const criterionId = state.inputs[0].criteria[0].id;
+      const oldValue = state.inputs[0].criteria[0].value, oldExplanation = state.inputs[0].criteria[0].explanation;
+      await db.documentInsight.delete({ where: { id: width.id } });
+      state = await read(sid, caseId);
+      assert.deepEqual(state.inputs[0].criteria[0].insightIds, []);
+      assert.ok(state.inputs[0].criteria[0].historicalInsightIds.includes(width.id));
+      const action = { action: "reviewCriterion", planId: state.plan.id, criterionId, value: oldValue, explanation: oldExplanation, sufficient: false, insightIds: [] };
+      for (const id of [width.id, conflict.id, "foreign-or-invalid-id"]) assert.equal((await send(command(state, { ...action, insightIds: [id] }))).status, 409);
+      const cleared = await send(command(state, action)); assert.equal(cleared.status, 200); state = cleared.planning;
+      let c = state.inputs[0].criteria[0];
+      assert.equal(c.value, oldValue); assert.equal(c.explanation, oldExplanation); assert.equal(c.stale, true);
+      assert.deepEqual(c.insightIds, []); assert.ok(c.historicalInsightIds.includes(width.id));
+      const replacementDoc = await db.document.create({ data: { case_id: caseId, filename: "replacement.txt", filetype: "txt", original_file: "", processed_text: "Ověřená šířka 1,80 m." } });
+      await db.situationDocument.create({ data: { situation_id: sid, document_id: replacementDoc.id } });
+      const replacement = await db.documentInsight.create({ data: { document_id: replacementDoc.id, source_document_id: replacementDoc.id,
+        title: "Náhradní měření", content: "1,80 m", source_text: "Ověřená šířka 1,80 m.", source_start_offset: 0, source_end_offset: "Ověřená šířka 1,80 m.".length,
+        insight_type: "fact", evidence_state: "verified", target_section: "description", target_item_type: "FACT", status: "approved" } });
+      state = await read(sid, caseId);
+      state = (await send(command(state, { ...action, insightIds: [replacement.id], sufficient: true }))).planning;
+      c = state.inputs[0].criteria[0]; assert.equal(c.status, "SATISFIED"); assert.equal(c.stale, false);
+      assert.deepEqual(c.insightIds, [replacement.id]); assert.ok(c.historicalInsightIds.includes(width.id));
+      assert.equal(c.value, oldValue); assert.equal(c.explanation, oldExplanation);
+      assert.ok(state.reviewHistory.some((entry) => entry.changes.some((change) => change.before.refs.includes(width.id))));
+    });
     await t.test("editing accepted Plan preserves history, cancels consent and rejects old acceptance", async () => {
       const oldPlan = state.plan.id; const changed = { ...content, expectedOutput: "Nový uživatelský výstup" };
       state = (await send(command(state, { action: "savePlan", goalId: state.goal.id, content: changed }))).planning;
@@ -386,4 +411,27 @@ test("coverage refresh hides removed evidence immediately and rail reload follow
     for (const r of renderers) r.dispose();
     for (const [key, descriptor] of previous) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key]; }
   }
+});
+
+test("open criterion editor prunes removed IDs on refresh without losing text or replacement choices", async () => {
+  const saved = [], source = { id: "old", documentName: "Old", title: "Width", value: "1,80", evidenceState: "verified", usable: true };
+  const criterion = { id: "c", requirement_text: "Šířka", value: "1,80", explanation: "Moje vysvětlení", insightIds: ["old"], sources: [source], stale: false };
+  const renderer = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "CriterionReview", {
+    criterion, evidence: [source], busy: false, onSave: (...args) => saved.push(args), onOpenSource: async () => true
+  });
+  const button = (label) => elements(renderer.tree, (e) => e.type === "button" && e.props.children === label)[0];
+  const settle = () => { for (let i = 0; i < 5; i++) renderer.render(); };
+  try {
+    settle();
+    elements(renderer.tree, (e) => e.type === "textarea")[1].props.onChange({ target: { value: "Rozepsaná poznámka" } }); settle();
+    renderer.update({ criterion: { ...criterion, insightIds: [], sources: [], stale: true }, evidence: [] }); settle();
+    button("Uložit jako neúplné / chybějící").props.onClick();
+    assert.deepEqual(saved.at(-1), ["1,80", [], false, "Rozepsaná poznámka"]);
+    const replacement = { ...source, id: "new" };
+    renderer.update({ evidence: [replacement] }); settle();
+    elements(renderer.tree, (e) => e.type === "input")[0].props.onChange({ target: { checked: true } }); settle();
+    renderer.update({ evidence: [{ ...replacement }] }); settle();
+    button("Potvrdit doložení a dostatečnost").props.onClick();
+    assert.deepEqual(saved.at(-1), ["1,80", ["new"], true, "Rozepsaná poznámka"]);
+  } finally { renderer.dispose(); }
 });

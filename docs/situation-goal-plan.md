@@ -74,3 +74,12 @@ Credential decision is closed: **REUSE EXISTING**, exclusively in the local VS r
 - Snapshot validation is deliberately conservative: a changed finding/source text can require renewed review even if some words are unchanged. Historical raw evidence is preserved; effective current coverage is the authority for present support.
 - This batch does not fix previous OCR/conversion/upload, literal Ctrl+C or small-viewport limits. BC-012 and BC-015 remain In Progress.
 - Changed canonical mirrors 00/01/02/03/04/07/08 require later Drive synchronization; none was performed. No merge, deployment, user DB migration or Drive write is authorized here.
+
+
+## PR #43 repair — editable criteria after source removal (2026-10-30)
+
+Baseline `94aa55196aeba6f69c429989f548df5fcb1242ca`. Current `insightIds` now contains only findings available in this Situation; historical IDs remain separate, read-only metadata and append-only review history. An already open editor prunes unavailable selections on evidence refresh (and before submission) without clearing the value, explanation or valid replacement selections. Deleted references appear separately as historical references, never invisible selected checkboxes. The server still rejects submitted missing/foreign IDs instead of silently accepting them.
+
+Saving without sources preserves the historical IDs and stale marker while allowing missing/incomplete review. Selecting a current replacement and explicitly confirming sufficiency establishes fresh support and clears the current stale marker; prior links remain historical. The stale warning is separate from the saved explanation, preventing repeated warning prefixes from modifying user text.
+
+Repair validation: planning regressions 24, Journal 24, Situation deletion 10, typecheck without incremental cache and diff check all pass, exit 0. No schema/migration, user DB, AI or dependency change. Actual Windows/browser acceptance remains pending. VS agent: keep a criterion editor open, confirm support, remove its source, refresh, inspect the read-only historical reference, save with zero selected sources, choose a replacement, explicitly reconfirm, then reload. Check preserved value/explanation/history, correct stale markers and rejection of tampered foreign/deleted IDs. This controlled component/service regression is not browser PASS; Drive sync remains pending.

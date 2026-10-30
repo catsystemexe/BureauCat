@@ -138,21 +138,28 @@ export function SituationPlanningPanel({ caseId, situationId, view, onOpenSource
     </>}
   </div>;
 }
-function CriterionReview({ criterion, evidence, busy, onSave, onOpenSource }: {
+export function CriterionReview({ criterion, evidence, busy, onSave, onOpenSource }: {
   criterion: PlanningState["inputs"][number]["criteria"][number]; evidence: PlanningState["evidence"]; busy: boolean;
   onSave: (value: string, ids: string[], sufficient: boolean, explanation: string) => Promise<void>;
   onOpenSource: (source: JournalSource) => Promise<boolean>;
 }) {
   const [value, setValue] = useState(criterion.value), [ids, setIds] = useState(criterion.insightIds);
   const [explanation, setExplanation] = useState(criterion.explanation);
+  const availableIdsKey = JSON.stringify(evidence.map((e) => e.id).sort());
+  const selectedIds = ids.filter((id) => evidence.some((e) => e.id === id));
+  useEffect(() => { setIds((current) => current.filter((id) => evidence.some((e) => e.id === id))); }, [availableIdsKey]);
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   return <fieldset disabled={busy}><legend>{criterion.requirement_text} — {criterion.status === "SATISFIED" ? "Doloženo" : "Nutno doplnit / ověřit"}</legend>
     {criterion.stale ? <p role="status">Původní zdroj byl odebrán nebo změněn. Dřívější potvrzení nyní neplatí.</p> : null}
+    {criterion.historicalInsightIds?.some((id) => !evidence.some((e) => e.id === id)) ? <details>
+      <summary>Historické vazby na odebrané poznatky</summary>
+      {criterion.historicalInsightIds.filter((id) => !evidence.some((e) => e.id === id)).map((id) => <p key={id}>Poznatek {id} — již není v aktuálních zdrojích.</p>)}
+    </details> : null}
     <label>Hodnota / zjištění<textarea value={value} onChange={(e) => setValue(e.target.value)} /></label>
     <label>Co chybí nebo potřebuje vyjasnit<textarea value={explanation} onChange={(e) => setExplanation(e.target.value)} /></label>
     <details><summary>Vybrat konkrétní doložení z aktuální situace</summary>{evidence.map((e) => <label key={e.id}>
-      <input type="checkbox" checked={ids.includes(e.id)} onChange={(event) => setIds(event.target.checked ? [...ids, e.id] : ids.filter((id) => id !== e.id))} />
+      <input type="checkbox" checked={selectedIds.includes(e.id)} onChange={(event) => setIds(event.target.checked ? [...selectedIds, e.id] : selectedIds.filter((id) => id !== e.id))} />
       {e.documentName}: {e.title} — {e.value} ({evidenceLabels[e.evidenceState] ?? "neurčené doložení"}){!e.usable ? " — pasáž není ověřitelná" : ""}
     </label>)}</details>
     {criterion.sources.map((e) => <p key={e.id}>{e.documentName}: {e.quote} <button type="button" onClick={async () => {
@@ -160,7 +167,7 @@ function CriterionReview({ criterion, evidence, busy, onSave, onOpenSource }: {
         startOffset: e.startOffset, endOffset: e.endOffset, quote: e.quote });
       if (!opened && alive.current) setExplanation("Zdroj se nepodařilo otevřít. " + explanation);
     }}>Otevřít zdroj</button></p>)}
-    <button type="button" onClick={() => void onSave(value, ids, false, explanation)}>Uložit jako neúplné / chybějící</button>
-    <button type="button" onClick={() => void onSave(value, ids, true, explanation)}>Potvrdit doložení a dostatečnost</button>
+    <button type="button" onClick={() => void onSave(value, selectedIds, false, explanation)}>Uložit jako neúplné / chybějící</button>
+    <button type="button" onClick={() => void onSave(value, selectedIds, true, explanation)}>Potvrdit doložení a dostatečnost</button>
   </fieldset>;
 }

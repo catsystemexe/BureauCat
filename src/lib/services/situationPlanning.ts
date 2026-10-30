@@ -45,12 +45,13 @@ async function load(db: DB, situationId: string, caseId: string) {
   return { situation, goals, plans, steps, evidence, contextHash, goal, journal, documents, reviews };
 }
 type Loaded = Awaited<ReturnType<typeof load>>;
-type SavedEvidence = { sources: { insightId: string; fingerprint: string }[]; explanation: string; reviewed: boolean };
+type SavedEvidence = { sources: { insightId: string; fingerprint: string }[]; explanation: string; reviewed: boolean; stale?: boolean; historicalInsightIds?: string[] };
 function savedEvidence(json: string): SavedEvidence {
   try {
     const v = JSON.parse(json);
     if (v && Array.isArray(v.sources) && v.sources.every((s: { insightId?: unknown; fingerprint?: unknown }) => typeof s.insightId === "string" && typeof s.fingerprint === "string")) {
-      return { sources: v.sources, explanation: typeof v.explanation === "string" ? v.explanation : "", reviewed: v.reviewed === true };
+      return { sources: v.sources, explanation: typeof v.explanation === "string" ? v.explanation : "", reviewed: v.reviewed === true, stale: v.stale === true,
+        historicalInsightIds: Array.isArray(v.historicalInsightIds) ? v.historicalInsightIds.filter((id: unknown): id is string => typeof id === "string") : [] };
     }
   } catch { /* Legacy refs remain unconfirmed. */ }
   return { sources: [], explanation: "Doložení zatím nebylo ověřeno.", reviewed: false };
@@ -61,11 +62,12 @@ function project(data: Loaded): PlanningState {
     const criteria = input.criteria.map((criterion) => {
       const saved = savedEvidence(criterion.evidence_refs_json);
       const sources = saved.sources.flatMap((r) => data.evidence.filter((e) => e.id === r.insightId && e.fingerprint === r.fingerprint && e.usable));
-      const stale = saved.sources.length !== sources.length;
+      const stale = saved.stale === true || saved.sources.length !== sources.length;
       const satisfied = !stale && sources.length > 0 && saved.reviewed && criterion.status === "SATISFIED";
       return { id: criterion.id, requirement_text: criterion.requirement_text, status: satisfied ? "SATISFIED" : "MISSING",
-        value: criterion.matched_value ?? "", explanation: stale ? "Zdroj byl odebrán nebo změněn; původní doložení již neplatí. " + saved.explanation : saved.explanation,
-        stale, insightIds: saved.sources.map((s) => s.insightId), sources };
+        value: criterion.matched_value ?? "", explanation: saved.explanation,
+        stale, historicalInsightIds: [...new Set([...(saved.historicalInsightIds ?? []), ...saved.sources.map((s) => s.insightId)])],
+        insightIds: saved.sources.filter((s) => data.evidence.some((e) => e.id === s.insightId)).map((s) => s.insightId), sources };
     });
     return { id: input.id, title: input.title, status: criteria.every((c) => c.status === "SATISFIED") ? "SATISFIED" :
       criteria.some((c) => c.sources.length || c.value || c.stale) ? "INCOMPLETE" : "MISSING", criteria };
@@ -208,7 +210,10 @@ export async function executePlanningCommand(situationId: string, command: Plann
         const sources = change.insightIds.map((id) => data.evidence.find((e) => e.id === id) ?? fail("Zdroj nepatří k této situaci."));
         const sufficient = command.action === "reviewCriterion" && command.sufficient;
         if (sufficient && (!change.value || !sources.length || sources.some((e) => !e.usable || ["conflict", "unverified"].includes(e.evidenceState) || ["conflict", "question", "claim"].includes(e.type)))) fail("Nejasný, rozporný nebo neověřitelný zdroj nelze potvrdit jako dostatečný. Zachovejte Neúplné a vyjasněte podklady.");
-        const saved: SavedEvidence = { sources: sources.map((e) => ({ insightId: e.id, fingerprint: e.fingerprint })), explanation: change.explanation, reviewed: command.action === "reviewCriterion" };
+        const previous = savedEvidence(criterion!.evidence_refs_json);
+        const wasStale = previous.stale === true || previous.sources.some((ref) => !data.evidence.some((e) => e.id === ref.insightId && e.fingerprint === ref.fingerprint && e.usable));
+        const saved: SavedEvidence = { stale: sufficient ? false : wasStale,
+          historicalInsightIds: [...new Set([...(previous.historicalInsightIds ?? []), ...previous.sources.map((s) => s.insightId)])], sources: sources.map((e) => ({ insightId: e.id, fingerprint: e.fingerprint })), explanation: change.explanation, reviewed: command.action === "reviewCriterion" };
         auditChanges.push({ criterionId: criterion!.id, requirement: criterion!.requirement_text, before: { value: criterion!.matched_value, refs: criterion!.evidence_refs_json },
           after: { value: change.value, explanation: change.explanation, reviewed: saved.reviewed, refs: JSON.stringify(saved) } });
         await db.requiredInputCriterion.update({ where: { id: criterion!.id }, data: { matched_value: change.value || null, status: sufficient ? "SATISFIED" : "MISSING", evidence_refs_json: JSON.stringify(saved) } });

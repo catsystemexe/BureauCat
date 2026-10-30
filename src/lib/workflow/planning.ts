@@ -37,7 +37,7 @@ export type PlanningState = {
   history: { id: string; goal_id: string; status: string; revision: number; content: PlanContent }[];
   inputs: { id: string; title: string; status: string; criteria: {
     id: string; requirement_text: string; status: string; value: string; explanation: string;
-    stale: boolean; insightIds: string[]; sources: PlanningEvidence[];
+    stale: boolean; historicalInsightIds?: string[]; insightIds: string[]; sources: PlanningEvidence[];
   }[] }[];
   evidence: PlanningEvidence[];
   reviewHistory?: { id: string; createdAt: string; changes: { criterionId: string; requirement?: string; before: { value: string | null; refs: string }; after: { value: string; explanation: string; reviewed: boolean } }[] }[];
