@@ -289,3 +289,6 @@ BC-012/BC-015 remain In Progress. PR #43 now separates case intent, editable Sit
 
 
 BC-012/BC-015 follow-up in PR #43: simplify Analysis to Situace / Cíl / K doplnění a ověření, remove the repeated documents, and prioritize individual accepted criteria without SATISFIED/duplicate preliminary rows. Preserve exact sources, compound requirements, uncertain/conflicting variants, manual assessment and draft/source-removal repairs. A proven-absence indicator is not available in the current MISSING/INCOMPLETE data; no guessing from explanations. Browser acceptance, live AI quality (prior unknown-ID FAIL) and Drive sync remain open; this is not completion of either backlog item.
+
+
+BC-012/BC-015 remain In Progress after PR #43's one-form K doplnění revision: atomic multi-criterion Save, direct USER assertions, explicit attachment dependencies and retained source-removal/draft protections are implemented. Prior read-only lists/duplicate assessment controls are superseded. Pending acceptance includes native upload, compact/expanded editing, failure/reload, actual AI-generated separable requirements and Windows browser checks; no product-completion or Drive-sync claim.

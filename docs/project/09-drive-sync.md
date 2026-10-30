@@ -98,3 +98,6 @@ The brief source-removal repair additionally updates 00, 07 and 08; these mirror
 
 
 The three-section Analysis simplification updates canonical 00, 01, 03, 04, 07 and 08; their mirrors remain pending. Earlier snapshot-specific synchronization is historical, not parity with this follow-up. No Drive write was performed.
+
+
+The K doplnění completion-form revision again changes canonical 00, 01, 03, 04, 07 and 08. Their mirror alignment/readback remains pending; this work performs no Drive synchronization.

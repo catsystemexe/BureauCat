@@ -50,6 +50,12 @@ export function currentBrief(brief: SituationBrief | null, documents: { id: stri
     requirements: brief.requirements.map((item) => ({ ...item, insightIds: ids(item.insightIds) })),
     deadline: brief.deadline ? { ...brief.deadline, insightIds: ids(brief.deadline.insightIds) } : null };
 }
+export const inputReviewSchema = z.object({
+  criterionId: z.string().min(1), value: z.string().trim().max(4000), explanation: z.string().trim().max(4000),
+  insightIds: z.array(z.string().min(1)).max(20), documentIds: z.array(z.string().min(1)).max(20),
+  origin: z.enum(["USER", "DOCUMENT"]), sufficient: z.boolean()
+}).strict();
+export type InputReview = z.infer<typeof inputReviewSchema>;
 const base = {
   caseId: z.string().min(1), requestKey: z.string().min(8).max(100),
   expectedRevision: z.number().int().min(0), contextHash: z.string().length(64)
@@ -61,6 +67,7 @@ export const planningCommandSchema = z.discriminatedUnion("action", [
   z.object({ ...base, action: z.literal("savePlan"), goalId: z.string(), content: newPlanContentSchema }).strict(),
   z.object({ ...base, action: z.literal("acceptPlan"), planId: z.string() }).strict(),
   z.object({ ...base, action: z.literal("matchInputs"), planId: z.string() }).strict(),
+  z.object({ ...base, action: z.literal("reviewInputs"), planId: z.string(), reviews: z.array(inputReviewSchema).min(1).max(240).refine((rows) => new Set(rows.map((row) => row.criterionId)).size === rows.length, "Kritérium je uvedeno vícekrát.") }).strict(),
   z.object({ ...base, action: z.literal("reviewCriterion"), planId: z.string(), criterionId: z.string(),
     value: z.string().trim().max(4000), insightIds: z.array(z.string()).max(20),
     sufficient: z.boolean(), explanation: z.string().trim().max(4000) }).strict()
@@ -74,7 +81,7 @@ export const inputMatchesSchema = z.object({ matches: z.array(z.object({
 export type PlanningState = {
   historicalBrief?: SituationBrief | null; deadlineVerified?: boolean;
   briefHistory?: { id: string; brief: SituationBrief }[];
-  brief?: SituationBrief | null; briefStale?: boolean; documents?: { id: string; name: string }[];
+  brief?: SituationBrief | null; briefStale?: boolean; documents?: { id: string; name: string; fingerprint?: string }[];
   revision: number; contextHash: string; goalSelectionRequired: boolean;
   goal: { id: string; title: string } | null;
   goals: { id: string; title: string; status: string; confirmed_at: string | null; reason?: string | null; insightIds?: string[]; currentProposal?: boolean; brief?: SituationBrief | null }[];
@@ -83,6 +90,7 @@ export type PlanningState = {
   history: { id: string; goal_id: string; status: string; revision: number; content: PlanContent }[];
   inputs: { id: string; title: string; status: string; criteria: {
     id: string; requirement_text: string; status: string; value: string; explanation: string;
+    origin?: "USER" | "DOCUMENT"; documentIds?: string[]; attachments?: { documentId: string; name: string; stale: boolean }[]; historicalDocumentIds?: string[];
     assessed?: boolean; stale: boolean; historicalInsightIds?: string[]; insightIds: string[]; sources: PlanningEvidence[];
   }[] }[];
   evidence: PlanningEvidence[];
@@ -103,7 +111,7 @@ export function effectiveRequiredInputs<T extends { id: string; criteria: { id: 
     return [{ ...input, status: effective.status, criteria: input.criteria.map((criterion) => {
       const current = effective.criteria.find((item) => item.id === criterion.id)!;
       return { ...criterion, status: current.status, matched_value: current.value || null,
-        stale: current.stale, explanation: current.explanation, sources: current.sources };
+        stale: current.stale, origin: current.origin, attachments: current.attachments, explanation: current.explanation, sources: current.sources };
     }) }];
   });
 }

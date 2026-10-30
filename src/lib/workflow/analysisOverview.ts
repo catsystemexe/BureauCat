@@ -49,9 +49,9 @@ export function analysisOverview(state: PlanningState) {
     const matches = criteria.filter((c) => sameStatement(q, c));
     return matches.length === 1 ? matches[0].id : null;
   };
-  const openCriteria = criteria.filter((c) => c.status !== "SATISFIED").map((criterion) => ({
+  const criterionSources = criteria.map((criterion) => ({
     criterion, sources: uniqueSources([...criterion.sources.map(evidenceSource),
       ...preliminary.filter((q) => matchedCriterion(q) === criterion.id).flatMap((q) => q.sources)])
   }));
-  return { openCriteria, questions: preliminary.filter((q) => matchedCriterion(q) === null) };
+  return { criterionSources, openCriteria: criterionSources.filter(({ criterion }) => criterion.status !== "SATISFIED"), questions: preliminary.filter((q) => matchedCriterion(q) === null) };
 }

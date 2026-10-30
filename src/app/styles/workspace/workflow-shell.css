@@ -248,3 +248,7 @@
 .planning-situation-brief p { margin: 6px 0; }
 .planning-situation-requirements { margin: 6px 0; padding-left: 20px; }
 .situation-planning .planning-situation-requirements li { margin: 4px 0; }
+
+.situation-planning .required-input-title { display: flex; align-items: baseline; gap: 7px; font-weight: 600; }
+.required-input-title input[type="checkbox"] { flex: none; margin: 0; }
+.required-inputs-form .required-input-file { font-size: .82rem; }

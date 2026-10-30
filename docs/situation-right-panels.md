@@ -120,3 +120,8 @@ Baseline `ffffc38fc6ee3f3bd9f77546ae20d28240b512e4`, same branch and draft PR #4
 Controlled tests: planning/Analysis/source/draft suite 38 pass; references 33, Journal 24, hover 12, deletion 10. Typecheck without incremental cache, build and diff check pass with exit 0. Controlled geometry/hooks are not browser PASS. Existing NFT build warning remains; real Goal-AI proposal quality, the prior unknown-ID FAIL, Windows/browser checks and Drive synchronization remain pending.
 
 Initial metadata-regression fixture used a shared insight and invalidated the earlier Goal proposal snapshot. That run exited 1, with a downstream `AssertionError [ERR_ASSERTION]: Missing expected rejection.` at `situation-goal-plan.test.cjs:515:7`. The fixture now owns an isolated document/insight/Situation; production stale-context checks were preserved. Exact statement matching is also rejected as ambiguous when more than one distinct criterion could own it; such questions stay additional.
+
+
+## Superseding completion form
+
+The later approved K doplnění form replaces this document's open-criteria overview, K ověření subheadings and separate assessment instructions. Situace/Cíl, Journal, Document and Plan structure remain unchanged. Current form behavior, USER provenance, upload dependencies, atomic Save and concrete pending acceptance are specified in `docs/required-inputs-form.md`. Historical verification records above are not acceptance of this new form.

@@ -5,7 +5,7 @@ import { WORKFLOW_STEP_DEFINITIONS } from "@/lib/workflow/constants";
 import { resolveSourceRange, parseJournalLinks } from "@/lib/journal/overview";
 import { requestAIJson } from "@/lib/ai/jsonResponse";
 import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema, newPlanContentSchema, situationBriefSchema, currentBrief, uniqueInsights } from "@/lib/workflow/planning";
-import type { PlanningCommand, PlanningEvidence, PlanningState } from "@/lib/workflow/planning";
+import type { InputReview, PlanningCommand, PlanningEvidence, PlanningState } from "@/lib/workflow/planning";
 
 type DB = Prisma.TransactionClient;
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -23,7 +23,7 @@ async function load(db: DB, situationId: string, caseId: string) {
     db.workflowStep.findMany({ where: { situation_id: situationId }, orderBy: { display_order: "asc" } }),
     db.document.findMany({ where: { case_id: caseId, situation_documents: { some: { situation_id: situationId } } }, orderBy: { id: "asc" } }),
     db.journalItem.findMany({ where: { situation_id: situationId, case_id: caseId, status: "active" }, orderBy: { id: "asc" } }),
-    db.workflowEvent.findMany({ where: { situation_id: situationId, event_type: { in: ["PLANNING_reviewCriterion", "PLANNING_matchInputs"] } }, orderBy: [{ created_at: "asc" }, { id: "asc" }] }),
+    db.workflowEvent.findMany({ where: { situation_id: situationId, event_type: { in: ["PLANNING_reviewCriterion", "PLANNING_reviewInputs", "PLANNING_matchInputs"] } }, orderBy: [{ created_at: "asc" }, { id: "asc" }] }),
     db.workflowEvent.findMany({ where: { situation_id: situationId, event_type: { in: ["PLANNING_suggestGoals", "PLANNING_confirmGoal"] } }, orderBy: { created_at: "asc" } }),
     db.case.findUniqueOrThrow({ where: { id: caseId }, select: { title: true, area: true } })
   ]);
@@ -47,12 +47,14 @@ async function load(db: DB, situationId: string, caseId: string) {
   return { situation, goals, plans, steps, evidence, contextHash, goal, journal, documents, insights, reviews, proposals, caseIntent };
 }
 type Loaded = Awaited<ReturnType<typeof load>>;
-type SavedEvidence = { sources: { insightId: string; fingerprint: string }[]; explanation: string; reviewed: boolean; assessed?: boolean; stale?: boolean; historicalInsightIds?: string[] };
+type SavedEvidence = { origin?: "USER" | "DOCUMENT"; confirmedValueHash?: string; documents?: { documentId: string; fingerprint: string }[]; historicalDocumentIds?: string[]; sources: { insightId: string; fingerprint: string }[]; explanation: string; reviewed: boolean; assessed?: boolean; stale?: boolean; historicalInsightIds?: string[] };
 function savedEvidence(json: string): SavedEvidence {
   try {
     const v = JSON.parse(json);
     if (v && Array.isArray(v.sources) && v.sources.every((s: { insightId?: unknown; fingerprint?: unknown }) => typeof s.insightId === "string" && typeof s.fingerprint === "string")) {
-      return { assessed: true, sources: v.sources, explanation: typeof v.explanation === "string" ? v.explanation : "", reviewed: v.reviewed === true, stale: v.stale === true,
+      return { assessed: true, origin: v.origin === "USER" ? "USER" : "DOCUMENT", confirmedValueHash: typeof v.confirmedValueHash === "string" ? v.confirmedValueHash : undefined,
+        documents: Array.isArray(v.documents) ? v.documents.filter((d: { documentId?: unknown; fingerprint?: unknown }) => d && typeof d.documentId === "string" && typeof d.fingerprint === "string") : [],
+        historicalDocumentIds: Array.isArray(v.historicalDocumentIds) ? v.historicalDocumentIds.filter((id: unknown) => typeof id === "string") : [], sources: v.sources, explanation: typeof v.explanation === "string" ? v.explanation : "", reviewed: v.reviewed === true, stale: v.stale === true,
         historicalInsightIds: Array.isArray(v.historicalInsightIds) ? v.historicalInsightIds.filter((id: unknown): id is string => typeof id === "string") : [] };
     }
   } catch { /* Legacy refs remain unconfirmed. */ }
@@ -79,19 +81,27 @@ function project(data: Loaded): PlanningState {
     const criteria = input.criteria.map((criterion) => {
       const saved = savedEvidence(criterion.evidence_refs_json);
       const sources = uniqueInsights(saved.sources.flatMap((r) => data.evidence.filter((e) => e.id === r.insightId && e.fingerprint === r.fingerprint && e.usable)));
-      const stale = saved.stale === true || saved.sources.some((r) => !data.evidence.some((e) => e.id === r.insightId && e.fingerprint === r.fingerprint && e.usable));
-      const satisfied = !stale && sources.length > 0 && saved.reviewed && criterion.status === "SATISFIED";
+      const attachments = [...new Set((saved.documents ?? []).map((ref) => ref.documentId))].map((documentId) => {
+        const doc = data.documents.find((document) => document.id === documentId);
+        return { documentId, name: doc?.display_name ?? doc?.filename ?? "Odebraný dokument", stale: !doc || (saved.documents ?? []).some((ref) => ref.documentId === documentId && hash(doc) !== ref.fingerprint) };
+      });
+      const stale = attachments.some((doc) => doc.stale) || saved.stale === true || saved.sources.some((r) => !data.evidence.some((e) => e.id === r.insightId && e.fingerprint === r.fingerprint && e.usable));
+      const valueBound = !saved.confirmedValueHash || saved.confirmedValueHash === hash(criterion.matched_value ?? "");
+      const support = saved.origin === "USER" ? Boolean(criterion.matched_value?.trim() && saved.confirmedValueHash && valueBound) : sources.length > 0;
+      const satisfied = !stale && support && valueBound && saved.reviewed && criterion.status === "SATISFIED";
       return { id: criterion.id, requirement_text: criterion.requirement_text, status: satisfied ? "SATISFIED" : "MISSING",
         value: criterion.matched_value ?? "", explanation: saved.explanation, assessed: saved.assessed === true,
+        origin: saved.origin ?? "DOCUMENT", documentIds: attachments.filter((doc) => data.documents.some((current) => current.id === doc.documentId)).map((doc) => doc.documentId), attachments,
+        historicalDocumentIds: [...new Set([...(saved.historicalDocumentIds ?? []), ...(saved.documents ?? []).map((doc) => doc.documentId)])],
         stale, historicalInsightIds: [...new Set([...(saved.historicalInsightIds ?? []), ...saved.sources.map((s) => s.insightId)])],
         insightIds: [...new Set(saved.sources.filter((s) => data.evidence.some((e) => e.id === s.insightId)).map((s) => s.insightId))], sources };
     });
     return { id: input.id, title: input.title, status: criteria.every((c) => c.status === "SATISFIED") ? "SATISFIED" :
-      criteria.some((c) => c.sources.length || c.value || c.stale) ? "INCOMPLETE" : "MISSING", criteria };
+      criteria.some((c) => c.sources.length || c.value || c.stale || c.attachments.length) ? "INCOMPLETE" : "MISSING", criteria };
   }) : [];
   return { brief: currentBrief(selectedBrief, data.documents, data.evidence), historicalBrief: selectedBrief, briefStale,
     deadlineVerified: Boolean(!briefStale && selectedBrief?.deadline?.insightIds.length && selectedBrief.deadline.insightIds.every((id: string) => data.evidence.some((e) => e.id === id && e.usable))),
-    briefHistory: data.proposals.flatMap((event) => { const payload = JSON.parse(event.payload_json); return payload.action === "confirmGoal" && payload.brief ? [{ id: event.id, brief: payload.brief }] : []; }), documents: data.documents.map((d) => ({ id: d.id, name: d.display_name ?? d.filename })), revision: data.situation.workflow_revision, contextHash: data.contextHash, goalSelectionRequired: !data.goal && data.goals.some((g) => g.status === "active"),
+    briefHistory: data.proposals.flatMap((event) => { const payload = JSON.parse(event.payload_json); return payload.action === "confirmGoal" && payload.brief ? [{ id: event.id, brief: payload.brief }] : []; }), documents: data.documents.map((d) => ({ id: d.id, name: d.display_name ?? d.filename, fingerprint: hash(d) })), revision: data.situation.workflow_revision, contextHash: data.contextHash, goalSelectionRequired: !data.goal && data.goals.some((g) => g.status === "active"),
     goal: data.goal ? { id: data.goal.id, title: data.goal.title } : null,
     goals: data.goals.map((g) => ({ id: g.id, title: g.title, status: g.status, confirmed_at: g.confirmed_at?.toISOString() ?? null, currentProposal: latestProposalIds.has(g.id) && g.proposal_context_hash === data.contextHash, brief: currentBrief(g.id === data.goal?.id ? selectedBrief : proposals.get(g.id)?.brief ?? null, data.documents, data.evidence), reason: proposals.get(g.id)?.reason ?? null, insightIds: proposals.get(g.id)?.insightIds ?? [] })),
     steps: data.steps.map((s) => ({ step_key: s.step_key, status: s.status })),
@@ -161,7 +171,7 @@ export async function executePlanningCommand(situationId: string, command: Plann
   }
   if (command.action === "suggestPlan") {
     requireGoal(initial, command.goalId);
-    proposedPlan = await requestAIJson(instructions + `Navrhni plán výhradně pro potvrzený cíl z perspektivy občana a požadavků situationBrief. Rozliš zjištění údajů, přípravu odpovědi, kontrolu požadavků a doloženého termínu, odeslání a uchování dokladu podle skutečného kontextu; nyní nic nevykonávej. Nezadávej získávání informace, která již je doložená; případné ověření označ jako ověření. Nevyhodnocené neznamená chybějící ani dostatečné. Postup jsou body obsahu, nikoli nové workflow kroky. Vstupy jsou informace, nikoli pouhá existence souboru. Každý vstup má konkrétní kritéria dostatečnosti. Schéma: {"version":2,"expectedOutput":"...","procedure":[{"id":"action-uuid","title":"...","expectedResult":"...","explanation":"...","inputIds":["input-uuid"]}],"inputs":[{"id":"input-uuid","title":"...","description":"...","criteria":["..."]}]}. ID jsou jedinečné neprázdné identifikátory v rámci verze. Každý odkaz inputIds musí existovat v inputs; názvy ani pořadí neslouží jako identita.\n` + promptContext(initial), newPlanContentSchema);
+    proposedPlan = await requestAIJson(instructions + `Navrhni plán výhradně pro potvrzený cíl z perspektivy občana a požadavků situationBrief. Rozliš zjištění údajů, přípravu odpovědi, kontrolu požadavků a doloženého termínu, odeslání a uchování dokladu podle skutečného kontextu; nyní nic nevykonávej. Nezadávej získávání informace, která již je doložená; případné ověření označ jako ověření. Nevyhodnocené neznamená chybějící ani dostatečné. Postup jsou body obsahu, nikoli nové workflow kroky. Vstupy jsou informace, nikoli pouhá existence souboru. Každý vstup má konkrétní kritéria dostatečnosti. Nové požadované informace navrhuj samostatně doplnitelné: odlišné údaje jako adresa, šířka a hloubka mají vlastní kritéria, pokud jsou skutečně samostatné. Nedělitelné požadavky nerozděluj a nerozděluj automaticky existující uložená kritéria. Schéma: {"version":2,"expectedOutput":"...","procedure":[{"id":"action-uuid","title":"...","expectedResult":"...","explanation":"...","inputIds":["input-uuid"]}],"inputs":[{"id":"input-uuid","title":"...","description":"...","criteria":["..."]}]}. ID jsou jedinečné neprázdné identifikátory v rámci verze. Každý odkaz inputIds musí existovat v inputs; názvy ani pořadí neslouží jako identita.\n` + promptContext(initial), newPlanContentSchema);
   }
   if (command.action === "matchInputs") {
     const plan = requirePlan(initial, command.planId);
@@ -246,10 +256,11 @@ export async function executePlanningCommand(situationId: string, command: Plann
         await activate(db, data, "COLLECTION");
       }
     }
-    if (command.action === "reviewCriterion" || command.action === "matchInputs") {
+    if (command.action === "reviewCriterion" || command.action === "reviewInputs" || command.action === "matchInputs") {
       const p = requirePlan(data, command.planId);
       if (p.status !== "ACCEPTED") fail("Nejprve přijměte plán.");
-      const changes = command.action === "reviewCriterion" ? [{ criterionId: command.criterionId, value: command.value, insightIds: command.insightIds, explanation: command.explanation }] : matches!.matches;
+      const changes: InputReview[] = command.action === "reviewInputs" ? command.reviews : command.action === "reviewCriterion" ? [{ criterionId: command.criterionId, value: command.value, insightIds: command.insightIds, explanation: command.explanation, origin: "DOCUMENT", documentIds: [], sufficient: command.sufficient }] : matches!.matches.map((match) => ({ ...match, origin: "DOCUMENT", documentIds: [], sufficient: false }));
+      if (new Set(changes.map((change) => change.criterionId)).size !== changes.length) fail("Kritérium je uvedeno vícekrát.");
       const auditChanges = [];
       for (const change of changes) {
         const input = p.required_inputs.find((i) => i.criteria.some((c) => c.id === change.criterionId));
@@ -258,20 +269,27 @@ export async function executePlanningCommand(situationId: string, command: Plann
         // Automated proposals never replace an explicit user's saved review.
         if (command.action === "matchInputs" && savedEvidence(criterion!.evidence_refs_json).reviewed) continue;
         const sources = [...new Set(change.insightIds)].map((id) => data.evidence.find((e) => e.id === id) ?? fail("Zdroj nepatří k této situaci."));
-        const sufficient = command.action === "reviewCriterion" && command.sufficient;
-        if (sufficient && (!change.value || !sources.length || sources.some((e) => !e.usable || ["conflict", "unverified"].includes(e.evidenceState) || ["conflict", "question", "claim"].includes(e.type)))) fail("Nejasný, rozporný nebo neověřitelný zdroj nelze potvrdit jako dostatečný. Zachovejte Neúplné a vyjasněte podklady.");
+        const origin = change.origin;
+        const documents = [...new Set(change.documentIds)].map((id) => data.documents.find((doc) => doc.id === id) ?? fail("Příloha nepatří k této situaci."));
+        const sufficient = change.sufficient;
+        if (sufficient && !change.value) fail("Před potvrzením vyplňte požadovanou informaci.");
+        if (sufficient && ((origin !== "USER" && !sources.length) || sources.some((e) => !e.usable || ["conflict", "unverified"].includes(e.evidenceState) || ["conflict", "question", "claim"].includes(e.type)))) fail("Nejasný, rozporný nebo neověřitelný zdroj nelze potvrdit jako dostatečný. Zachovejte Neúplné a vyjasněte podklady.");
         const previous = savedEvidence(criterion!.evidence_refs_json);
-        const wasStale = previous.stale === true || previous.sources.some((ref) => !data.evidence.some((e) => e.id === ref.insightId && e.fingerprint === ref.fingerprint && e.usable));
-        const saved: SavedEvidence = { stale: sufficient ? false : wasStale,
-          historicalInsightIds: [...new Set([...(previous.historicalInsightIds ?? []), ...previous.sources.map((s) => s.insightId)])], sources: sources.map((e) => ({ insightId: e.id, fingerprint: e.fingerprint })), explanation: change.explanation, reviewed: command.action === "reviewCriterion" };
+        const wasStale = (previous.documents ?? []).some((ref) => !data.documents.some((doc) => doc.id === ref.documentId && hash(doc) === ref.fingerprint)) || previous.stale === true || previous.sources.some((ref) => !data.evidence.some((e) => e.id === ref.insightId && e.fingerprint === ref.fingerprint && e.usable));
+        const saved: SavedEvidence = { origin,
+          confirmedValueHash: sufficient ? hash(change.value) : undefined,
+          documents: documents.map((doc) => ({ documentId: doc.id, fingerprint: hash(doc) })),
+          historicalDocumentIds: [...new Set([...(previous.historicalDocumentIds ?? []), ...(previous.documents ?? []).map((doc) => doc.documentId)])], stale: sufficient ? false : wasStale,
+          historicalInsightIds: [...new Set([...(previous.historicalInsightIds ?? []), ...previous.sources.map((s) => s.insightId)])], sources: sources.map((e) => ({ insightId: e.id, fingerprint: e.fingerprint })), explanation: change.explanation, reviewed: command.action !== "matchInputs" };
         auditChanges.push({ criterionId: criterion!.id, requirement: criterion!.requirement_text, before: { value: criterion!.matched_value, refs: criterion!.evidence_refs_json },
           after: { value: change.value, explanation: change.explanation, reviewed: saved.reviewed, refs: JSON.stringify(saved) } });
         await db.requiredInputCriterion.update({ where: { id: criterion!.id }, data: { matched_value: change.value || null, status: sufficient ? "SATISFIED" : "MISSING", evidence_refs_json: JSON.stringify(saved) } });
       }
       event.changes = auditChanges;
+      const effective = project(await load(db, situationId, command.caseId));
       for (const input of p.required_inputs) {
-        const criteria = await db.requiredInputCriterion.findMany({ where: { required_input_id: input.id } });
-        await db.requiredInput.update({ where: { id: input.id }, data: { status: criteria.every((c) => c.status === "SATISFIED") ? "SATISFIED" : criteria.some((c) => c.matched_value || savedEvidence(c.evidence_refs_json).sources.length) ? "INCOMPLETE" : "MISSING" } });
+        const status = effective.inputs.find((current) => current.id === input.id)?.status ?? "MISSING";
+        await db.requiredInput.update({ where: { id: input.id }, data: { status } });
       }
     }
     await db.workflowEvent.create({ data: { situation_id: situationId, request_key: command.requestKey, event_type: `PLANNING_${command.action}`, payload_json: JSON.stringify(event) } });
