@@ -216,10 +216,14 @@ This contract does not define:
 
 ## 14. Implementation invariant notes
 
-Current persistence foundation exists on `work/workflow-foundation-v01`, but the implementation must still explicitly enforce/resolve the minimum strategy for:
+Foundation invariants are implemented for the bounded Goal/Plan/Collection slice under D-027:
 
-- one authoritative active Goal per Situation;
-- one `ACTIVE` Step per Situation;
-- Situation lifecycle semantics required by later execution/completion behavior.
+- `Goal.status=draft` is a saved proposal; `active` plus non-null `confirmed_at` is explicit authority. A partial unique index enforces one new confirmed active Goal, while legacy rows remain unchanged until explicit selection. Readers do not pick an arbitrary legacy Goal.
+- `SituationPlan` stores immutable versions, bound to Goal and evidence hash. DRAFT is not acceptance; ACCEPTED creates existing RequiredInputs/criteria with `plan_id`. Replacement supersedes previous versions without deleting their inputs or reviews.
+- `Situation.workflow_revision`, source-context hashes and unique `(situation_id, request_key)` WorkflowEvents provide optimistic concurrency, stale-result rejection and idempotency. Goal confirmation/Plan acceptance and Step updates are one write transaction. They leave exactly one ACTIVE Step; GET does not repair historical anomalies.
+- Criterion MISSING/SATISFIED persistence remains unchanged. A proposed or partial value can produce input INCOMPLETE while criterion remains MISSING. AI proposals never assert sufficiency. Explicit review with usable, non-conflicting sources is required for SATISFIED. Historical criterion support is fingerprinted; effective read-only coverage invalidates removed/changed sources and exposes the need to reverify.
+- Manual edits remain in immutable Plan versions or criterion-review history/events; repeated automated matching does not overwrite explicit reviews. Context never depends on Journal visibility checkboxes.
+
+Situation lifecycle semantics and consequential progression beyond Collection coverage remain later work. This MVP does not implement Collection → Input Validation or overrides.
 
 Any deviation from this contract must be surfaced as an explicit design revision rather than silently redefining workflow semantics.

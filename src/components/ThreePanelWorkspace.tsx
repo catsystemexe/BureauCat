@@ -593,6 +593,19 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     setSelectedStepKey(null);
   }, [caseItem.id]);
 
+  useEffect(() => {
+    const transitioned = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail?.situationId === selectedSituationIdRef.current && (detail.stepKey === "PLAN" || detail.stepKey === "COLLECTION")) {
+        setSelectedStepKey(detail.stepKey);
+        setActiveAnalysisDocument(null);
+        setActiveAnalysisInsights([]);
+      }
+    };
+    window.addEventListener("bureaucat:workflow-refresh", transitioned);
+    return () => window.removeEventListener("bureaucat:workflow-refresh", transitioned);
+  }, []);
+
   const selectSituation = useCallback((situationId: string | null) => {
     referenceNavigationRef.current += 1;
     setTargetAnalysisInsight(null);

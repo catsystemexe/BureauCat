@@ -1,3 +1,5 @@
+import { getSituationPlanning } from "@/lib/services/situationPlanning";
+import { effectiveRequiredInputs } from "@/lib/workflow/planning";
 import { prisma } from "@/lib/prisma";
 import { WORKFLOW_STEP_DEFINITIONS } from "@/lib/workflow/constants";
 
@@ -34,11 +36,12 @@ export async function ensureSituationWorkflow(situationId: string) {
   return getSituationWorkflow(situationId);
 }
 
-export function getSituationWorkflow(situationId: string) {
-  return prisma.situation.findUnique({
+export async function getSituationWorkflow(situationId: string) {
+  const workflow = await prisma.situation.findUnique({
     where: { id: situationId },
     select: {
       id: true,
+      case_id: true,
       goals: {
         where: { status: { not: "archived" } },
         orderBy: [{ display_order: "asc" }, { created_at: "asc" }]
@@ -63,4 +66,7 @@ export function getSituationWorkflow(situationId: string) {
       }
     }
   });
+  if (!workflow) return null;
+  const planning = await getSituationPlanning(situationId, workflow.case_id);
+  return { ...workflow, required_inputs: effectiveRequiredInputs(workflow.required_inputs, planning), planning };
 }

@@ -144,13 +144,13 @@ Implemented foundation on `work/workflow-foundation-v01`:
 Still required for the slice:
 
 - D-014 automatic source-grounded Journal projection;
-- Goal Candidate Resolver and user Goal confirmation;
-- accepted Plan;
-- Required Input criteria orchestration;
-- Collection matching and Task creation/resolution;
+- Goal archetype/resolver extensions beyond the bounded MVP;
+- broader Required Input orchestration and Task creation/resolution;
 - transition/controller behavior needed by the slice.
 
 Bounded Journal follow-up on `feat/compact-situation-journal`, baseline `79ef398b1ef72af575a2ea07a74c6539ed83ca02`: retain existing AI `content` on creation and derive a concrete Situation overview before Goal/Plan, with conservative source-preserving grouping, distinct temporal meanings, unresolved value variants, preserved original/user-edited records and editable manual notes. No new AI calls, read-time writes, data backfill or workflow transitions. Focused regressions and static checks pass; Windows/browser acceptance is pending. This advances D-014 presentation/content preservation without claiming the full projection semantics or BC-012 complete. See D-025 and `docs/compact-situation-journal.md`.
+
+Goal/Plan follow-up (2026-10-30), `feat/situation-goal-plan`, baseline `5595ad8fab84eec6d9040b6d4111145a471f2997`: implemented saved editable Goal proposals/manual confirmation, legacy-choice handling, unique confirmed authority, immutable Plan versions and explicit acceptance, current RequiredInput/criterion coverage with concrete evidence review, stale-source invalidation, idempotency and transactional Step transitions. AI reuses existing configuration; core manual entry works without it. Temporary-SQLite migration/concurrency/rollback, controlled API/component regressions and static checks are documented in `docs/situation-goal-plan.md`. Actual Windows/browser and live-AI verification remain pending; no credential was copied or live call made. BC-012/BC-015 remain In Progress; this block ends at Collection coverage, with no Input Validation, Production, execution, override or Timeline. Affected Drive mirrors remain pending.
 
 ## BC-013 — Input Validation readiness slice
 

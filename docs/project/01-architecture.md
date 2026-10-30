@@ -32,6 +32,8 @@ A supporting Situation may arise while another Situation is being worked. If its
 
 Goal expresses the desired outcome of a Situation. Analysis may propose candidates, but the actual Goal is established by user decision. One confirmed Goal corresponds to one Situation for the prototype. Multiple materially distinct Goals should become multiple Situations after user confirmation/order.
 
+The bounded MVP stores proposals in existing `Goal` rows (`draft`) and explicit authority through `confirmed_at` plus `active`. Legacy active rows without confirmation are not authoritative; multiple legacy choices require explicit selection. A partial unique database index covers newly confirmed active authority without rewriting legacy data. Material changes create a new Goal and archive the old one, preserving its Plans.
+
 Goal describes **what** should be achieved, not **when**. Deadlines belong to Timeline.
 
 ## Situation Workflow Contract v1
@@ -51,6 +53,8 @@ Source-grounded Document Analysis may project compact traceable findings into Jo
 ### Plan
 
 Decision layer after Goal confirmation. Defines the working route plus Goal-dependent Required Inputs and their acceptance criteria. Required Inputs describe what information must be available; Tasks represent operational actions needed to obtain or resolve it.
+
+`SituationPlan` stores immutable content versions bound to Goal, revision and evidence snapshot, with `DRAFT / ACCEPTED / SUPERSEDED`. Content contains expected output, procedure and information requirements/criteria; procedure items are not new Steps. Explicit acceptance instantiates existing RequiredInput/RequiredInputCriterion rows for that version and activates Collection. Goal/Plan replacement preserves history and revokes previous consent. See D-027.
 
 ### Collection
 
@@ -110,6 +114,8 @@ Under D-026, Analysis/Document indices use the same actually attached `DocumentP
 Case Context is a reusable assembly layer for Case/Situation context. The active branch exposes authoritative Goal plus workflow Steps, Required Inputs/criteria, Tasks and active overrides alongside Journal, Documents, pins and approved insights.
 
 Consumers may include Situation Controller, AI capabilities, audit/briefing views, Timeline reasoning and output generation.
+
+Current MVP coverage uses all current Situation findings and Journal knowledge, independent of visibility checkboxes. AI provides schema-validated evidence proposals through the existing Responses API/configuration; it does not grant sufficiency. Explicit review records value, source snapshots and explanation; uncertain/conflicting selected evidence cannot become SATISFIED. Effective GET coverage revalidates source membership, quote/range and fingerprint without writes, so removed/changed sources invalidate prior support. Workflow and Case Context expose this current coverage, while older plan-bound input rows remain historical. This is structural evidence review, not a semantic or legal resolver.
 
 ## Timeline
 

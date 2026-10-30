@@ -19,11 +19,10 @@ This roadmap describes product direction and sequencing. Concrete actionable wor
 Build on the already implemented workflow persistence, Case Context exposure and UX shell foundation.
 
 - Complete D-014 source-grounded Analysis → Journal projection semantics.
-- Add Goal Candidate Resolver and user Goal confirmation.
-- Implement minimal accepted Plan with Goal-dependent Required Inputs and criteria.
-- Implement Collection matching against available evidence / Document Insights.
+- Build on the bounded MVP Goal proposals/explicit confirmation and versioned accepted Plans; extend Goal/Required Input orchestration only where the next slice requires it.
+- Extend Collection beyond the implemented conservative evidence-review coverage, with operational task orchestration as needed.
 - Keep Tasks operational and Step-local.
-- Resolve the minimum invariant mechanism for one authoritative active Goal and one ACTIVE Step per Situation.
+- Preserve the implemented confirmed-Goal/revision/transaction invariants while adding later transitions; keep legacy ambiguity explicit.
 
 ## NEXT 2 — Input Validation and routing
 

@@ -1,3 +1,5 @@
+import { getSituationPlanning } from "@/lib/services/situationPlanning";
+import { effectiveRequiredInputs } from "@/lib/workflow/planning";
 import { prisma } from "@/lib/prisma";
 
 type BookmarkSourceLink = {
@@ -195,6 +197,7 @@ export async function buildCaseContext(caseId: string, situationId: string | nul
         id: true,
         situation_id: true,
         title: true,
+        confirmed_at: true,
         status: true,
         display_order: true,
         created_at: true,
@@ -344,7 +347,7 @@ export async function buildCaseContext(caseId: string, situationId: string | nul
         ]);
 
         return {
-          current_step: steps.find((step) => step.status === "ACTIVE") ?? null,
+          current_step: steps.filter((step) => step.status === "ACTIVE").length === 1 ? steps.find((step) => step.status === "ACTIVE") ?? null : null,
           steps,
           required_inputs: requiredInputs,
           tasks,
@@ -377,9 +380,9 @@ export async function buildCaseContext(caseId: string, situationId: string | nul
     };
   });
 
-  const authoritativeGoal = situationId
-    ? goals.find((goal) => goal.status === "active") ?? null
-    : null;
+  const activeGoals = goals.filter((goal) => goal.status === "active");
+  const authoritativeGoal = situationId && activeGoals.length === 1 && activeGoals[0].confirmed_at ? activeGoals[0] : null;
+  const planning = situationId ? await getSituationPlanning(situationId, caseId) : null;
 
   const context = {
     generated_at: new Date().toISOString(),
@@ -387,8 +390,9 @@ export async function buildCaseContext(caseId: string, situationId: string | nul
     situation: selectedSituation,
     situations,
     authoritative_goal: authoritativeGoal,
+    planning,
     goals,
-    workflow,
+    workflow: workflow && planning ? { ...workflow, required_inputs: effectiveRequiredInputs(workflow.required_inputs, planning) } : workflow,
     documents: documents.map((document) => ({
       id: document.id,
       case_id: document.case_id,

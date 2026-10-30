@@ -2,6 +2,7 @@
 
 import type { JournalSource } from "@/lib/journal/overview";
 import type { AnalysisReference } from "@/lib/analysis/references";
+import { SituationPlanningPanel } from "@/components/workflow/SituationPlanningPanel";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
 import type {
@@ -107,6 +108,9 @@ export function StepWorkspace({
           <h2 id="step-workspace-title">{STEP_LABELS[stepKey]}</h2>
           <p className="panel-note">Pracovní model situace a source-grounded poznatky.</p>
         </div>
+        {selectedSituationId ? <div className="step-workspace-goal-shell">
+          <SituationPlanningPanel key={`${caseItem.id}:${selectedSituationId}`} caseId={caseItem.id} situationId={selectedSituationId} refreshKey={documentListRefreshKey} view="ANALYSIS" onOpenSource={onOpenJournalSource} />
+        </div> : null}
         <div className="step-workspace-journal-shell">
           <JournalPanel
             caseItem={caseItem}
@@ -125,6 +129,12 @@ export function StepWorkspace({
         </div>
       </section>
     );
+  }
+
+  if ((stepKey === "PLAN" || stepKey === "COLLECTION") && selectedSituationId) {
+    return <section className="workspace-panel step-workspace step-workspace-planning">
+      <SituationPlanningPanel key={`${caseItem.id}:${selectedSituationId}`} caseId={caseItem.id} situationId={selectedSituationId} refreshKey={documentListRefreshKey} view={stepKey} onOpenSource={onOpenJournalSource} />
+    </section>;
   }
 
   return (

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { CaseDocument, CaseSummary, JournalItem, Situation } from "@/components/types";
-import { GoalsSection } from "@/components/journal/GoalsSection";
 import { SituationDocumentsSection } from "@/components/journal/SituationDocumentsSection";
 import { SituationPager } from "@/components/journal/SituationPager";
 import { CompactJournal } from "@/components/journal/CompactJournal";
@@ -175,7 +174,6 @@ function UserLayer({
         <span>Uživatel</span>
       </div>
       <SituationCard onSituationUpdated={onSituationUpdated} situation={selectedSituation} />
-      <GoalsSection selectedSituationId={selectedSituation?.id ?? null} />
       <SituationDocumentsSection
         onOpenDocument={onOpenDocument}
         refreshKey={documentListRefreshKey}

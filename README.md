@@ -11,7 +11,8 @@ The repository currently includes:
 
 - A case list with case creation and case detail workspaces.
 - A three-region workspace evolving around Situation workflow.
-- Persisted Situations and Goals.
+- Persisted Situations and Goals, with saved editable proposals and explicit confirmation.
+- Goal → Plan → Collection MVP: versioned draft/accepted Plans, required information/criteria and source-backed coverage review; see [implementation and Windows handoff](docs/situation-goal-plan.md).
 - Situation workflow persistence for ordered Steps, Required Inputs/criteria, Tasks, overrides, and workflow events.
 - A compact left workflow rail and central Step workspace foundation.
 - Journal APIs and evidence-state handling.
