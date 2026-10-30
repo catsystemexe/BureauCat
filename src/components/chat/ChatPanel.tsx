@@ -368,39 +368,42 @@ export function ChatPanel({
         data-insight-id={insight.id}
         style={{ "--insight-link-color": reference ? analysisReferenceColor(reference.color) : getAnalysisInsightColor(insight.insight_type) } as React.CSSProperties}
       >
-        {reference ? <button type="button" className="analysis-reference-index" data-reference-number={reference.number}
-          aria-label={`Odkaz ${reference.number}: otevřít zdroj poznatku ${insight.title}`}
-          style={{ "--reference-color": analysisReferenceColor(reference.color) } as React.CSSProperties}
-          onMouseEnter={() => handleInsightMouseEnter(insight, isExpanded)} onMouseLeave={() => handleInsightMouseLeave(insight)}
-          onFocus={() => handleInsightMouseEnter(insight, isExpanded)} onBlur={() => handleInsightMouseLeave(insight)}
-          onClick={async () => {
-            setExpandedInsightIds((current) => current.includes(insight.id) ? current : [...current, insight.id]);
-            if (onOpenAnalysisSourceReference) {
-              const opened = await onOpenAnalysisSourceReference(reference);
-              if (!opened && analysisDocumentIdRef.current === reference.analysisDocumentId) setAnalysisInsightsError("Zdroj poznatku se nepodařilo otevřít.");
-            } else dispatchScrollToInsightSource(insight);
-          }} /> : null}
-        {placement.time ? <span className="analysis-time-kind">{placement.time}</span> : null}
-        <button
-          className={`analysis-inline-insight analysis-inline-insight-${insight.insight_type} analysis-inline-insight-status-${insight.status}${isBookmarkHovered || isExpanded ? " analysis-inline-insight-bookmark-hover" : ""}${isBookmarkHovered ? " analysis-reference-matched" : ""}`}
-          onClick={() => {
-            const willExpand = !expandedInsightIds.includes(insight.id);
-            toggleExpandedInsight(insight.id);
+        <span className="analysis-insight-heading">
+          {reference ? <button type="button" className="analysis-reference-index" data-reference-number={reference.number}
+            aria-label={`Odkaz ${reference.number}: otevřít zdroj poznatku ${insight.title}`}
+            style={{ "--reference-color": analysisReferenceColor(reference.color) } as React.CSSProperties}
+            onMouseEnter={() => handleInsightMouseEnter(insight, isExpanded)} onMouseLeave={() => handleInsightMouseLeave(insight)}
+            onFocus={() => handleInsightMouseEnter(insight, isExpanded)} onBlur={() => handleInsightMouseLeave(insight)}
+            onClick={async () => {
+              setExpandedInsightIds((current) => current.includes(insight.id) ? current : [...current, insight.id]);
+              if (onOpenAnalysisSourceReference) {
+                const opened = await onOpenAnalysisSourceReference(reference);
+                if (!opened && analysisDocumentIdRef.current === reference.analysisDocumentId) setAnalysisInsightsError("Zdroj poznatku se nepodařilo otevřít.");
+              } else dispatchScrollToInsightSource(insight);
+            }} /> : null}
+          <span className="analysis-insight-description">
+            <button
+              className={`analysis-inline-insight analysis-inline-insight-${insight.insight_type} analysis-inline-insight-status-${insight.status}${isBookmarkHovered || isExpanded ? " analysis-inline-insight-bookmark-hover" : ""}${isBookmarkHovered ? " analysis-reference-matched" : ""}`}
+              onClick={() => {
+                const willExpand = !expandedInsightIds.includes(insight.id);
+                toggleExpandedInsight(insight.id);
 
-            if (willExpand) {
-              dispatchScrollToInsightSource(insight);
-            }
-          }}
-          onMouseEnter={() => handleInsightMouseEnter(insight, isExpanded)}
-          onMouseLeave={() => handleInsightMouseLeave(insight)}
-          onFocus={() => handleInsightMouseEnter(insight, isExpanded)}
-          onBlur={() => handleInsightMouseLeave(insight)}
-          title={insight.title}
-          type="button"
-        >
-          <span className="analysis-inline-insight-status-dot" aria-hidden="true" />
-          <span className="analysis-inline-insight-text">{insight.title}</span>
-        </button>
+                if (willExpand) {
+                  dispatchScrollToInsightSource(insight);
+                }
+              }}
+              onMouseEnter={() => handleInsightMouseEnter(insight, isExpanded)}
+              onMouseLeave={() => handleInsightMouseLeave(insight)}
+              onFocus={() => handleInsightMouseEnter(insight, isExpanded)}
+              onBlur={() => handleInsightMouseLeave(insight)}
+              title={insight.title}
+              type="button"
+            >
+              <span className="analysis-inline-insight-text">{insight.title}</span>
+            </button>
+            {placement.time ? <span className="analysis-time-kind">{placement.time}</span> : null}
+          </span>
+        </span>
 
         {isExpanded ? (
           <span className="analysis-inline-insight-detail">
