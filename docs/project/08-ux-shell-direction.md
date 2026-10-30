@@ -21,33 +21,31 @@ Preserve the existing three-region visual language while redistributing responsi
 - Emphasize orientation/current progress, not a dense Journal/document tree/dashboard.
 - Step visual states follow the workflow persistence contract: `INACTIVE`, `ACTIVE`, `COMPLETED`.
 
-### CENTER — selected / active Step workspace
+### CENTER — Situation Journal
 
-- Center is no longer reserved for chat.
-- Primary role is the working surface for Analysis, Plan, Collection, Input Validation, Production, Output Review or Execution/Completion.
-- Selecting a Step exposes its working content in or through the center.
-- Exact presentation mechanic remains open: replacement, inline expansion, focused overlay/drawer, or another implementation-proven pattern.
-- UI-selected Step is distinct from persisted workflow-active Step.
+The existing Journal occupies the center regardless of UI-selected workflow Step. Its content, manual notes, document visibility checkboxes, source links and controls are unchanged. Do not duplicate Goal/Plan forms here or replace it with document analysis.
 
-### RIGHT — contextual evidence/tools panel
+### RIGHT — Document / Situation Analysis / Plan
 
-- Preserve the current document workspace concept.
-- Continue contextual Document and Analysis surfaces.
-- Add Timeline as a planned peer tab when Timeline exists.
-- This is context/evidence, not workflow navigation.
-- Width relative to center may be tuned or made adjustable later.
+Approved allocation on 2026-10-30 supersedes the former central Goal/Plan workspaces:
+
+- **Dokument:** existing document, detailed document analysis, source indices and navigation. Document detail is not Situation Analysis. Switching the source/detail view must preserve navigation and manual bookmarks.
+- **Analýza:** exact order: Goal, K dispozici, Chybí / potřebuje vyjasnit. Before confirmation, current AI proposals are compact cards with title/reason and explicit Použít / Upravit, plus custom wording. Confirmation closes the editor and leaves one compact Goal card with Změnit. Older proposals/history remain collapsed. Available facts and explicit questions/conflicts use saved Situation knowledge, with source/detail on demand. No new relevance heuristic; unassessed knowledge is not automatically missing. Before an accepted Plan gaps are preliminary; afterward effective RequiredInput coverage is authoritative. Navrhnout plán sits at the bottom, available for a confirmed Goal regardless of input coverage; manual Plan creation remains available without AI.
+- **Plán:** confirmed Goal heading, expected output, numbered concrete actions. Each new-format action has a title/result; needed inputs/explanation/links live in its expandable detail. Default is read view; draft actions are Použít plán / Upravit, accepted action is Změnit plán. Only editing displays fields; saved changes require new acceptance. Histories remain collapsed and technical revisions/reload controls do not fill the normal view.
+
+Keep one mounted Situation planning surface across right-tab changes, with persistent local drafts and stable criterion identities. Hidden views do not confirm or mutate anything. Scope changes to another Case/Situation reset that scope's UI; read-only navigation never changes persisted ACTIVE Step. Keep left navigation structure unchanged; its selections may expose the corresponding right surface, while the center stays Journal. No automatic action execution or new Timeline belongs here.
 
 ## 3. Assistant / chat role
 
 Assistant/chat is secondary, not a permanent full middle panel. It may later be implemented as compact input, drawer, floating assistant or another lightweight contextual interaction.
 
-It must not reclaim the center as the primary shell structure.
+It must not displace the Journal from the center.
 
 ## 4. Journal role
 
 Journal remains the user-visible working model but is not required to occupy the entire left region. Detailed Journal interaction may appear contextually or in a dedicated working surface. Exact access pattern remains open.
 
-Current implementation temporarily reuses Journal inside the Analysis Step workspace as an incremental bridge.
+The approved 2026-10-30 screen keeps Journal in the center; Goal, Situation Analysis and Plan occupy the right surfaces.
 
 ## 5. Stable decisions
 
@@ -55,8 +53,8 @@ Current implementation temporarily reuses Journal inside the Analysis Step works
 - narrow left Situation/workflow rail;
 - compact Situation selector remains prominent at top-left;
 - selected Goal visible compactly;
-- center is selected/active Step workspace;
-- right remains Document/Analysis/context oriented and may gain Timeline;
+- center is the existing Journal;
+- right tabs are Dokument / Analýza / Plán; detailed document analysis belongs to Dokument;
 - assistant/chat is secondary.
 
 ## 6. Explicitly open
@@ -81,6 +79,4 @@ The first shell foundation is implemented on `work/workflow-foundation-v01`:
 - UI selection separated from persisted workflow status;
 - existing right Document/Analysis panel preserved.
 
-Replit Free runtime/manual verification confirmed the workflow loads and clicking between Steps works. The D-027 MVP adds Goal proposals/manual confirmation to the central Situation Analysis surface; the simplified Journal stays a knowledge overview and no longer offers a competing Goal editor. The central Plan surface shows confirmed Goal, expected output, editable procedure and required information/criteria, distinguishes saved drafts from accepted versions, and uses the explicit “Použít tento plán” gate. Collection shows Máme / Neúplné / Chybí, concrete values/sources, explanations and explicit evidence review. Goal/Plan history remains available. AI is an optional proposal action; manual entry works without credentials or network.
-
-Explicit successful confirmation/acceptance updates both the persisted active Step and UI navigation. Navigation/reload merely reads state. Situation-keyed components and request guards prevent old responses from populating a different Situation; source-refresh events hide stale coverage while rereading current evidence. The left rail and right document workspace remain in place. Business surfaces beyond Collection coverage remain placeholders. Actual Windows/browser acceptance is pending; controlled component tests do not establish layout success.
+Historical Replit Free verification confirmed the original shell loaded; it is not acceptance of the current layout. The initial D-027 central Goal/Plan UI has been superseded by the approved right-side allocation above. The existing atomic confirmation/acceptance, version history, concurrency checks and effective input coverage remain. Controlled regressions verify legacy/new Plan reading, explicit gates, source identity checks, scope isolation and draft preservation across tabs/refreshes. Actual Windows/browser layout, native navigation, keyboard/clipboard and real AI acceptance remain pending; see `docs/situation-right-panels.md`.

@@ -3,13 +3,14 @@
 import type { JournalSource, SourceTarget } from "@/lib/journal/overview";
 import type { AnalysisReference } from "@/lib/analysis/references";
 import { getRecordValue, getSourceLinkDocumentId } from "@/lib/documents/sourceLinks";
-import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { DocumentList } from "@/components/documents/DocumentList";
 import { DocumentUpload, type DocumentUploadHandle } from "@/components/documents/DocumentUpload";
 import { DocumentViewPanel } from "@/components/documents/DocumentViewPanel";
 import { JournalPanel } from "@/components/journal/JournalPanel";
 import { StepWorkspace } from "@/components/workflow/StepWorkspace";
+import { SituationPlanningPanel } from "@/components/workflow/SituationPlanningPanel";
 import { WorkflowRail } from "@/components/workflow/WorkflowRail";
 import {
   CASE_STATUS_LABELS,
@@ -54,7 +55,7 @@ import type {
 } from "./types";
 
 type RightPanelMode = "help" | "evidence" | "document";
-type RightPanelTab = "documents" | "analysis" | "procedure";
+type RightPanelTab = "documents" | "analysis" | "plan";
 
 type ParsedSourceLinks =
   | { kind: "empty" }
@@ -347,7 +348,11 @@ function EvidencePanel({
   );
 }
 
-function RightContextPanel({
+export function RightContextPanel({
+  planningPanel,
+  documentAnalysis,
+  showDocumentAnalysis,
+  onShowDocumentAnalysis,
   caseId,
   mode,
   activeTab,
@@ -370,6 +375,10 @@ function RightContextPanel({
   targetSourceRange,
   contextualPinIds
 }: {
+  planningPanel: ReactNode;
+  documentAnalysis: ReactNode;
+  showDocumentAnalysis: boolean;
+  onShowDocumentAnalysis: (show: boolean) => void;
   caseId: string;
   mode: RightPanelMode;
   activeTab: RightPanelTab;
@@ -453,13 +462,13 @@ function RightContextPanel({
           Analýza
         </button>
         <button
-          aria-selected={activeTab === "procedure"}
-          className={`right-panel-tab${activeTab === "procedure" ? " selected-right-panel-tab" : ""}`}
-          onClick={() => onActiveTabChange("procedure")}
+          aria-selected={activeTab === "plan"}
+          className={`right-panel-tab${activeTab === "plan" ? " selected-right-panel-tab" : ""}`}
+          onClick={() => onActiveTabChange("plan")}
           role="tab"
           type="button"
         >
-          Postup
+          Plán
         </button>
 
         <div className="right-panel-tab-actions" aria-label="Akce dokumentů">
@@ -484,8 +493,9 @@ function RightContextPanel({
         </div>
       </div>
 
-      {activeTab === "documents" ? (
-        <div className="right-panel-tab-content">
+      <div className="right-panel-tab-content" hidden={activeTab !== "documents"}>
+          {documentAnalysis ? <div className="document-analysis-navigation"><button type="button" onClick={() => onShowDocumentAnalysis(false)}>Dokument</button><button type="button" onClick={() => onShowDocumentAnalysis(true)}>Podrobná analýza</button></div> : null}
+          <div className="document-source-shell" hidden={showDocumentAnalysis}>
         <DocumentUpload
           caseId={caseId}
           onSituationDocumentLinked={onSituationDocumentLinked}
@@ -527,22 +537,11 @@ function RightContextPanel({
               </p>
             </div>
           )}
+          </div>
+          <div className="document-analysis-shell" hidden={!showDocumentAnalysis}>{documentAnalysis}</div>
         </div>
-      ) : null}
 
-      {activeTab === "analysis" ? (
-        <div className="right-panel-tab-content right-panel-placeholder compact-right-placeholder">
-          <h2>Analýza</h2>
-          <p className="panel-note">Zatím bez analýzy.</p>
-        </div>
-      ) : null}
-
-      {activeTab === "procedure" ? (
-        <div className="right-panel-tab-content right-panel-placeholder compact-right-placeholder">
-          <h2>Postup</h2>
-          <p className="panel-note">Zatím bez návrhu postupu.</p>
-        </div>
-      ) : null}
+      <div hidden={activeTab === "documents"} className="right-panel-tab-content situation-panel-shell">{planningPanel}</div>
     </aside>
   );
 }
@@ -562,6 +561,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
   const [isCaseMetaEditorOpen, setIsCaseMetaEditorOpen] = useState(false);
   const [, setJournalRefreshKey] = useState(0);
   const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("help");
+  const [showDocumentAnalysis, setShowDocumentAnalysis] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>("documents");
   const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
   const [activeAnalysisDocument, setActiveAnalysisDocument] = useState<CaseDocument | null>(null);
@@ -598,8 +598,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
       const detail = (event as CustomEvent).detail;
       if (detail?.situationId === selectedSituationIdRef.current && (detail.stepKey === "PLAN" || detail.stepKey === "COLLECTION")) {
         setSelectedStepKey(detail.stepKey);
-        setActiveAnalysisDocument(null);
-        setActiveAnalysisInsights([]);
+        setRightPanelTab(detail.stepKey === "PLAN" ? "plan" : "analysis");
       }
     };
     window.addEventListener("bureaucat:workflow-refresh", transitioned);
@@ -618,6 +617,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
 
   const selectStep = useCallback((stepKey: WorkflowStepKey) => {
     setSelectedStepKey(stepKey);
+    if (stepKey === "PLAN") setRightPanelTab("plan");
+    else if (stepKey === "ANALYSIS" || stepKey === "COLLECTION") setRightPanelTab("analysis");
   }, []);
 
   function requestJournalRefresh() {
@@ -768,12 +769,18 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
     sourceNavigationRef.current += 1;
     setTargetSourceRange(null);
     setSelectedDocument(document);
+    if (activeAnalysisDocument && activeAnalysisDocument.parent_document_id !== document.id) {
+      setActiveAnalysisDocument(null);
+      setActiveAnalysisInsights([]);
+      setTargetAnalysisInsight(null);
+    }
     setTargetDocumentPinId(pinId);
     window.setTimeout(() => {
       setTargetDocumentPinId((currentPinId) => currentPinId === pinId ? null : currentPinId);
     }, 1600);
     setRightPanelMode("document");
     setRightPanelTab("documents");
+    setShowDocumentAnalysis(false);
   }
 
   async function openSourceDocument(documentId: string, pinId: string | null = null) {
@@ -824,6 +831,7 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
       const data = await response.json() as { document?: CaseDocument };
       if (!response.ok || !data.document || request !== sourceNavigationRef.current || situationId !== selectedSituationIdRef.current) return false;
       openDocument(data.document, source.pinId);
+      setShowDocumentAnalysis(false);
       setTargetSourceRange({ ...source, token: request });
       return true;
     } catch { return false; }
@@ -847,6 +855,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
         if (!active || request !== referenceNavigationRef.current || situationId !== selectedSituationIdRef.current ||
             !response.ok || !data.document || data.document.case_id !== caseItem.id || data.document.document_type !== "analysis") return;
         setActiveAnalysisDocument(data.document);
+        setShowDocumentAnalysis(true);
+        setRightPanelTab("documents");
         setSelectedStepKey("ANALYSIS");
         setTargetAnalysisInsight({ analysisDocumentId: data.document.id, insightId: reference.insightId, token: request });
       } catch { /* Navigation is read-only; keep the current panels on failure. */ }
@@ -1068,6 +1078,15 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           selectedStepKey={selectedStepKey}
         />
         <RightContextPanel
+          planningPanel={selectedSituationId ? <SituationPlanningPanel key={`${caseItem.id}:${selectedSituationId}`} caseId={caseItem.id} situationId={selectedSituationId}
+            view={rightPanelTab === "plan" ? "PLAN" : "ANALYSIS"} refreshKey={situationDocumentListRefreshKey} onOpenSource={handleOpenJournalSource} onSelectPlan={() => setRightPanelTab("plan")} /> : <p>Vyberte situaci.</p>}
+          showDocumentAnalysis={showDocumentAnalysis && Boolean(activeAnalysisDocument)}
+          onShowDocumentAnalysis={setShowDocumentAnalysis}
+          documentAnalysis={activeAnalysisDocument ? <ChatPanel activeAnalysisDocument={activeAnalysisDocument} caseItem={caseItem}
+            onActiveAnalysisInsightsChange={setActiveAnalysisInsights} onCloseAnalysisDocument={() => { referenceNavigationRef.current += 1; setTargetAnalysisInsight(null); setShowDocumentAnalysis(false); setActiveAnalysisDocument(null); setActiveAnalysisInsights([]); }}
+            onOpenAnalysisSourceDocument={(id) => { void openSourceDocument(id); setShowDocumentAnalysis(false); }}
+            onOpenAnalysisSourceReference={handleOpenAnalysisSourceReference} targetAnalysisInsight={targetAnalysisInsight}
+            onJournalRefreshRequested={requestJournalRefresh} selectedSituationId={selectedSituationId} hoveredBookmarkPinId={hoveredBookmarkPinId} /> : null}
           caseId={caseItem.id}
           activeTab={rightPanelTab}
           activeAnalysisInsights={activeAnalysisInsights}
@@ -1078,6 +1097,8 @@ export function ThreePanelWorkspace({ caseItem }: { caseItem: CaseSummary }) {
           onActiveTabChange={setRightPanelTab}
           onAnalysisCreated={(document) => {
             setActiveAnalysisDocument(document);
+            setShowDocumentAnalysis(true);
+            setRightPanelTab("documents");
             setSelectedStepKey("ANALYSIS");
             setDocumentListRefreshKey((currentKey) => currentKey + 1);
           }}

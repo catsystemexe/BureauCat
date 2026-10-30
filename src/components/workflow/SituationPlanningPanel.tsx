@@ -2,24 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { JournalSource } from "@/lib/journal/overview";
-import { uniqueInsights } from "@/lib/workflow/planning";
-import type { PlanContent, PlanningCommand, PlanningState } from "@/lib/workflow/planning";
-const emptyPlan = (): PlanContent => ({ expectedOutput: "", procedure: [""], inputs: [{ title: "", description: "", criteria: [""] }] });
+import { uniqueInsights, editPlan } from "@/lib/workflow/planning";
+import type { EditablePlan, PlanningCommand, PlanningState } from "@/lib/workflow/planning";
+const emptyPlan = () => editPlan(null);
 const lines = (value: string) => value.split("\n");
 const labels: Record<string, string> = { SATISFIED: "Máme", INCOMPLETE: "Neúplné", MISSING: "Chybí" };
 const evidenceLabels: Record<string, string> = { verified: "ověřené", inferred: "odvozené", unverified: "neověřené", conflict: "rozpor" };
 type Action = PlanningCommand extends infer C ? C extends PlanningCommand ? Omit<C, "caseId" | "requestKey" | "expectedRevision" | "contextHash"> : never : never;
 
-export function SituationPlanningPanel({ caseId, situationId, view, onOpenSource, refreshKey = 0 }: {
-  refreshKey?: number; caseId: string; situationId: string; view: "ANALYSIS" | "PLAN" | "COLLECTION";
+export function SituationPlanningPanel({ caseId, situationId, view, onOpenSource, refreshKey = 0, onSelectPlan }: {
+  onSelectPlan?: () => void; refreshKey?: number; caseId: string; situationId: string; view: "ANALYSIS" | "PLAN" | "COLLECTION";
   onOpenSource: (source: JournalSource) => Promise<boolean>;
 }) {
   const [state, setState] = useState<PlanningState | null>(null);
+  const [goalEditing, setGoalEditing] = useState(false);
+  const [planEditing, setPlanEditing] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [goalId, setGoalId] = useState("");
   const [title, setTitle] = useState("");
-  const [draft, setDraft] = useState<PlanContent>(emptyPlan);
+  const [draft, setDraft] = useState<EditablePlan>(emptyPlan);
   const sequence = useRef(0), pending = useRef(false), queuedRefresh = useRef(false);
   const [sourcesStale, setSourcesStale] = useState(false);
   const alive = useRef(true);
@@ -27,7 +29,7 @@ export function SituationPlanningPanel({ caseId, situationId, view, onOpenSource
   function apply(next: PlanningState, preserveDraft = false) {
     setState(next);
     if (!preserveDraft || state?.goal?.id !== next.goal?.id || state?.plan?.id !== next.plan?.id) {
-      setDraft(next.plan?.content ?? emptyPlan());
+      setDraft(next.plan && "version" in next.plan.content ? next.plan.content : emptyPlan());
       setGoalId(next.goal?.id ?? "");
       setTitle(next.goal?.title ?? "");
     }
@@ -70,75 +72,125 @@ export function SituationPlanningPanel({ caseId, situationId, view, onOpenSource
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Změnu se nepodařilo uložit.");
       if (!alive.current || request !== sequence.current) return;
-      apply(data.planning);
+      apply(data.planning, action.action === "reviewCriterion" || action.action === "matchInputs" || action.action === "suggestGoals");
+      if (action.action === "confirmGoal") setGoalEditing(false);
+      if (["savePlan", "suggestPlan", "acceptPlan"].includes(action.action)) setPlanEditing(false);
+      if (action.action === "suggestPlan") onSelectPlan?.();
       const stepKey = action.action === "confirmGoal" || action.action === "savePlan" || action.action === "suggestPlan" ? "PLAN" : action.action === "acceptPlan" ? "COLLECTION" : null;
       window.dispatchEvent(new CustomEvent("bureaucat:workflow-refresh", { detail: { situationId, stepKey } }));
     } catch (e) { if (alive.current && request === sequence.current) setError(e instanceof Error ? e.message : "Změna selhala."); }
     finally { if (alive.current && request === sequence.current) { pending.current = false; setBusy(false); if (queuedRefresh.current) { queuedRefresh.current = false; void refresh(true); } } }
   }
-  const modified = JSON.stringify(draft) !== JSON.stringify(state?.plan?.content);
-  const unsavedEdits = state?.plan ? modified : Boolean(draft.expectedOutput || draft.procedure.some(Boolean) || draft.inputs.some((input) => input.title || input.description || input.criteria.some(Boolean)));
-  return <div className="situation-planning" aria-label={view === "ANALYSIS" ? "Cíl situace" : view === "PLAN" ? "Pracovní plán" : "Potřebné vstupy"}>
-    <div className="planning-toolbar"><h3>{view === "ANALYSIS" ? "Cíl situace" : view === "PLAN" ? "Plán" : "Potřebné vstupy"}</h3>
-      <button type="button" disabled={busy} onClick={() => void refresh()}>Načíst uložený stav</button></div>
-    {error ? <p role="alert" className="planning-error">{error}</p> : null}
+  const canEdit = !busy && !sourcesStale;
+  const startPlanEdit = () => { setDraft(editPlan(state?.plan?.content ?? null)); setPlanEditing(true); };
+  const brief = (value: string) => value.length > 180 ? `${value.slice(0, 180)}…` : value;
+  const coverageLabel = (input: PlanningState["inputs"][number]) => input.criteria.some((c) => c.assessed === false) ? "Dosud nevyhodnoceno" : labels[input.status];
+  const information = state?.evidence.filter((e) => !["question", "conflict"].includes(e.type) && e.evidenceState !== "conflict") ?? [];
+  const questions = state?.evidence.filter((e) => ["question", "conflict"].includes(e.type) || e.evidenceState === "conflict") ?? [];
+  const journalQuestions = state?.preliminary?.filter((e) => e.type === "QUESTION" || e.evidenceState === "conflict") ?? [];
+  const suggestPlan = () => state?.goal && void run({ action: "suggestPlan", goalId: state.goal.id });
+  return <div className="situation-planning">
+    {error ? <p role="alert" className="planning-error">{error} <button disabled={busy} type="button" onClick={() => void refresh(true)}>Zkusit znovu načíst</button></p> : null}
     {busy ? <p role="status">Zpracovávám…</p> : null}
     {!state ? <p>Načítám pracovní stav…</p> : <>
-      {state.goal ? <p><strong>Potvrzený cíl:</strong> {state.goal.title}</p> : <p>Cíl zatím není výslovně potvrzený.</p>}
-      {view === "ANALYSIS" ? <fieldset disabled={busy}>
-        <legend>Návrh a potvrzení cíle</legend>
-        {state.goalSelectionRequired ? <p>Starší cíle nejsou automaticky autoritativní. Výslovně vyberte cíl, který chcete potvrdit; ostatní se zachovají v historii.</p> : null}
-        <button type="button" onClick={() => void run({ action: "suggestGoals" })}>Navrhnout cíle pomocí AI</button>
-        <label>Návrh nebo stávající cíl<select value={goalId} onChange={(e) => {
-          setGoalId(e.target.value); setTitle(state.goals.find((g) => g.id === e.target.value)?.title ?? "");
-        }}><option value="">Vlastní formulace</option>{state.goals.filter((g) => g.status === "draft" || g.status === "active").map((g) =>
-          <option key={g.id} value={g.id}>{g.status === "draft" ? "Návrh: " : g.confirmed_at ? "Potvrzený: " : "Starší: "}{g.title}</option>)}</select></label>
-        <label>Čeho chcete v této situaci dosáhnout?<textarea value={title} onChange={(e) => setTitle(e.target.value)} /></label>
-        <p>Návrh ani jeho úprava nejsou potvrzením. Změna cíle zneplatní dosavadní přijetí plánu; historie zůstane zachována.</p>
-        <button type="button" disabled={!title.trim()} onClick={() => void run({ action: "confirmGoal", title, ...(goalId ? { goalId } : {}) })}>Potvrdit cíl a otevřít Plán</button>
-      </fieldset> : null}
-      {view === "PLAN" && !state.goal ? <p>V Analýze nejprve výslovně vyberte nebo zadejte a potvrďte cíl.</p> : null}
-      {view === "PLAN" && state.goal ? <fieldset disabled={busy}>
-        <legend>{unsavedEdits ? "Upravený návrh — neuložený, nepřijatý" : state.plan?.status === "ACCEPTED" ? "Přijatý plán" : "Návrh plánu — dosud nepřijatý"}</legend>
-        <button type="button" disabled={unsavedEdits} onClick={() => void run({ action: "suggestPlan", goalId: state.goal!.id })}>Navrhnout plán pomocí AI</button>
-        <label>Očekávaný výstup<textarea value={draft.expectedOutput} onChange={(e) => setDraft({ ...draft, expectedOutput: e.target.value })} /></label>
-        <label>Pracovní postup (jeden bod na řádek)<textarea value={draft.procedure.join("\n")} onChange={(e) => setDraft({ ...draft, procedure: lines(e.target.value) })} /></label>
-        {draft.inputs.map((input, index) => <div className="planning-input-definition" key={index}>
-          <label>Potřebná informace<input value={input.title} onChange={(e) => setDraft({ ...draft, inputs: draft.inputs.map((i, n) => n === index ? { ...i, title: e.target.value } : i) })} /></label>
-          <label>Co je třeba zjistit<textarea value={input.description} onChange={(e) => setDraft({ ...draft, inputs: draft.inputs.map((i, n) => n === index ? { ...i, description: e.target.value } : i) })} /></label>
-          <label>Kritéria dostatečnosti (jedno na řádek)<textarea value={input.criteria.join("\n")} onChange={(e) => setDraft({ ...draft, inputs: draft.inputs.map((i, n) => n === index ? { ...i, criteria: lines(e.target.value) } : i) })} /></label>
-          <button type="button" disabled={draft.inputs.length === 1} onClick={() => setDraft({ ...draft, inputs: draft.inputs.filter((_, n) => n !== index) })}>Odebrat vstup z návrhu</button>
-        </div>)}
-        <button type="button" onClick={() => setDraft({ ...draft, inputs: [...draft.inputs, { title: "", description: "", criteria: [""] }] })}>Přidat potřebnou informaci</button>
-        <p>Uložení změny vytvoří novou verzi a vyžádá nové přijetí. Samotné otevření kroku nic nepotvrzuje.</p>
-        <button type="button" onClick={() => void run({ action: "savePlan", goalId: state.goal!.id, content: draft })}>Uložit návrh plánu</button>
-        <button type="button" disabled={!state.plan || modified || state.plan.status === "ACCEPTED"} onClick={() => void run({ action: "acceptPlan", planId: state.plan!.id })}>Použít tento plán</button>
-        {modified ? <p>Upravovaný obsah nejprve uložte jako návrh, než požádáte o další AI návrh nebo přijetí.</p> : null}
-      </fieldset> : null}
-      {view === "COLLECTION" && state.plan?.status !== "ACCEPTED" ? <p>Nejprve potvrďte cíl a přijměte aktuální plán v kroku Plán.</p> : null}
-      {sourcesStale ? <p role="status">Podklady se změnily; ověřuji aktuální doložení…</p> : null}
-      {view === "COLLECTION" && state.plan?.status === "ACCEPTED" ? <>
-        <p>Soubor sám informaci nesplňuje. AI navrhne doložení; dostatečnost konkrétních zdrojů potvrzujete vy. Nejisté a rozporné podklady zůstávají neúplné.</p>
-        <button disabled={busy} type="button" onClick={() => void run({ action: "matchInputs", planId: state.plan!.id })}>Najít podklady v existujících analýzách pomocí AI</button>
-        {state.inputs.map((input) => <section className="planning-coverage" key={input.id}><h4>{input.title} — {sourcesStale ? "Ověřuji aktuální doložení…" : labels[input.status]}</h4>
-          {input.criteria.map((criterion) => <CriterionReview key={criterion.id} criterion={criterion} evidence={state.evidence} busy={busy} refreshing={sourcesStale}
-            onOpenSource={onOpenSource} onSave={(value, insightIds, sufficient, explanation) => run({ action: "reviewCriterion", planId: state.plan!.id, criterionId: criterion.id, value, insightIds, sufficient, explanation })} />)}
-        </section>)}
-      </> : null}
-      {state.history.length ? <details><summary>Historie verzí plánu ({state.history.length})</summary>{state.history.map((p) => <div key={p.id}>
-        <strong>Verze {p.revision} — {p.status === "ACCEPTED" ? "přijatá" : p.status === "SUPERSEDED" ? "nahrazená" : "návrh"}</strong>
-        <p>{p.content.expectedOutput}</p><ol>{p.content.procedure.map((line, i) => <li key={i}>{line}</li>)}</ol>
-        {p.content.inputs.map((input, i) => <p key={i}>{input.title}: {input.criteria.join("; ")}</p>)}
-      </div>)}</details> : null}
-      {state.reviewHistory?.length ? <details><summary>Historie doložení a ručních úprav</summary>{state.reviewHistory.map((entry) => <div key={entry.id}>
-        <time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString("cs-CZ")}</time>{entry.changes.map((change, index) => <p key={index}>
-          {change.requirement ?? "Kritérium"} — {change.after.reviewed ? "Ruční posouzení" : "AI návrh"}: {change.before.value ? `Původně: ${change.before.value}. ` : ""}{change.after.value || "Bez doložené hodnoty"} — {change.after.explanation}
-        </p>)}
-      </div>)}</details> : null}
-      {state.goals.some((g) => g.status === "archived") ? <details><summary>Dřívější cíle</summary>{state.goals.filter((g) => g.status === "archived").map((g) => <p key={g.id}>{g.title}</p>)}</details> : null}
+      <section hidden={view === "PLAN"} aria-label="Analýza situace">
+        <h2>Cíl situace</h2>
+        {state.goal ? <article className="planning-goal-card"><strong>{state.goal.title}</strong>
+          <button disabled={!canEdit} type="button" onClick={() => setGoalEditing(true)}>Změnit</button></article> : <>
+          <p>Cíl zatím není potvrzený.</p>
+          {state.goalSelectionRequired ? <p>Starší cíle vyžadují výslovný výběr.</p> : null}
+          {state.goals.filter((g) => g.status === "draft" && g.currentProposal).map((g) => <article className="planning-goal-card" key={g.id}>
+            <strong>{g.title}</strong>{g.reason ? <p>{g.reason}</p> : null}
+            <button disabled={!canEdit} type="button" onClick={() => void run({ action: "confirmGoal", goalId: g.id, title: g.title })}>Použít</button>
+            <button disabled={!canEdit} type="button" onClick={() => { setGoalId(g.id); setTitle(g.title); setGoalEditing(true); }}>Upravit</button>
+          </article>)}
+          <button disabled={!canEdit} type="button" onClick={() => void run({ action: "suggestGoals" })}>Navrhnout cíle pomocí AI</button>
+          <button type="button" disabled={!canEdit} onClick={() => { setGoalId(""); setTitle(""); setGoalEditing(true); }}>Vlastní cíl</button>
+        </>}
+        <div hidden={!goalEditing}>
+          <fieldset disabled={!canEdit}><legend>Formulace cíle</legend>
+            <label>Vlastní nebo uložený návrh<select value={goalId} onChange={(e) => { setGoalId(e.target.value); setTitle(state.goals.find((g) => g.id === e.target.value)?.title ?? ""); }}>
+              <option value="">Vlastní formulace</option>{state.goals.filter((g) => g.status === "draft" || g.status === "active").map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+            </select></label>
+            <label>Čeho chcete dosáhnout?<textarea value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+            <button type="button" disabled={!title.trim()} onClick={() => void run({ action: "confirmGoal", title, ...(goalId ? { goalId } : {}) })}>Potvrdit cíl</button>
+            <button type="button" onClick={() => setGoalEditing(false)}>Zavřít úpravu</button>
+          </fieldset>
+        </div>
+        <h2>K dispozici</h2>
+        <p>Uložené informace ze situace. Přítomnost dokumentu nepotvrzuje splnění požadavku; relevance vůči cíli se neodhaduje.</p>
+        {information.map((e) => <details key={e.id}><summary>{e.title}: {brief(e.value)}</summary><p>{e.value}</p>
+          <p>{e.documentName} — {e.quote}</p><p>{evidenceLabels[e.evidenceState] ?? "Neurčené doložení"}</p>
+          {e.usable ? <button type="button" onClick={() => void onOpenSource({ documentId: e.documentId, documentName: e.documentName, pinId: e.pinId, insightId: e.id, startOffset: e.startOffset, endOffset: e.endOffset, quote: e.quote })}>Otevřít zdroj</button> : <p>Pasáž není ověřitelná.</p>}
+        </details>)}
+        {state.preliminary?.filter((e) => ["FACT", "CLAIM"].includes(e.type) && e.evidenceState !== "conflict").map((e) => <details key={e.id}><summary>{e.title}: {brief(e.value)}</summary><p>{e.value}</p><p>Uložená informace ze zápisníku; relevance vůči cíli není posouzená.</p></details>)}
+        {state.plan?.status === "ACCEPTED" ? state.inputs.filter((i) => i.status === "SATISFIED").map((i) => <p key={i.id}>{i.title} — {sourcesStale ? "Ověřuji doložení…" : "Máme"}</p>) : null}
+        {!information.length ? <p>Žádné uložené informace k zobrazení; dostupnost zatím není vyhodnocena.</p> : null}
+        <h2>Chybí / potřebuje vyjasnit</h2>
+        {state.plan?.status !== "ACCEPTED" ? <p>Předběžné otázky a rozpory z podkladů. Požadavky plánu zatím nejsou vyhodnocené.</p> : <>
+          {state.inputs.filter((i) => i.status !== "SATISFIED").map((i) => <details key={i.id}><summary>{i.title} — {sourcesStale ? "Ověřuji doložení…" : coverageLabel(i)}</summary>
+            {i.criteria.map((c) => <p key={c.id}>{c.requirement_text}: {c.stale ? "Původní doložení již neplatí. " : ""}{c.explanation || "Dostatečnost zatím nebyla posouzena."}</p>)}
+          </details>)}
+        </>}
+        {questions.map((e) => <details key={e.id}><summary>{e.title}: {brief(e.value)}</summary><p>{e.value}</p><p>Uložená otázka / rozpor, relevance vůči cíli není odvozena.</p><p>{e.documentName}: {e.quote}</p></details>)}
+        {journalQuestions.map((e) => <details key={e.id}><summary>{e.title}</summary><p>{e.value}</p><p>Uložená otázka / rozpor zápisníku; předběžné, bez automatického posouzení.</p></details>)}
+        {!questions.length && !journalQuestions.length && state.plan?.status !== "ACCEPTED" ? <p>Žádné výslovně uložené otázky nebo rozpory. Neznamená to úplnost podkladů.</p> : null}
+        {sourcesStale ? <p role="status">Podklady se změnily; ověřuji aktuální doložení…</p> : null}
+        <details hidden={state.plan?.status !== "ACCEPTED"}><summary>Posoudit požadavky přijatého plánu</summary>
+          <button disabled={!canEdit} type="button" onClick={() => state.plan && void run({ action: "matchInputs", planId: state.plan.id })}>Najít podklady v existujících analýzách pomocí AI</button>
+          {state.inputs.map((input) => <section className="planning-coverage" key={input.id}><h4>{input.title} — {sourcesStale ? "Ověřuji aktuální doložení…" : coverageLabel(input)}</h4>
+            {input.criteria.map((criterion) => <CriterionReview key={criterion.id} criterion={criterion} evidence={state.evidence} busy={busy} refreshing={sourcesStale}
+              onOpenSource={onOpenSource} onSave={(value, insightIds, sufficient, explanation) => run({ action: "reviewCriterion", planId: state.plan!.id, criterionId: criterion.id, value, insightIds, sufficient, explanation })} />)}
+          </section>)}
+        </details>
+        <footer><button disabled={!state.goal || !canEdit || planEditing} type="button" onClick={suggestPlan}>Navrhnout plán</button>
+          <button disabled={!state.goal || !canEdit} type="button" onClick={() => { startPlanEdit(); onSelectPlan?.(); }}>Vytvořit plán ručně</button></footer>
+      </section>
+      <section hidden={view !== "PLAN"} aria-label="Plán situace">
+        <header><h2>Plán</h2><strong>Potvrzený cíl: {state.goal?.title ?? "Cíl zatím není potvrzený."}</strong></header>
+        {state.plan ? <div hidden={planEditing}>
+          <h3>Očekávaný výstup</h3><p>{state.plan.content.expectedOutput}</p>
+          <ol>{state.plan.content.procedure.map((action, i) => typeof action === "string" ? <li key={`legacy:${i}`}><strong>{action}</strong><p>Výsledek a vazby nejsou v této starší verzi uložené.</p></li> : <li key={action.id}>
+            <strong>{action.title}</strong><p>Výsledek: {action.expectedResult}</p>
+            {action.explanation || action.inputIds.length ? <details><summary>Podklady a vysvětlení</summary><p>{action.explanation}</p>
+              {state.plan!.content.inputs.filter((input) => "id" in input && typeof input.id === "string" && action.inputIds.includes(input.id)).map((input) => <div key={(input as EditablePlan["inputs"][number]).id}><strong>{input.title}</strong><p>{input.description}</p><ul>{input.criteria.map((c, n) => <li key={n}>{c}</li>)}</ul></div>)}
+            </details> : null}
+          </li>)}</ol>
+          <p>{state.plan.status === "ACCEPTED" ? "Přijatý plán" : "Návrh — dosud nepřijatý"}</p>
+          {state.plan.status !== "ACCEPTED" ? <button disabled={!canEdit} type="button" onClick={() => void run({ action: "acceptPlan", planId: state.plan!.id })}>Použít plán</button> : null}
+          <button disabled={!canEdit} type="button" onClick={startPlanEdit}>{state.plan.status === "ACCEPTED" ? "Změnit plán" : "Upravit"}</button>
+        </div> : <div hidden={planEditing}><p>Plán zatím není uložený.</p><button disabled={!state.goal || !canEdit} type="button" onClick={suggestPlan}>Navrhnout plán</button><button disabled={!state.goal || !canEdit} type="button" onClick={startPlanEdit}>Vytvořit plán ručně</button></div>}
+        <div hidden={!planEditing}><fieldset disabled={!canEdit}><legend>Úprava návrhu plánu</legend>
+          <label>Očekávaný výstup<textarea value={draft.expectedOutput} onChange={(e) => setDraft({ ...draft, expectedOutput: e.target.value })} /></label>
+          {draft.inputs.map((input) => <div key={input.id}>
+            <label>Potřebná informace<input value={input.title} onChange={(e) => setDraft({ ...draft, inputs: draft.inputs.map((x) => x.id === input.id ? { ...x, title: e.target.value } : x) })} /></label>
+            <label>Vysvětlení<textarea value={input.description} onChange={(e) => setDraft({ ...draft, inputs: draft.inputs.map((x) => x.id === input.id ? { ...x, description: e.target.value } : x) })} /></label>
+            <label>Kritéria dostatečnosti (jedno na řádek)<textarea value={input.criteria.join("\n")} onChange={(e) => setDraft({ ...draft, inputs: draft.inputs.map((x) => x.id === input.id ? { ...x, criteria: lines(e.target.value) } : x) })} /></label>
+            <button type="button" onClick={() => setDraft({ ...draft, inputs: draft.inputs.filter((x) => x.id !== input.id), procedure: draft.procedure.map((a) => ({ ...a, inputIds: a.inputIds.filter((id) => id !== input.id) })) })}>Odebrat vstup z návrhu</button>
+          </div>)}
+          <button type="button" onClick={() => setDraft({ ...draft, inputs: [...draft.inputs, { id: crypto.randomUUID(), title: "", description: "", criteria: [""] }] })}>Přidat potřebnou informaci</button>
+          {draft.procedure.map((action) => <div key={action.id}>
+            <label>Název akce<input value={action.title} onChange={(e) => setDraft({ ...draft, procedure: draft.procedure.map((a) => a.id === action.id ? { ...a, title: e.target.value } : a) })} /></label>
+            <label>Očekávaný výsledek<textarea value={action.expectedResult} onChange={(e) => setDraft({ ...draft, procedure: draft.procedure.map((a) => a.id === action.id ? { ...a, expectedResult: e.target.value } : a) })} /></label>
+            <label>Vysvětlení akce<textarea value={action.explanation ?? ""} onChange={(e) => setDraft({ ...draft, procedure: draft.procedure.map((a) => a.id === action.id ? { ...a, explanation: e.target.value } : a) })} /></label>
+            <fieldset><legend>Podklady pro tuto akci</legend>{draft.inputs.map((input) => <label key={input.id}><input type="checkbox" checked={action.inputIds.includes(input.id)} onChange={(e) => setDraft({ ...draft, procedure: draft.procedure.map((a) => a.id === action.id ? { ...a, inputIds: e.target.checked ? [...new Set([...a.inputIds, input.id])] : a.inputIds.filter((id) => id !== input.id) } : a) })} />{input.title || "Nový vstup"}</label>)}</fieldset>
+            <button type="button" onClick={() => setDraft({ ...draft, procedure: draft.procedure.filter((a) => a.id !== action.id) })}>Odebrat akci</button>
+          </div>)}
+          <button type="button" onClick={() => setDraft({ ...draft, procedure: [...draft.procedure, { id: crypto.randomUUID(), title: "", expectedResult: "", explanation: "", inputIds: [] }] })}>Přidat akci</button>
+          <button type="button" disabled={!state.goal} onClick={() => state.goal && void run({ action: "savePlan", goalId: state.goal.id, content: draft })}>Uložit návrh plánu</button>
+          <button type="button" onClick={() => setPlanEditing(false)}>Zavřít úpravu</button>
+        </fieldset></div>
+      </section>
+      <details><summary>Historie</summary>
+        {state.goals.map((g) => <article key={g.id}><strong>{g.title}</strong>{g.reason ? <p>{g.reason}</p> : null}
+          {view !== "PLAN" && (g.status === "draft" || (g.status === "active" && !g.confirmed_at)) ? <button type="button" disabled={!canEdit} onClick={() => { setGoalId(g.id); setTitle(g.title); setGoalEditing(true); }}>Upravit návrh cíle</button> : null}</article>)}
+        {state.history.map((p) => <article key={p.id}><strong>{p.status === "ACCEPTED" ? "Přijatý" : p.status === "SUPERSEDED" ? "Nahrazený" : "Návrh"}: {p.content.expectedOutput}</strong><ol>{p.content.procedure.map((a, i) => <li key={typeof a === "string" ? `legacy:${i}` : a.id}>{typeof a === "string" ? a : a.title}</li>)}</ol></article>)}
+        {state.reviewHistory?.map((entry) => <div key={entry.id}>{entry.changes.map((change, i) => <p key={i}>{change.requirement}: {change.after.value} — {change.after.explanation}</p>)}</div>)}
+      </details>
     </>}
   </div>;
 }
+
 export function CriterionReview({ criterion, evidence, busy, refreshing = false, onSave, onOpenSource }: {
   criterion: PlanningState["inputs"][number]["criteria"][number]; evidence: PlanningState["evidence"]; busy: boolean; refreshing?: boolean;
   onSave: (value: string, ids: string[], sufficient: boolean, explanation: string) => Promise<void>;
@@ -161,7 +213,7 @@ export function CriterionReview({ criterion, evidence, busy, refreshing = false,
   useEffect(() => { setIds((current) => [...new Set(current)].filter((id) => currentEvidence.some((e) => e.id === id))); }, [availableIdsKey]);
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-  return <fieldset disabled={busy || refreshing}><legend>{criterion.requirement_text} — {refreshing ? "Ověřuji aktuální doložení…" : criterion.status === "SATISFIED" ? "Doloženo" : "Nutno doplnit / ověřit"}</legend>
+  return <fieldset disabled={busy || refreshing}><legend>{criterion.requirement_text} — {refreshing ? "Ověřuji aktuální doložení…" : criterion.assessed === false ? "Dostatečnost dosud neposouzena" : criterion.status === "SATISFIED" ? "Doloženo" : "Nutno doplnit / ověřit"}</legend>
     {criterion.stale ? <p role="status">Původní zdroj byl odebrán nebo změněn. Dřívější potvrzení nyní neplatí.</p> : null}
     {criterion.historicalInsightIds?.some((id) => !currentEvidence.some((e) => e.id === id)) ? <details>
       <summary>Historické vazby na odebrané poznatky</summary>

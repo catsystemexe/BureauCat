@@ -134,11 +134,13 @@ BureauCat may automate low-risk analysis, extraction, matching, readiness checks
 The target UI preserves the existing three-region language:
 
 - **Left:** narrow Situation/workflow rail with compact Situation selector, selected Goal and ordered Steps.
-- **Center:** selected/active Step workspace, not a permanent chat panel.
-- **Right:** contextual Document/Analysis evidence/tools surface; Timeline may become a peer tab.
+- **Center:** the existing Situation Journal, with its content and controls unchanged.
+- **Right:** Document (including detailed document analysis and linked source indices), Situation Analysis, and Plan. This approved 2026-10-30 allocation supersedes the former central Goal/Plan workspaces; no duplicate forms or new Timeline are introduced.
 - **Chat/assistant:** secondary contextual interaction surface.
 
-Detailed shell contract is in `08-ux-shell-direction.md`.
+Situation Analysis displays Goal, available stored knowledge, then gaps/questions. Before an accepted Plan, gaps are explicitly preliminary; unassessed information is not classified as missing. After acceptance the same effective RequiredInput coverage is used, without another state ledger or relevance heuristic. Plan is read-first: confirmed Goal, expected output, numbered actions with expected results and expandable per-action input links. Edits and histories are hidden until requested; tab navigation is read-only and does not discard drafts.
+
+New Plan content uses version 2 with independent action/input IDs and validated references local to that version. Old string procedures remain readable/acceptable unchanged; missing results/links are not guessed or filled on GET. Goal proposal events explicitly associate created Goal IDs, reasons and insight IDs; legacy title-only reasons are not attached by inference. Detailed shell contract is in `08-ux-shell-direction.md`.
 
 ## AI boundary
 

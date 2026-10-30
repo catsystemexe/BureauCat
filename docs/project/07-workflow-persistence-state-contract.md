@@ -227,3 +227,10 @@ Foundation invariants are implemented for the bounded Goal/Plan/Collection slice
 Situation lifecycle semantics and consequential progression beyond Collection coverage remain later work. This MVP does not implement Collection → Input Validation or overrides.
 
 Any deviation from this contract must be surfaced as an explicit design revision rather than silently redefining workflow semantics.
+
+
+## 15. Approved Plan content and screen revision (2026-10-30)
+
+Plan content version 2 adds stable action IDs, title, expected result, optional explanation and explicit input-ID references. Input IDs must be unique within the version, action IDs unique within their list, and references must resolve to inputs in that same version. Server rejects duplicate/unknown references; title or position is never a join key. These actions do not become WorkflowSteps and have no automatic execution. Legacy `procedure: string[]` stays readable and may retain its previous acceptance; GET neither converts nor fills missing fields. Explicit new saves require version 2. Editing a legacy Plan supplies new local IDs and blank results/links for user completion, never guessed content.
+
+Goal proposal metadata is stored in existing WorkflowEvents with explicit Goal ID/reason/insight-ID association. Older unlinked reasons are not inferred from matching titles. This content/UI revision needs no further schema migration or user data backfill. The approved screen moves Goal/Plan to the right while retaining all consequential transition gates and one authoritative RequiredInput coverage projection. See D-027 and `08-ux-shell-direction.md`.

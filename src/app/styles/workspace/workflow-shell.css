@@ -231,3 +231,16 @@
 .situation-planning button:focus-visible, .situation-planning input:focus-visible, .situation-planning textarea:focus-visible, .situation-planning select:focus-visible { outline: 2px solid #0869d7; outline-offset: 2px; }
 .planning-error { color: #991b1b; }
 .planning-input-definition, .planning-coverage { border-top: 1px solid #dbe1e9; margin-top: 10px; padding-top: 8px; }
+
+/* Approved right-side Situation panels; center remains the Journal. */
+.context-panel [hidden], .situation-planning [hidden] { display: none !important; }
+.situation-panel-shell { overflow-y: auto; }
+.document-source-shell { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.document-analysis-shell { flex: 1; min-height: 0; overflow: auto; }
+.document-analysis-shell .chat-panel { height: 100%; min-height: 0; padding: 0; border: 0; }
+.document-analysis-shell .chat-panel > :not(.analysis-floating-panel) { display: none !important; }
+.document-analysis-shell .analysis-floating-panel { position: relative !important; inset: auto !important; margin: 0; height: 100%; max-height: none !important; border: 0; box-shadow: none; }
+.document-analysis-navigation { display: flex; gap: 8px; flex: 0 0 auto; padding: 6px; }
+.planning-goal-card { padding: 10px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 7px; }
+.situation-planning summary { cursor: pointer; }
+.situation-planning li { margin: 10px 0; }

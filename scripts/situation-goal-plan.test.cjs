@@ -50,8 +50,8 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
   const { createCase } = load("src/lib/services/cases.ts");
   const { createSituation } = load("src/lib/services/situations.ts");
   const { GET, POST } = load("src/app/api/situations/[situationId]/planning/route.ts");
-  const content = { expectedOutput: "Připravit doloženou odpověď", procedure: ["Ověřit údaje", "Sestavit návrh odpovědi"], inputs: [
-    { title: "Ověřené rozměry", description: "Dvě hodnoty a jejich zdroje", criteria: ["Doložená šířka", "Doložená hloubka"] }
+  const content = { version: 2, expectedOutput: "Připravit doloženou odpověď", procedure: [{ id: "action-a", title: "Ověřit údaje", expectedResult: "Ověřené hodnoty", inputIds: ["input-a"] }], inputs: [
+    { id: "input-a", title: "Ověřené rozměry", description: "Dvě hodnoty a jejich zdroje", criteria: ["Doložená šířka", "Doložená hloubka"] }
   ] };
   let request = 0, caseId, sid;
   const command = (state, action) => ({ caseId, expectedRevision: state.revision, contextHash: state.contextHash, requestKey: `request-${++request}`, ...action });
@@ -120,6 +120,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       const c = command(state, { action: "suggestGoals" }); const result = await send(c);
       assert.equal(result.status, 200); state = result.planning;
       assert.equal(state.goal, null); assert.equal(state.goals.length, 2); assert.ok(state.goals.every((g) => g.status === "draft"));
+      assert.ok(state.goals.every((g) => g.reason && g.currentProposal && g.insightIds.length === 1));
       assert.equal(state.steps.find((s) => s.status === "ACTIVE").step_key, "ANALYSIS");
       const calls = aiCalls; await send(c); assert.equal(aiCalls, calls, "completed request retry has no new AI call");
       assert.equal(await db.goal.count({ where: { situation_id: sid } }), 2);
@@ -133,6 +134,32 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       const revision = state.revision; assert.equal((await send(c)).status, 200); assert.equal((await read(sid, caseId)).revision, revision);
       assert.equal((await send({ ...c, title: "Different payload" })).status, 409);
     });
+    await t.test("legacy Plan reads and acceptance preserve content; only explicit new saves use version 2", async () => {
+      const legacy = { expectedOutput: "Starý výstup", procedure: ["Starý bod"], inputs: [{ title: "Starý vstup", description: "", criteria: ["Staré kritérium"] }] };
+      const plan = await db.situationPlan.create({ data: { situation_id: sid, goal_id: state.goal.id, revision: -1, context_hash: state.contextHash, content_json: JSON.stringify(legacy) } });
+      await new Promise((resolve) => setImmediate(resolve));
+      queries.length = 0; state = await read(sid, caseId);
+      assert.deepEqual(state.plan.content, legacy); assert.ok(!queries.some((q) => /^\s*(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(q)), queries.join("\n"));
+      const { editPlan } = load("src/lib/workflow/planning.ts");
+      const editing = editPlan(state.plan.content);
+      assert.equal(editing.version, 2); assert.equal(editing.procedure[0].expectedResult, ""); assert.deepEqual(editing.procedure[0].inputIds, []);
+      assert.notEqual(editing.inputs[0].id, editing.inputs[0].title);
+      assert.equal((await send(command(state, { action: "savePlan", goalId: state.goal.id, content: legacy }))).status, 400);
+      state = (await send(command(state, { action: "acceptPlan", planId: plan.id }))).planning;
+      assert.equal(state.plan.status, "ACCEPTED"); assert.deepEqual(state.plan.content, legacy);
+      const before = await db.situationPlan.findUnique({ where: { id: plan.id } }); await read(sid, caseId);
+      assert.deepEqual(await db.situationPlan.findUnique({ where: { id: plan.id } }), before);
+    });
+    await t.test("new Plan IDs and references are validated independently of names and ordering", async () => {
+      for (const bad of [
+        { ...content, inputs: [content.inputs[0], content.inputs[0]] },
+        { ...content, procedure: [content.procedure[0], content.procedure[0]] },
+        { ...content, procedure: [{ ...content.procedure[0], inputIds: ["foreign-input"] }] },
+        { ...content, procedure: [{ ...content.procedure[0], inputIds: ["input-a", "input-a"] }] }
+      ]) assert.equal((await send(command(state, { action: "savePlan", goalId: state.goal.id, content: bad }))).status, 400);
+      const { newPlanContentSchema } = load("src/lib/workflow/planning.ts");
+      assert.deepEqual(newPlanContentSchema.parse({ ...content, inputs: content.inputs.map((i) => ({ ...i, title: "Renamed", criteria: [...i.criteria].reverse() })) }).procedure[0].inputIds, ["input-a"]);
+    });
     await t.test("manual plan works without AI; GET/navigation does not accept it", async () => {
       const beforeAI = aiCalls;
       state = (await send(command(state, { action: "savePlan", goalId: state.goal.id, content }))).planning;
@@ -144,7 +171,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
     await t.test("plan acceptance creates required information/criteria once and activates only Collection", async () => {
       const c = command(state, { action: "acceptPlan", planId: state.plan.id });
       state = (await send(c)).planning; assert.equal(state.plan.status, "ACCEPTED");
-      assert.equal(state.inputs.length, 1); assert.equal(state.inputs[0].criteria.length, 2); assert.equal(state.inputs[0].status, "MISSING");
+      assert.equal(state.inputs.length, 1); assert.equal(state.inputs[0].criteria.length, 2); assert.equal(state.inputs[0].status, "MISSING"); assert.ok(state.inputs[0].criteria.every((c) => c.assessed === false));
       assert.equal(state.steps.find((s) => s.status === "ACTIVE").step_key, "COLLECTION");
       await send(c); assert.equal(await db.requiredInput.count({ where: { plan_id: state.plan.id } }), 1); await invariant();
     });
@@ -153,7 +180,7 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       aiReply = { matches: [{ criterionId: a.id, value: "1,80 m / 1,20 m", insightIds: [width.id, width.id, conflict.id, conflict.id], explanation: "Rozpor hodnot; nutné vyjasnit" }, { criterionId: b.id, value: "", insightIds: [], explanation: "Hloubka není doložena, nelze tvrdit nulovou hloubku" }] };
       state = (await send(command(state, { action: "matchInputs", planId: state.plan.id }))).planning;
       assert.equal(state.inputs[0].status, "INCOMPLETE"); assert.match(state.inputs[0].criteria[0].value, /1,80.*1,20/);
-      assert.equal(state.inputs[0].criteria[1].value, "");
+      assert.equal(state.inputs[0].criteria[1].value, ""); assert.equal(state.inputs[0].criteria[1].assessed, true);
       assert.deepEqual(state.inputs[0].criteria[0].insightIds, [width.id, conflict.id]);
       const storedAI = JSON.parse((await db.requiredInputCriterion.findUnique({ where: { id: a.id } })).evidence_refs_json);
       assert.deepEqual(storedAI.sources.map((source) => source.insightId), [width.id, conflict.id]);
@@ -300,6 +327,13 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       assert.equal((await read(broken.id, caseId)).revision, brokenState.revision);
       assert.equal(await db.goal.count({ where: { situation_id: broken.id } }), 0);
     });
+    await t.test("known Goal AI failure for unknown insight ID remains explicit and creates no draft", async () => {
+      state = await read(sid, caseId); const before = state.goals.length;
+      aiReply = { goals: [{ title: "A", reason: "Reason", insightIds: ["unknown-insight"] }, { title: "B", reason: "Reason", insightIds: [] }] };
+      const result = await send(command(state, { action: "suggestGoals" }));
+      assert.equal(result.status, 409); assert.match(result.error, /neznámý poznatek/);
+      state = await read(sid, caseId); assert.equal(state.goals.length, before);
+    });
     await t.test("AI failure/invalid output and response after changed context never create authoritative state", async () => {
       state = await read(sid, caseId); const revision = state.revision;
       aiReply = { nonsense: "bad" };
@@ -317,7 +351,9 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       const legacy = await createSituation(caseId, { title: "Legacy choice" });
       const a = await db.goal.create({ data: { situation_id: legacy.id, title: "A", status: "active" } });
       const b = await db.goal.create({ data: { situation_id: legacy.id, title: "B", status: "active" } });
+      await db.workflowEvent.create({ data: { situation_id: legacy.id, event_type: "PLANNING_suggestGoals", payload_json: JSON.stringify({ suggestions: { goals: [{ title: a.title, reason: "Unlinked old reason", insightIds: [] }] } }) } });
       const old = await read(legacy.id, caseId); assert.equal(old.goal, null);
+      assert.ok(old.goals.every((g) => g.reason === null));
       assert.equal((await send(command(old, { action: "confirmGoal", title: "Silent replacement" }), legacy.id)).status, 409);
       const results = await Promise.all([send(command(old, { action: "confirmGoal", goalId: a.id, title: a.title }), legacy.id), send(command(old, { action: "confirmGoal", goalId: b.id, title: b.title }), legacy.id)]);
       assert.equal(results.filter((r) => r.status === 200).length, 1); await invariant(legacy.id);
@@ -377,9 +413,10 @@ test("actual planning UI callbacks reject double clicks and stale responses; edi
   try {
     await settle(); respond(snapshot); await settle();
     await t.test("typing and selection do not write; immediate double click sends one explicit command", async () => {
+      button("Vlastní cíl").props.onClick(); await settle();
       const title = elements(renderer.tree, (e) => e.type === "textarea")[0]; title.props.onChange({ target: { value: "Vlastní konkrétní cíl" } }); await settle();
       assert.equal(calls.filter((c) => c.options.method).length, 0);
-      const confirm = button("Potvrdit cíl a otevřít Plán");
+      const confirm = button("Potvrdit cíl");
       const first = confirm.props.onClick(); confirm.props.onClick(); await settle();
       assert.equal(calls.filter((c) => c.options.method === "POST").length, 1);
       assert.equal(JSON.parse(calls.at(-1).options.body).title, "Vlastní konkrétní cíl");
@@ -387,20 +424,19 @@ test("actual planning UI callbacks reject double clicks and stale responses; edi
     });
     await t.test("editing Plan fields never accepts it; unmount rejects old AI/GET responses", async () => {
       renderer.update({ view: "PLAN" }); await settle();
-      const textarea = elements(renderer.tree, (e) => e.type === "textarea")[0]; textarea.props.onChange({ target: { value: "Ruční výstup" } }); await settle();
+      button("Vytvořit plán ručně").props.onClick(); await settle();
+      const planSection = elements(renderer.tree, (e) => e.props["aria-label"] === "Plán situace")[0];
+      const textarea = elements(planSection, (e) => e.type === "textarea")[0]; textarea.props.onChange({ target: { value: "Ruční výstup" } }); await settle();
       assert.equal(calls.filter((c) => c.options.method).length, 1);
-      assert.equal(button("Použít tento plán").props.disabled, true);
-      assert.equal(button("Navrhnout plán pomocí AI").props.disabled, true, "unsaved manual edits are protected from an AI replacement");
-      button("Načíst uložený stav").props.onClick(); await settle();
-      respond({ ...snapshot, revision: 1, goal: { id: "g", title: "Vlastní konkrétní cíl" } }); await settle();
-      const pending = button("Navrhnout plán pomocí AI").props.onClick(); await settle();
+      renderer.update({ view: "ANALYSIS" }); await settle();
+      renderer.update({ view: "PLAN" }); await settle();
+      assert.equal(elements(elements(renderer.tree, (e) => e.props["aria-label"] === "Plán situace")[0], (e) => e.type === "textarea")[0].props.value, "Ruční výstup");
       renderer.dispose();
-      respond({ ...snapshot, revision: 2, goal: { id: "old-g", title: "Stará situace" } }); await pending; await settle();
       const next = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "SituationPlanningPanel", { caseId: "case", situationId: "s2", view: "ANALYSIS", onOpenSource: async () => true }); allRenderers.push(next);
       await settle(); assert.match(calls.at(-1).url, /s2/); respond(snapshot); await settle();
       assert.equal(elements(next.tree, (e) => e.type === "textarea")[0].props.value, "");
       // A pending read is also ignored after leaving the Situation.
-      elements(next.tree, (e) => e.type === "button" && e.props.children === "Načíst uložený stav")[0].props.onClick(); await settle(); next.dispose(); respond(snapshot); await settle();
+      elements(next.tree, (e) => e.type === "button" && e.props.children === "Navrhnout cíle pomocí AI")[0].props.onClick(); await settle(); next.dispose(); respond(snapshot); await settle();
     });
   } finally {
     for (const r of allRenderers) if (!r.disposed) r.dispose();
@@ -545,4 +581,48 @@ test("actual source siblings and form selections are unique by insight ID, not p
     elements(editor.tree, (e) => e.type === "button" && e.props.children === "Uložit jako neúplné / chybějící")[0].props.onClick();
     assert.deepEqual(saves[0][1], ["a", "b"]);
   } finally { editor.dispose(); }
+});
+
+test("right tabs keep one planning component, center only Journal, and Plan drafts survive tab navigation", async () => {
+  const env = environment(), previous = new Map(["window", "fetch"].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  globalThis.window = env.window;
+  const requests = [], calls = [];
+  globalThis.fetch = (url, options = {}) => { calls.push({ url, options }); return new Promise((resolve) => requests.push(resolve)); };
+  const workspace = hookRenderer("src/components/ThreePanelWorkspace.tsx", "ThreePanelWorkspace", { caseItem: { id: "case", title: "Panels", icon: "folder", icon_color: "blue" } });
+  let planner;
+  const right = () => elements(workspace.tree, (e) => e.type?.name === "RightContextPanel")[0].props;
+  const center = () => elements(workspace.tree, (e) => typeof e.props.onOpenAnalysisSourceReference === "function")[0].props;
+  const snapshot = { revision: 1, contextHash: "a".repeat(64), goal: { id: "g", title: "Confirmed" }, goalSelectionRequired: false, goals: [], plan: null, history: [], inputs: [], evidence: [], preliminary: [] };
+  async function settle() { for (let i = 0; i < 12; i++) { workspace.render(); if (planner) { planner.update(right().planningPanel.props); planner.render(); } await Promise.resolve(); await Promise.resolve(); } }
+  try {
+    await settle(); center().onSelectSituation("s1"); await settle();
+    const slot = right().planningPanel; assert.ok(slot); const key = slot.key;
+    planner = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "SituationPlanningPanel", slot.props);
+    await settle(); requests.shift()({ ok: true, json: async () => ({ planning: snapshot }) }); await settle();
+    const journal = hookRenderer("src/components/workflow/StepWorkspace.tsx", "StepWorkspace", center()); journal.render();
+    assert.equal(elements(journal.tree, (e) => e.type?.name === "SituationPlanningPanel").length, 0);
+    assert.equal(elements(journal.tree, (e) => e.type?.name === "ChatPanel").length, 0); journal.dispose();
+    right().onActiveTabChange("plan"); await settle();
+    assert.equal(right().planningPanel.key, key);
+    const planSection = () => elements(planner.tree, (e) => e.props["aria-label"] === "Plán situace")[0];
+    elements(planSection(), (e) => e.type === "button" && e.props.children === "Vytvořit plán ručně")[0].props.onClick(); await settle();
+    const fields = () => elements(planSection(), (e) => e.type === "textarea");
+    fields()[0].props.onChange({ target: { value: "Rozpracovaný výstup" } }); await settle();
+    const actionIds = elements(planSection(), (e) => e.type === "div" && e.key).map((e) => e.key);
+    for (const tab of ["documents", "analysis", "plan"]) { right().onActiveTabChange(tab); await settle(); assert.equal(right().planningPanel.key, key); }
+    assert.equal(fields()[0].props.value, "Rozpracovaný výstup");
+    assert.deepEqual(elements(planSection(), (e) => e.type === "div" && e.key).map((e) => e.key), actionIds);
+    assert.equal(calls.filter((call) => call.options.method).length, 0, "tabs, edit opening and typing do not confirm or save");
+    right().planningPanel.props.onSelectPlan(); await settle(); assert.equal(right().activeTab, "plan");
+    const rightRenderer = hookRenderer("src/components/ThreePanelWorkspace.tsx", "RightContextPanel", right()); rightRenderer.render();
+    assert.deepEqual(elements(rightRenderer.tree, (e) => e.props.role === "tab").map((e) => e.props.children), ["Dokument", "Analýza", "Plán"]);
+    for (const tab of ["documents", "analysis", "plan"]) {
+      right().onActiveTabChange(tab); await settle(); rightRenderer.update(right()); rightRenderer.render();
+      assert.equal(elements(rightRenderer.tree, (e) => e === right().planningPanel).length, 1, "actual right-panel tree retains one planning child even in Document tab");
+    }
+    rightRenderer.dispose();
+  } finally {
+    workspace.dispose(); planner?.dispose();
+    for (const [key, descriptor] of previous) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key]; }
+  }
 });

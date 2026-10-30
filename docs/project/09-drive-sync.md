@@ -22,6 +22,8 @@ The recorded Windows outcomes are taken from the VS agent reports supplied for t
 
 ## Direction
 
+Approved right-panel revision (2026-10-30), baseline `6699f1c55125223e418d2fc2ef68127d5fe9b19a`: changed mirrors **00, 01, 03, 04, 07 and 08** require later synchronization/readback. This has not been performed. `docs/situation-right-panels.md`, README and document 09 have no mapped mirror. No Drive write or current-parity claim is made.
+
 Goal → Plan → Collection MVP (2026-10-30), `feat/situation-goal-plan`, baseline `5595ad8fab84eec6d9040b6d4111145a471f2997`: affected mirrors **00, 01, 02, 03, 04, 07 and 08** require later synchronization/readback after review/preservation. That synchronization has not been performed. `docs/situation-goal-plan.md`, README and this document have no mapped mirrors. No Drive write, new parity claim or change to existing mirror IDs/titles belongs to this batch.
 
 Analysis ↔ Document follow-up (2026-10-29), `feat/analysis-document-references`, baseline `340fc410ee3a7a8c66ff38c12c6fb1929b0527dd`: changed mirrors **00, 01, 03 and 04** require later synchronization after review/preservation. This synchronization has not been performed. The handoff and read-only SQL under `docs/analysis-document-references.md` / `docs/analysis-document-reference-audit.sql` have no mapped Drive mirrors. No current Drive parity or Drive write is claimed.

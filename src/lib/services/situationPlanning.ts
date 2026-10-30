@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { WORKFLOW_STEP_DEFINITIONS } from "@/lib/workflow/constants";
 import { resolveSourceRange } from "@/lib/journal/overview";
 import { requestAIJson } from "@/lib/ai/jsonResponse";
-import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema, uniqueInsights } from "@/lib/workflow/planning";
+import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema, newPlanContentSchema, uniqueInsights } from "@/lib/workflow/planning";
 import type { PlanningCommand, PlanningEvidence, PlanningState } from "@/lib/workflow/planning";
 
 type DB = Prisma.TransactionClient;
@@ -17,13 +17,14 @@ const fail = (message: string): never => { throw new PlanningError(message); };
 async function load(db: DB, situationId: string, caseId: string) {
   const situation = await db.situation.findFirst({ where: { id: situationId, case_id: caseId } });
   if (!situation) throw new PlanningError("Situace v tomto případu neexistuje.", 404);
-  const [goals, plans, steps, documents, journal, reviews] = await Promise.all([
-    db.goal.findMany({ where: { situation_id: situationId }, orderBy: { id: "asc" } }),
+  const [goals, plans, steps, documents, journal, reviews, proposals] = await Promise.all([
+    db.goal.findMany({ where: { situation_id: situationId }, orderBy: [{ created_at: "asc" }, { id: "asc" }] }),
     db.situationPlan.findMany({ where: { situation_id: situationId }, orderBy: { revision: "desc" }, include: { required_inputs: { orderBy: { display_order: "asc" }, include: { criteria: { orderBy: { display_order: "asc" } } } } } }),
     db.workflowStep.findMany({ where: { situation_id: situationId }, orderBy: { display_order: "asc" } }),
     db.document.findMany({ where: { case_id: caseId, situation_documents: { some: { situation_id: situationId } } }, orderBy: { id: "asc" } }),
     db.journalItem.findMany({ where: { situation_id: situationId, case_id: caseId, status: "active" }, orderBy: { id: "asc" } }),
-    db.workflowEvent.findMany({ where: { situation_id: situationId, event_type: { in: ["PLANNING_reviewCriterion", "PLANNING_matchInputs"] } }, orderBy: [{ created_at: "asc" }, { id: "asc" }] })
+    db.workflowEvent.findMany({ where: { situation_id: situationId, event_type: { in: ["PLANNING_reviewCriterion", "PLANNING_matchInputs"] } }, orderBy: [{ created_at: "asc" }, { id: "asc" }] }),
+    db.workflowEvent.findMany({ where: { situation_id: situationId, event_type: "PLANNING_suggestGoals" }, orderBy: { created_at: "asc" } })
   ]);
   const insights = await db.documentInsight.findMany({ where: {
     document: { case_id: caseId }, source_document_id: { in: documents.map((d) => d.id) }, status: { not: "rejected" }
@@ -42,21 +43,30 @@ async function load(db: DB, situationId: string, caseId: string) {
   const contextHash = hash([situation.title, situation.description, documents, insights, journal]);
   const active = goals.filter((g) => g.status === "active");
   const goal = active.length === 1 && active[0].confirmed_at ? active[0] : null;
-  return { situation, goals, plans, steps, evidence, contextHash, goal, journal, documents, reviews };
+  return { situation, goals, plans, steps, evidence, contextHash, goal, journal, documents, reviews, proposals };
 }
 type Loaded = Awaited<ReturnType<typeof load>>;
-type SavedEvidence = { sources: { insightId: string; fingerprint: string }[]; explanation: string; reviewed: boolean; stale?: boolean; historicalInsightIds?: string[] };
+type SavedEvidence = { sources: { insightId: string; fingerprint: string }[]; explanation: string; reviewed: boolean; assessed?: boolean; stale?: boolean; historicalInsightIds?: string[] };
 function savedEvidence(json: string): SavedEvidence {
   try {
     const v = JSON.parse(json);
     if (v && Array.isArray(v.sources) && v.sources.every((s: { insightId?: unknown; fingerprint?: unknown }) => typeof s.insightId === "string" && typeof s.fingerprint === "string")) {
-      return { sources: v.sources, explanation: typeof v.explanation === "string" ? v.explanation : "", reviewed: v.reviewed === true, stale: v.stale === true,
+      return { assessed: true, sources: v.sources, explanation: typeof v.explanation === "string" ? v.explanation : "", reviewed: v.reviewed === true, stale: v.stale === true,
         historicalInsightIds: Array.isArray(v.historicalInsightIds) ? v.historicalInsightIds.filter((id: unknown): id is string => typeof id === "string") : [] };
     }
   } catch { /* Legacy refs remain unconfirmed. */ }
   return { sources: [], explanation: "Doložení zatím nebylo ověřeno.", reviewed: false };
 }
 function project(data: Loaded): PlanningState {
+  const proposals = new Map<string, { reason: string; insightIds: string[] }>();
+  for (const event of data.proposals) {
+    const saved = JSON.parse(event.payload_json);
+    for (const candidate of saved.goalProposals ?? []) if (typeof candidate.goalId === "string") proposals.set(candidate.goalId, candidate);
+  }
+  const latestProposal = data.proposals.map((event) => JSON.parse(event.payload_json))
+    .filter((event) => Number.isInteger(event.revision) && Array.isArray(event.goalProposals))
+    .sort((a, b) => b.revision - a.revision)[0];
+  const latestProposalIds = new Set<string>((latestProposal?.goalProposals ?? []).map((candidate: { goalId: string }) => candidate.goalId));
   const current = data.goal ? data.plans.find((p) => p.goal_id === data.goal!.id && p.status !== "SUPERSEDED") ?? null : null;
   const inputs = current?.status === "ACCEPTED" ? current.required_inputs.map((input) => {
     const criteria = input.criteria.map((criterion) => {
@@ -65,7 +75,7 @@ function project(data: Loaded): PlanningState {
       const stale = saved.stale === true || saved.sources.some((r) => !data.evidence.some((e) => e.id === r.insightId && e.fingerprint === r.fingerprint && e.usable));
       const satisfied = !stale && sources.length > 0 && saved.reviewed && criterion.status === "SATISFIED";
       return { id: criterion.id, requirement_text: criterion.requirement_text, status: satisfied ? "SATISFIED" : "MISSING",
-        value: criterion.matched_value ?? "", explanation: saved.explanation,
+        value: criterion.matched_value ?? "", explanation: saved.explanation, assessed: saved.assessed === true,
         stale, historicalInsightIds: [...new Set([...(saved.historicalInsightIds ?? []), ...saved.sources.map((s) => s.insightId)])],
         insightIds: [...new Set(saved.sources.filter((s) => data.evidence.some((e) => e.id === s.insightId)).map((s) => s.insightId))], sources };
     });
@@ -74,11 +84,12 @@ function project(data: Loaded): PlanningState {
   }) : [];
   return { revision: data.situation.workflow_revision, contextHash: data.contextHash, goalSelectionRequired: !data.goal && data.goals.some((g) => g.status === "active"),
     goal: data.goal ? { id: data.goal.id, title: data.goal.title } : null,
-    goals: data.goals.map((g) => ({ id: g.id, title: g.title, status: g.status, confirmed_at: g.confirmed_at?.toISOString() ?? null })),
+    goals: data.goals.map((g) => ({ id: g.id, title: g.title, status: g.status, confirmed_at: g.confirmed_at?.toISOString() ?? null, currentProposal: latestProposalIds.has(g.id) && g.proposal_context_hash === data.contextHash, reason: proposals.get(g.id)?.reason ?? null, insightIds: proposals.get(g.id)?.insightIds ?? [] })),
     steps: data.steps.map((s) => ({ step_key: s.step_key, status: s.status })),
     plan: current ? { id: current.id, goal_id: current.goal_id, status: current.status, revision: current.revision,
       accepted_at: current.accepted_at?.toISOString() ?? null, content: planContentSchema.parse(JSON.parse(current.content_json)) } : null,
     history: data.plans.map((p) => ({ id: p.id, goal_id: p.goal_id, status: p.status, revision: p.revision, content: planContentSchema.parse(JSON.parse(p.content_json)) })), inputs, evidence: data.evidence,
+    preliminary: data.journal.map((j) => ({ id: j.id, title: j.title, value: j.value ?? j.explanation ?? "", type: j.item_type, evidenceState: j.evidence_state })),
     reviewHistory: data.reviews.map((review) => ({ id: review.id, createdAt: review.created_at.toISOString(), changes: JSON.parse(review.payload_json).changes ?? [] })) };
 }
 export function getSituationPlanning(situationId: string, caseId: string) {
@@ -119,7 +130,7 @@ export async function executePlanningCommand(situationId: string, command: Plann
   const initial = await load(prisma, situationId, command.caseId);
   if (initial.situation.workflow_revision !== command.expectedRevision || initial.contextHash !== command.contextHash) fail("Podklady nebo pracovní stav se změnily. Načtěte aktuální stav a znovu potvrďte změnu.");
   let goals: ReturnType<typeof goalSuggestionsSchema.parse> | null = null;
-  let proposedPlan: ReturnType<typeof planContentSchema.parse> | null = null;
+  let proposedPlan: ReturnType<typeof newPlanContentSchema.parse> | null = null;
   let matches: ReturnType<typeof inputMatchesSchema.parse> | null = null;
   // Network work stays outside the write transaction; its snapshot is rechecked.
   if (command.action === "suggestGoals") {
@@ -128,7 +139,7 @@ export async function executePlanningCommand(situationId: string, command: Plann
   }
   if (command.action === "suggestPlan") {
     requireGoal(initial, command.goalId);
-    proposedPlan = await requestAIJson(instructions + `Navrhni plán výhradně pro potvrzený cíl. Postup jsou body obsahu, nikoli nové workflow kroky. Vstupy jsou informace, nikoli pouhá existence souboru. Každý vstup má konkrétní kritéria dostatečnosti. Schéma: {"expectedOutput":"...","procedure":["..."],"inputs":[{"title":"...","description":"...","criteria":["..."]}]}\n` + promptContext(initial), planContentSchema);
+    proposedPlan = await requestAIJson(instructions + `Navrhni plán výhradně pro potvrzený cíl. Postup jsou body obsahu, nikoli nové workflow kroky. Vstupy jsou informace, nikoli pouhá existence souboru. Každý vstup má konkrétní kritéria dostatečnosti. Schéma: {"version":2,"expectedOutput":"...","procedure":[{"id":"action-uuid","title":"...","expectedResult":"...","explanation":"...","inputIds":["input-uuid"]}],"inputs":[{"id":"input-uuid","title":"...","description":"...","criteria":["..."]}]}. ID jsou jedinečné neprázdné identifikátory v rámci verze. Každý odkaz inputIds musí existovat v inputs; názvy ani pořadí neslouží jako identita.\n` + promptContext(initial), newPlanContentSchema);
   }
   if (command.action === "matchInputs") {
     const plan = requirePlan(initial, command.planId);
@@ -152,7 +163,12 @@ export async function executePlanningCommand(situationId: string, command: Plann
     if (data.contextHash !== command.contextHash) fail("Podklady se během přípravy změnily; návrh nebyl použit.");
     const event: Record<string, unknown> = { digest, action: command.action, revision: data.situation.workflow_revision };
     if (command.action === "suggestGoals") {
-      for (const g of goals!.goals) await db.goal.create({ data: { situation_id: situationId, title: g.title, status: "draft", proposal_context_hash: data.contextHash } });
+      const goalProposals = [];
+      for (const g of goals!.goals) {
+        const created = await db.goal.create({ data: { situation_id: situationId, title: g.title, status: "draft", proposal_context_hash: data.contextHash } });
+        goalProposals.push({ goalId: created.id, reason: g.reason, insightIds: [...new Set(g.insightIds)] });
+      }
+      event.goalProposals = goalProposals;
       event.suggestions = goals;
     }
     if (command.action === "confirmGoal") {
@@ -171,7 +187,7 @@ export async function executePlanningCommand(situationId: string, command: Plann
     }
     if (command.action === "savePlan" || command.action === "suggestPlan") {
       const goal = requireGoal(data, command.goalId);
-      const content = command.action === "savePlan" ? command.content : proposedPlan;
+      const content = newPlanContentSchema.parse(command.action === "savePlan" ? command.content : proposedPlan);
       const previous = data.plans.find((p) => p.goal_id === goal.id && p.status !== "SUPERSEDED");
       if (command.action === "savePlan" && previous && previous.content_json === JSON.stringify(content) && previous.context_hash === data.contextHash) {
         event.planId = previous.id;
