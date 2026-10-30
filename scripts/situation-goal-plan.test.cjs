@@ -173,6 +173,91 @@ test("Goal → Plan → Collection on migrated disposable SQLite, controlled AI 
       assert.equal(choice.status, 200); assert.deepEqual(choice.planning.brief, ambiguous);
       await invariant(target.id);
     });
+    await t.test("confirmed brief survives source removal as history; actual refreshed editor clears or replaces references and reconfirms", async () => {
+      const target = await createSituation(caseId, { title: "Brief repair" });
+      const refs = [];
+      for (const name of ["Removed request", "Replacement request"]) {
+        const body = "Doplňte údaje do 11. září.";
+        const document = await db.document.create({ data: { case_id: caseId, filename: name, filetype: "txt", original_file: "", processed_text: body } });
+        await db.situationDocument.create({ data: { situation_id: target.id, document_id: document.id } });
+        const insight = await db.documentInsight.create({ data: { document_id: document.id, source_document_id: document.id, title: name, content: body, source_text: body, source_start_offset: 0, source_end_offset: body.length, insight_type: "fact", evidence_state: "verified", target_section: "description", target_item_type: "FACT", status: "approved" } });
+        refs.push({ document, insight });
+      }
+      const brief = { trigger: { description: "Výzva", documentIds: [refs[0].document.id] }, requirements: [{ text: "Doplnit údaje", insightIds: [refs[0].insight.id] }], deadline: { text: "11. září", insightIds: [refs[0].insight.id] } };
+      let current = await read(target.id, caseId);
+      current = (await send(command(current, { action: "confirmGoal", title: "Doplnit žádost", brief }), target.id)).planning;
+      assert.equal(current.deadlineVerified, true);
+      const original = await db.workflowEvent.findFirst({ where: { situation_id: target.id, event_type: "PLANNING_confirmGoal" } });
+      const env = environment(), previousWindow = globalThis.window, previousFetch = globalThis.fetch;
+      globalThis.window = env.window;
+      let hold = false, release, posted;
+      const operations = [];
+      globalThis.fetch = (_url, options = {}) => {
+        const operation = (async () => {
+          if (!options.method) {
+            if (hold) await new Promise((resolve) => release = resolve);
+            const planning = await read(target.id, caseId);
+            return { ok: true, json: async () => ({ planning }) };
+          }
+          posted = JSON.parse(options.body);
+          const result = await send(posted, target.id);
+          return { ok: result.status === 200, json: async () => result };
+        })(); operations.push(operation); return operation;
+      };
+      const panel = hookRenderer("src/components/workflow/SituationPlanningPanel.tsx", "SituationPlanningPanel", { caseId, situationId: target.id, view: "ANALYSIS", onOpenSource: async () => true });
+      const settle = async () => { for (let i = 0; i < 30; i++) { panel.render(); await new Promise((resolve) => setImmediate(resolve)); } };
+      const button = (text) => elements(panel.tree, (e) => e.type === "button" && e.props.children === text)[0];
+      const field = (text) => elements(panel.tree, (e) => e.type === "label" && e.props.children?.[0] === text)[0].props.children[1];
+      try {
+        await settle(); await operations.at(-1); await settle(); button("Změnit").props.onClick(); await settle();
+        field("Čeho chcete dosáhnout?").props.onChange({ target: { value: "Rozepsaný opravený cíl" } }); await settle();
+        await db.situationDocument.deleteMany({ where: { situation_id: target.id, document_id: refs[0].document.id } });
+        await new Promise((resolve) => setImmediate(resolve)); queries.length = 0;
+        hold = true; env.window.dispatchEvent(new Event("bureaucat:journal-refresh")); await settle();
+        assert.ok(release); assert.ok(!JSON.stringify(panel.tree).includes('"Doložený explicitní termín"'));
+        release(); hold = false; await operations.at(-1); await settle();
+        assert.equal(field("Čeho chcete dosáhnout?").props.value, "Rozepsaný opravený cíl");
+        assert.ok(!queries.some((q) => /^\s*(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(q)), queries.join("\n"));
+        current = await read(target.id, caseId);
+        assert.equal(current.deadlineVerified, false); assert.deepEqual(current.historicalBrief, brief);
+        assert.deepEqual(current.brief.trigger.documentIds, []); assert.deepEqual(current.brief.requirements[0].insightIds, []);
+        assert.deepEqual(current.brief.deadline.insightIds, []); assert.equal(current.brief.deadline.text, "11. září");
+        assert.equal((await send(command(current, { action: "confirmGoal", goalId: current.goal.id, title: current.goal.title }), target.id)).status, 409, "implicit confirmation cannot silently clean historical links");
+        aiReply = { brief: current.brief, goals: [{ title: "Nedoložený termín z AI", reason: "Test", insightIds: [] }] };
+        assert.equal((await send(command(current, { action: "suggestGoals" }), target.id)).status, 409, "AI still needs an actual source for a deadline");
+        for (const id of ["unknown-id", width.id]) {
+          const invalid = { ...current.brief, requirements: [{ text: "Wrong source", insightIds: [id] }] };
+          assert.equal((await send(command(current, { action: "confirmGoal", goalId: current.goal.id, title: current.goal.title, brief: invalid }), target.id)).status, 409);
+        }
+        field("Podnět / co nyní řešíme").props.onChange({ target: { value: "Opravený podnět bez původního zdroje" } }); await settle();
+        button("Potvrdit cíl").props.onClick(); await operations.at(-1); await settle();
+        current = await read(target.id, caseId);
+        assert.equal(current.goal.title, "Rozepsaný opravený cíl"); assert.equal(current.brief.trigger.description, "Opravený podnět bez původního zdroje");
+        assert.deepEqual(posted.brief.requirements[0].insightIds, []); assert.deepEqual(posted.brief.deadline.insightIds, []);
+        assert.equal(current.deadlineVerified, false); assert.equal(current.brief.deadline.text, "11. září");
+        assert.equal((await db.workflowEvent.findUnique({ where: { id: original.id } })).payload_json, original.payload_json);
+        assert.ok(current.briefHistory.some((entry) => entry.id === original.id && entry.brief.deadline.insightIds.includes(refs[0].insight.id)));
+        button("Změnit").props.onClick(); await settle();
+        let selectors = elements(panel.tree, (e) => e.type?.name === "BriefSourceSelection");
+        assert.equal(selectors.length, 2);
+        for (let i = 0; i < 2; i++) {
+          selectors = elements(panel.tree, (e) => e.type?.name === "BriefSourceSelection");
+          const actual = selectors[i].type(selectors[i].props);
+          const boxes = elements(actual, (e) => e.type === "input"); assert.equal(boxes.length, 1);
+          boxes[0].props.onChange({ target: { checked: true } }); await settle();
+        }
+        button("Potvrdit cíl").props.onClick(); await operations.at(-1); await settle();
+        current = await read(target.id, caseId); assert.equal(current.deadlineVerified, true);
+        assert.deepEqual(current.brief.deadline.insightIds, [refs[1].insight.id]);
+        assert.deepEqual(current.brief.requirements[0].insightIds, [refs[1].insight.id]);
+        button("Změnit").props.onClick(); await settle();
+        button("Odebrat termín").props.onClick(); await settle();
+        button("Potvrdit cíl").props.onClick(); await operations.at(-1); await settle();
+        current = await read(target.id, caseId); assert.equal(current.brief.deadline, null); assert.equal(current.deadlineVerified, false);
+        assert.equal((await db.workflowEvent.findUnique({ where: { id: original.id } })).payload_json, original.payload_json);
+        await invariant(target.id);
+      } finally { panel.dispose(); globalThis.window = previousWindow; globalThis.fetch = previousFetch; }
+    });
     await t.test("explicit edited goal confirmation is atomic, unique and idempotent under concurrent requests", async () => {
       const c = command(state, { action: "confirmGoal", goalId: state.goals[0].id, title: "Doložit skutečné rozměry a vypořádat rozdíl" });
       const results = await Promise.all([send(c), send(c)]);

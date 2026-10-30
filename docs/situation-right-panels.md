@@ -42,7 +42,7 @@ New `PLANNING_suggestGoals` events explicitly store `{goalId, reason, insightIds
 
 | Check | Result / exit |
 | --- | --- |
-| `node scripts/situation-goal-plan.test.cjs` | 33 tests including parents / 0 |
+| `node scripts/situation-goal-plan.test.cjs` | 34 tests including parents / 0 |
 | `node scripts/analysis-document-references.test.cjs` | 33 / 0 |
 | `node scripts/compact-situation-journal.test.cjs` | 24 / 0 |
 | `node scripts/insight-hover-bookmark-positions.test.cjs` | 12 / 0 |
@@ -93,3 +93,14 @@ VS handoff — one Goal/trigger follow-up:
 7. Type Goal trigger/Plan/criterion drafts, change all right tabs and refresh sources; preserve typed text, prune invalid criterion choices and withhold old proof while loading. Remove a brief source: warn historical context, never silently label old support current. Recheck previous source indices/manual drag, deletion isolation and Journal behavior.
 
 Validation for this follow-up: planning/UI regressions 33 tests (including parents), reference regressions 33, Journal 24, hover 12, deletion 10; typecheck, build and diff check. Exact final exit codes are reported in the implementation response. Existing NFT build warning remains. Initial changed-label fixture failure: exit 1, TypeError at `situation-goal-plan.test.cjs:475:108` (old AI-button label); the fixture now uses the current visible label. This was not a browser observation.
+
+
+## Brief source-removal repair — pending VS acceptance
+
+Baseline `1b211feefb4c245c1a94d70830bb4d2fc125134f`, same branch/PR #43. Current form selection is derived separately from immutable historical brief events. Only current linked documents and usable insight IDs enter the selection; GET performs no cleanup writes. Requirement/deadline source checkboxes allow clearing/replacement by insight ID; a deadline may be explicitly removed. Manual confirmation may preserve unsourced deadline text, labelled unverified. AI deadline proposals still require a valid exact-passage source; all unknown/foreign IDs remain rejected. Implicit confirmation cannot silently clean historical references. Replacing the brief revokes previous Plan consent under existing rules.
+
+On disposable Windows data: confirm a Goal whose trigger, requirement and deadline link to a document; start Goal editing and type unsaved title/trigger text. Remove that source and hold refresh GET pending. Verify old deadline support is not presented as confirmed, drafts stay mounted/disabled, and completed refresh preserves text but removes invalid selections. Historical IDs remain only in collapsed history. Save the edited brief without sources: confirmation must succeed, values survive reload and the deadline is unverified. Then select a valid replacement source independently for requirement and deadline and explicitly confirm again: verification is restored. Try removing the deadline entirely. Tamper with an unknown/foreign insight/document ID: reject without writes. Compare old event JSON before/after all GETs/reconfirmation; it must remain byte-identical. Recheck existing criterion refresh/removal/duplicate-ID regressions. No user DB or uploads were used by Codex.
+
+Controlled integration exercises the actual SituationPlanningPanel and source-selector siblings through the real service/HTTP handler on disposable SQLite, including pending GET, clear-source confirmation and replacement confirmation. This is not browser PASS. Initial regression fixture exit 1: `TypeError: Cannot read properties of undefined (reading 'props')` at `situation-goal-plan.test.cjs:211:41`, because it inspected controls before asynchronous SQLite GET completed. The fixture now awaits the actual request rather than assuming microtask count. Known live Goal-AI unknown-ID FAIL and Windows/browser acceptance remain open; no live API call, new credential or Drive write.
+
+Final checks for the brief-source repair: planning/source/parent-refresh suite 34 pass, references 33 pass, Journal 24 pass, hover 12 pass, deletion 10 pass; typecheck without incremental cache, build and diff check exit 0. Build retains the existing NFT warning. Browser/native interaction and actual AI remain unverified by Codex.

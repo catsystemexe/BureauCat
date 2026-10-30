@@ -80,3 +80,6 @@ The first shell foundation is implemented on `work/workflow-foundation-v01`:
 - existing right Document/Analysis panel preserved.
 
 Historical Replit Free verification confirmed the original shell loaded; it is not acceptance of the current layout. The initial D-027 central Goal/Plan UI has been superseded by the approved right-side allocation above. The existing atomic confirmation/acceptance, version history, concurrency checks and effective input coverage remain. Controlled regressions verify legacy/new Plan reading, explicit gates, source identity checks, scope isolation and draft preservation across tabs/refreshes. Actual Windows/browser layout, native navigation, keyboard/clipboard and real AI acceptance remain pending; see `docs/situation-right-panels.md`.
+
+
+Brief source editing: Goal editing exposes current source choices separately for requirements and the deadline, plus removal of the deadline. Missing historical IDs are not hidden form selections. Refresh preserves typed Goal/trigger values and prunes invalid references. Historical confirmations remain in collapsed history. Without current verified support the deadline is labelled unverified, including while refreshing/editing; retaining its text is not proof. Confirmation remains explicit.

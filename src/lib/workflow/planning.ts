@@ -34,7 +34,7 @@ export function editPlan(content: PlanContent | null): EditablePlan {
 export const situationBriefSchema = z.object({
   trigger: z.object({ description: text, documentIds: z.array(text).max(20) }).strict(),
   requirements: z.array(z.object({ text, insightIds: z.array(text).max(20) }).strict()).max(20),
-  deadline: z.object({ text, insightIds: z.array(text).min(1).max(20) }).strict().nullable()
+  deadline: z.object({ text, insightIds: z.array(text).max(20) }).strict().nullable()
 }).strict().transform((brief) => ({
   ...brief,
   trigger: { ...brief.trigger, documentIds: [...new Set(brief.trigger.documentIds)] },
@@ -42,6 +42,14 @@ export const situationBriefSchema = z.object({
   deadline: brief.deadline ? { ...brief.deadline, insightIds: [...new Set(brief.deadline.insightIds)] } : null
 }));
 export type SituationBrief = z.infer<typeof situationBriefSchema>;
+/** Read-only/current editor selection; immutable event payloads remain historical. */
+export function currentBrief(brief: SituationBrief | null, documents: { id: string }[], evidence: { id: string; usable: boolean }[]): SituationBrief | null {
+  if (!brief) return null;
+  const ids = (values: string[]) => [...new Set(values)].filter((id) => evidence.some((source) => source.id === id && source.usable));
+  return { ...brief, trigger: { ...brief.trigger, documentIds: [...new Set(brief.trigger.documentIds)].filter((id) => documents.some((doc) => doc.id === id)) },
+    requirements: brief.requirements.map((item) => ({ ...item, insightIds: ids(item.insightIds) })),
+    deadline: brief.deadline ? { ...brief.deadline, insightIds: ids(brief.deadline.insightIds) } : null };
+}
 const base = {
   caseId: z.string().min(1), requestKey: z.string().min(8).max(100),
   expectedRevision: z.number().int().min(0), contextHash: z.string().length(64)
@@ -64,6 +72,8 @@ export const inputMatchesSchema = z.object({ matches: z.array(z.object({
   explanation: text
 }).strict()).max(240) }).strict();
 export type PlanningState = {
+  historicalBrief?: SituationBrief | null; deadlineVerified?: boolean;
+  briefHistory?: { id: string; brief: SituationBrief }[];
   brief?: SituationBrief | null; briefStale?: boolean; documents?: { id: string; name: string }[];
   revision: number; contextHash: string; goalSelectionRequired: boolean;
   goal: { id: string; title: string } | null;

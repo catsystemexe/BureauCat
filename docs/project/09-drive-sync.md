@@ -92,3 +92,6 @@ A GitHub Action or other automation may be evaluated later only after this manua
 
 
 The one-Goal/trigger/document-overview follow-up on PR #43 changes canonical 00, 01, 03, 04, 07 and 08 again. Their mirrors still await authorized synchronization/readback; no new Drive parity is claimed.
+
+
+The brief source-removal repair additionally updates 00, 07 and 08; these mirrors remain pending along with the already listed unsynchronized documents. No Drive write or current parity is asserted.

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { WORKFLOW_STEP_DEFINITIONS } from "@/lib/workflow/constants";
 import { resolveSourceRange } from "@/lib/journal/overview";
 import { requestAIJson } from "@/lib/ai/jsonResponse";
-import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema, newPlanContentSchema, situationBriefSchema, uniqueInsights } from "@/lib/workflow/planning";
+import { goalSuggestionsSchema, inputMatchesSchema, planContentSchema, newPlanContentSchema, situationBriefSchema, currentBrief, uniqueInsights } from "@/lib/workflow/planning";
 import type { PlanningCommand, PlanningEvidence, PlanningState } from "@/lib/workflow/planning";
 
 type DB = Prisma.TransactionClient;
@@ -89,9 +89,11 @@ function project(data: Loaded): PlanningState {
     return { id: input.id, title: input.title, status: criteria.every((c) => c.status === "SATISFIED") ? "SATISFIED" :
       criteria.some((c) => c.sources.length || c.value || c.stale) ? "INCOMPLETE" : "MISSING", criteria };
   }) : [];
-  return { brief: selectedBrief, briefStale, documents: data.documents.map((d) => ({ id: d.id, name: d.display_name ?? d.filename })), revision: data.situation.workflow_revision, contextHash: data.contextHash, goalSelectionRequired: !data.goal && data.goals.some((g) => g.status === "active"),
+  return { brief: currentBrief(selectedBrief, data.documents, data.evidence), historicalBrief: selectedBrief, briefStale,
+    deadlineVerified: Boolean(!briefStale && selectedBrief?.deadline?.insightIds.length && selectedBrief.deadline.insightIds.every((id: string) => data.evidence.some((e) => e.id === id && e.usable))),
+    briefHistory: data.proposals.flatMap((event) => { const payload = JSON.parse(event.payload_json); return payload.action === "confirmGoal" && payload.brief ? [{ id: event.id, brief: payload.brief }] : []; }), documents: data.documents.map((d) => ({ id: d.id, name: d.display_name ?? d.filename })), revision: data.situation.workflow_revision, contextHash: data.contextHash, goalSelectionRequired: !data.goal && data.goals.some((g) => g.status === "active"),
     goal: data.goal ? { id: data.goal.id, title: data.goal.title } : null,
-    goals: data.goals.map((g) => ({ id: g.id, title: g.title, status: g.status, confirmed_at: g.confirmed_at?.toISOString() ?? null, currentProposal: latestProposalIds.has(g.id) && g.proposal_context_hash === data.contextHash, brief: proposals.get(g.id)?.brief ?? null, reason: proposals.get(g.id)?.reason ?? null, insightIds: proposals.get(g.id)?.insightIds ?? [] })),
+    goals: data.goals.map((g) => ({ id: g.id, title: g.title, status: g.status, confirmed_at: g.confirmed_at?.toISOString() ?? null, currentProposal: latestProposalIds.has(g.id) && g.proposal_context_hash === data.contextHash, brief: currentBrief(g.id === data.goal?.id ? selectedBrief : proposals.get(g.id)?.brief ?? null, data.documents, data.evidence), reason: proposals.get(g.id)?.reason ?? null, insightIds: proposals.get(g.id)?.insightIds ?? [] })),
     steps: data.steps.map((s) => ({ step_key: s.step_key, status: s.status })),
     plan: current ? { id: current.id, goal_id: current.goal_id, status: current.status, revision: current.revision,
       accepted_at: current.accepted_at?.toISOString() ?? null, content: planContentSchema.parse(JSON.parse(current.content_json)) } : null,
@@ -126,9 +128,10 @@ function validateBrief(data: Loaded, brief: NonNullable<PlanningState["brief"]>)
   }
 }
 function promptContext(data: Loaded) {
+  const planning = project(data);
   return JSON.stringify({ caseIntent: data.caseIntent, situation: { title: data.situation.title, description: data.situation.description },
     goal: data.goal ? { id: data.goal.id, title: data.goal.title } : null,
-    situationBrief: project(data).brief, effectiveCoverage: project(data).inputs,
+    situationBrief: planning.brief, briefStatus: { stale: planning.briefStale, deadlineVerified: planning.deadlineVerified }, effectiveCoverage: planning.inputs,
     allowedInsightIds: data.evidence.map((e) => e.id),
     allowedDocumentIds: data.documents.map((d) => d.id),
     documents: data.documents.map((d) => ({ id: d.id, title: d.display_name ?? d.filename, summary: d.ai_summary })),
@@ -153,6 +156,7 @@ export async function executePlanningCommand(situationId: string, command: Plann
   if (command.action === "suggestGoals") {
     goals = await requestAIJson(instructions + `Rozliš celkový záměr případu, podnět aktuální situace, jeden zastřešující cíl a dílčí požadavky/termín. Výchozí je JEDEN cíl z perspektivy občana; nikoli vydání povolení úřadem. Dílčí požadavky nejsou alternativní cíle. Varianty jen pro skutečně odlišné výsledky celé situace. Posuď souvislosti všech dokumentů; novější datum přílohy automaticky neurčuje podnět. Při nejednoznačnosti ji popiš, nevymýšlej jistotu. Vlastní Akce může mít podnět bez dokumentu. Požadavek neznamená chybějící údaj, prohledej i podpůrné podklady. Termín uváděj jen explicitně doložený, nepočítej právní účinky. insightIds jsou výhradně hodnoty findings[].id z allowedInsightIds, NIKOLI documentId, pinId, číslo bookmarku ani označení typu D01. documentIds jsou výhradně allowedDocumentIds. Nevytvářej ani neodhaduj ID. Schéma: {"brief":{"trigger":{"description":"...","documentIds":[]},"requirements":[{"text":"...","insightIds":[]}],"deadline":null},"goals":[{"title":"...","reason":"...","insightIds":[]}]}. Doložený deadline má tvar {"text":"...","insightIds":["skutečné ID poznatku"]}.\n` + promptContext(initial), goalSuggestionsSchema);
     validateBrief(initial, goals.brief);
+    if (goals.brief.deadline && !goals.brief.deadline.insightIds.length) fail("Termín nemá ověřitelnou zdrojovou pasáž.");
     if (goals.goals.some((g) => g.insightIds.some((id) => !initial.evidence.some((e) => e.id === id)))) fail("AI návrh odkazoval na neznámý poznatek.");
   }
   if (command.action === "suggestPlan") {
@@ -196,14 +200,17 @@ export async function executePlanningCommand(situationId: string, command: Plann
       if (command.goalId && !selected) fail("Vybraný cíl není v této situaci dostupný.");
       if (selected?.proposal_context_hash && !selected.confirmed_at && selected.proposal_context_hash !== data.contextHash) fail("Návrh cíle vychází ze starých podkladů. Vytvořte nový návrh nebo zadejte vlastní cíl.");
       const selectedMetadata = project(data);
-      const candidateBrief = command.brief ?? (selected?.id === data.goal?.id ? selectedMetadata.brief : selectedMetadata.goals.find((g) => g.id === selected?.id)?.brief) ?? null;
+      // Implicit requests must validate stored references, not silently prune them.
+      const proposal = data.proposals.map((entry) => JSON.parse(entry.payload_json))
+        .find((entry) => entry.goalProposals?.some((candidate: { goalId: string }) => candidate.goalId === selected?.id));
+      const candidateBrief = command.brief ?? (selected?.id === data.goal?.id ? selectedMetadata.historicalBrief : proposal?.suggestions?.brief) ?? null;
       const brief = candidateBrief ? situationBriefSchema.parse(candidateBrief) : null;
       if (brief) validateBrief(data, brief);
       event.brief = brief;
       event.caseIntent = data.caseIntent;
       event.contextHash = data.contextHash;
       event.goalId = selected?.id;
-      if (!(selected && data.goal && selected.id === data.goal.id && command.title === selected.title && JSON.stringify(brief) === JSON.stringify(selectedMetadata.brief))) {
+      if (!(selected && data.goal && selected.id === data.goal.id && command.title === selected.title && JSON.stringify(brief) === JSON.stringify(selectedMetadata.historicalBrief))) {
         await db.goal.updateMany({ where: { situation_id: situationId, status: "active" }, data: { status: "archived" } });
         const goal = selected && selected.title === command.title ? await db.goal.update({ where: { id: selected.id }, data: { status: "active", confirmed_at: new Date() } }) :
           await db.goal.create({ data: { situation_id: situationId, title: command.title, status: "active", confirmed_at: new Date() } });
